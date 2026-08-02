@@ -321,16 +321,25 @@ app.post('/api/vtex/orders', async (c) => {
     if (missing.length > 0) {
       console.warn('Missing VTEX credentials. Returning mock data for visualization.');
       
-      const mockOrders = Array.from({ length: 50 }).map((_, i) => ({
-        orderId: `v-${1000000000 + Math.floor(Math.random() * 9000000000)}`,
-        creationDate: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString(),
-        clientName: `Cliente Exemplo ${i + 1}`,
-        totalValue: (Math.floor(Math.random() * 1500) + 50) * 100,
-        status: ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)],
-        items: [
-          { name: 'Produto Exemplo', quantity: 1, price: 100 }
-        ]
-      }));
+    const mockOrders = Array.from({ length: 50 }).map((_, i) => {
+        const itemQuantity = Math.floor(Math.random() * 3) + 1;
+        const itemPrice = (Math.floor(Math.random() * 200) + 10) * 100;
+        const shippingValue = Math.random() > 0.3 ? (Math.floor(Math.random() * 30) + 10) * 100 : 0;
+        const deliveryChannel = Math.random() > 0.3 ? 'delivery' : 'pickup-in-point';
+        const totalValue = (itemPrice * itemQuantity) + (deliveryChannel === 'delivery' ? shippingValue : 0);
+        return {
+          orderId: `v-${1000000000 + Math.floor(Math.random() * 9000000000)}`,
+          creationDate: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString(),
+          clientName: `Cliente Exemplo ${i + 1}`,
+          totalValue: totalValue,
+          status: ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)],
+          items: [
+            { name: 'Produto Exemplo', quantity: itemQuantity, price: itemPrice, sellingPrice: itemPrice }
+          ],
+          shippingValue: deliveryChannel === 'delivery' ? shippingValue : 0,
+          deliveryChannel: deliveryChannel
+        };
+      });
       
       return c.json({ list: mockOrders });
     }
@@ -358,7 +367,50 @@ app.post('/api/vtex/orders', async (c) => {
       }
     );
 
-    return c.json(response.data);
+    const ordersList = response.data.list || [];
+    
+    const detailedOrders = await Promise.all(
+      ordersList.map(async (order: any) => {
+        try {
+          const detailResponse = await axios.get(
+            `https://${accountName}.${environment}.com.br/api/oms/pvt/orders/${order.orderId}`,
+            {
+              headers: {
+                'X-VTEX-API-AppKey': getEnv(c, 'VTEX_APP_KEY'),
+                'X-VTEX-API-AppToken': getEnv(c, 'VTEX_APP_TOKEN'),
+                'Accept': 'application/json'
+              }
+            }
+          );
+          const o = detailResponse.data;
+          
+          const shippingTotal = o.totals?.find((t: any) => t.id === 'Shipping')?.value || 0;
+          const deliveryChannel = o.shippingData?.logisticsInfo?.[0]?.deliveryChannel || 'delivery';
+
+          return {
+            orderId: o.orderId,
+            creationDate: o.creationDate,
+            clientName: o.clientProfileData ? `${o.clientProfileData.firstName} ${o.clientProfileData.lastName || ''}`.trim() : 'Cliente Indefinido',
+            totalValue: o.value,
+            status: o.status,
+            items: o.items?.map((item: any) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              sellingPrice: item.sellingPrice
+            })) || [],
+            shippingValue: shippingTotal,
+            deliveryChannel: deliveryChannel
+          };
+        } catch (err) {
+          console.error(`Failed to fetch details for order ${order.orderId}`, err);
+          return null;
+        }
+      })
+    );
+
+    const list = detailedOrders.filter(o => o !== null);
+    return c.json({ list });
   } catch (error: any) {
     console.error('VTEX Error:', error.response?.data || error.message);
     return c.json({ error: error.response?.data || error.message || 'Failed to fetch VTEX data' }, 500);

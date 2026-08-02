@@ -189,6 +189,26 @@ export default function Dashboard() {
   const avgConversionRate = totalSessions > 0 ? ((totalVtexOrders / totalSessions) * 100).toFixed(2) : '0.00';
   const avgOrderValue = totalVtexOrders > 0 ? (totalVtexRevenue / totalVtexOrders) : 0;
 
+  // New Group 1 Calculations (Items)
+  const totalItemsRevenue = dashboardFilteredVtexOrders.reduce((acc, order) => {
+    const orderItemsSum = order.items?.reduce((sum: number, item: any) => sum + ((item.sellingPrice || 0) * (item.quantity || 0)), 0) || 0;
+    return acc + (orderItemsSum / 100);
+  }, 0);
+  
+  const totalItemsQuantity = dashboardFilteredVtexOrders.reduce((acc, order) => {
+    const orderItemsCount = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+    return acc + orderItemsCount;
+  }, 0);
+  
+  const avgValuePerItem = totalItemsQuantity > 0 ? (totalItemsRevenue / totalItemsQuantity) : 0;
+
+  // New Group 2 Calculations (Logistics)
+  const pickupOrdersCount = dashboardFilteredVtexOrders.filter(order => order.deliveryChannel === 'pickup-in-point').length;
+  const deliveryOrdersCount = dashboardFilteredVtexOrders.filter(order => order.deliveryChannel === 'delivery').length;
+  
+  const totalShippingValue = dashboardFilteredVtexOrders.reduce((acc, order) => acc + ((order.shippingValue || 0) / 100), 0);
+  const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
+
   // Group VTEX orders by date for chart integration
   const vtexOrdersByDate = dashboardFilteredVtexOrders.reduce((acc, order) => {
     try {
@@ -640,47 +660,54 @@ export default function Dashboard() {
             </div>
           </section>
           
-          {/* Footer Table / Bottom Row */}
-          <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col shrink-0">
-            <div className="px-6 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Pedidos Recentes por Categoria</h3>
-              <button className="text-[10px] font-bold text-blue-600 uppercase hover:underline">Ver Relatório</button>
+          {/* Métricas Detalhadas (VTEX) */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
+            {/* Bloco 1: Itens */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4 text-indigo-500" />
+                Métricas de Itens Vendidos
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                  <p className="text-[10px] text-slate-500 uppercase font-semibold">Faturamento Itens</p>
+                  <p className="text-lg font-bold text-slate-800 mt-1">R$ {totalItemsRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                  <p className="text-[10px] text-slate-500 uppercase font-semibold">Quantidade Itens</p>
+                  <p className="text-lg font-bold text-slate-800 mt-1">{totalItemsQuantity.toLocaleString('pt-BR')}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                  <p className="text-[10px] text-slate-500 uppercase font-semibold">Média por Item</p>
+                  <p className="text-lg font-bold text-slate-800 mt-1">R$ {avgValuePerItem.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left min-w-[600px]">
-                <thead className="text-[10px] text-slate-400 uppercase bg-white">
-                  <tr>
-                    <th className="px-6 py-2">Categoria</th>
-                    <th className="px-6 py-2">Unidades Vendidas</th>
-                    <th className="px-6 py-2">Receita VTEX</th>
-                    <th className="px-6 py-2">Sessões GA4</th>
-                    <th className="px-6 py-2 text-right">Taxa Conv.</th>
-                  </tr>
-                </thead>
-                <tbody className="text-xs text-slate-700 divide-y divide-slate-50">
-                  <tr>
-                    <td className="px-6 py-3 font-medium">Eletrônicos</td>
-                    <td className="px-6 py-3">412</td>
-                    <td className="px-6 py-3">R$82.400</td>
-                    <td className="px-6 py-3">12.450</td>
-                    <td className="px-6 py-3 text-right font-bold text-emerald-600">4.8%</td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-3 font-medium">Moda & Vestuário</td>
-                    <td className="px-6 py-3">1.205</td>
-                    <td className="px-6 py-3">R$32.150</td>
-                    <td className="px-6 py-3">25.800</td>
-                    <td className="px-6 py-3 text-right font-bold text-slate-500">2.1%</td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-3 font-medium">Casa & Jardim</td>
-                    <td className="px-6 py-3">184</td>
-                    <td className="px-6 py-3">R$13.900</td>
-                    <td className="px-6 py-3">8.200</td>
-                    <td className="px-6 py-3 text-right font-bold text-emerald-600">3.2%</td>
-                  </tr>
-                </tbody>
-              </table>
+
+            {/* Bloco 2: Logística e Fretes */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                Logística e Fretes
+              </h3>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Retiradas</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Entregas</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">{deliveryOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Total Fretes</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">R$ {totalShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Média Frete</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">R$ {avgShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              </div>
             </div>
           </section>
             </>
