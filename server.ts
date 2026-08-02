@@ -21,6 +21,15 @@ const checkEnvVars = (c: any, vars: (keyof Bindings)[]) => {
   return vars.filter(v => !getEnv(c, v));
 };
 
+const clampEndDate = (endDate: string | undefined): string => {
+  if (!endDate) return 'today';
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (endDate > todayStr) {
+    return todayStr;
+  }
+  return endDate;
+};
+
 // Helper function to sign JWT and retrieve access token for Google API
 async function getGoogleAccessToken(clientEmail: string, privateKeyStr: string): Promise<string> {
   const pemContents = privateKeyStr
@@ -162,7 +171,7 @@ app.post('/api/ga4/metrics', async (c) => {
       dateRanges: [
         {
           startDate: startDate || '28daysAgo',
-          endDate: endDate || 'today',
+          endDate: clampEndDate(endDate),
         },
       ],
       dimensions: [
@@ -235,7 +244,7 @@ app.post('/api/ga4/funnel', async (c) => {
         dateRanges: [
           {
             startDate: startDate || '28daysAgo',
-            endDate: endDate || 'today',
+            endDate: clampEndDate(endDate),
           },
         ],
         metrics: [
@@ -246,7 +255,7 @@ app.post('/api/ga4/funnel', async (c) => {
         dateRanges: [
           {
             startDate: startDate || '28daysAgo',
-            endDate: endDate || 'today',
+            endDate: clampEndDate(endDate),
           },
         ],
         dimensions: [
