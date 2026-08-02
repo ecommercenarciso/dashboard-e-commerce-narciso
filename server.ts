@@ -1,29 +1,140 @@
-import express from 'express';
-import path from 'path';
-import { createServer as createViteServer } from 'vite';
-import { BetaAnalyticsDataClient } from '@google-analytics/data';
+import { Hono } from 'hono';
 import axios from 'axios';
 
-const app = express();
-const PORT = 3000;
-
-app.use(express.json());
-
-// Helper to check for missing env vars
-const checkEnvVars = (vars: string[]) => {
-  const missing = vars.filter(v => !process.env[v]);
-  return missing;
+type Bindings = {
+  GA4_PROPERTY_ID: string;
+  GOOGLE_APPLICATION_CREDENTIALS_JSON: string;
+  VTEX_ACCOUNT_NAME: string;
+  VTEX_APP_KEY: string;
+  VTEX_APP_TOKEN: string;
+  VTEX_ENVIRONMENT?: string;
 };
 
+const app = new Hono<{ Bindings: Bindings }>();
+
+// Helper to get environment variables
+const getEnv = (c: any, key: keyof Bindings): string | undefined => {
+  return c.env?.[key] || process.env[key];
+};
+
+const checkEnvVars = (c: any, vars: (keyof Bindings)[]) => {
+  return vars.filter(v => !getEnv(c, v));
+};
+
+// Helper function to sign JWT and retrieve access token for Google API
+async function getGoogleAccessToken(clientEmail: string, privateKeyStr: string): Promise<string> {
+  const pemContents = privateKeyStr
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
+    .replace(/\s/g, "");
+  
+  // Convert base64 to ArrayBuffer
+  const binaryDerString = atob(pemContents);
+  const binaryDer = new Uint8Array(binaryDerString.length);
+  for (let i = 0; i < binaryDerString.length; i++) {
+    binaryDer[i] = binaryDerString.charCodeAt(i);
+  }
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    binaryDer.buffer,
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      hash: "SHA-256",
+    },
+    false,
+    ["sign"]
+  );
+
+  const header = { alg: "RS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/analytics.readonly",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  };
+
+  const base64UrlEncode = (str: string) => {
+    return btoa(str)
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+  };
+
+  const tokenParts = [
+    base64UrlEncode(JSON.stringify(header)),
+    base64UrlEncode(JSON.stringify(payload)),
+  ];
+
+  const stringToSign = tokenParts.join(".");
+  const encoder = new TextEncoder();
+  const dataToSign = encoder.encode(stringToSign);
+
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    dataToSign
+  );
+
+  const base64UrlSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+
+  tokenParts.push(base64UrlSignature);
+  const jwt = tokenParts.join(".");
+
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }).toString(),
+  });
+
+  const tokenData = await tokenResponse.json() as any;
+  if (!tokenResponse.ok) {
+    throw new Error(`Failed to get Google Access Token: ${JSON.stringify(tokenData)}`);
+  }
+
+  return tokenData.access_token;
+}
+
+// Helper to query GA4 Data API via REST
+async function runGa4Report(accessToken: string, propertyId: string, reportBody: any) {
+  const response = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reportBody),
+    }
+  );
+  
+  const data = await response.json() as any;
+  if (!response.ok) {
+    throw new Error(`GA4 API Error: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
 // GA4 API Route
-app.post('/api/ga4/metrics', async (req, res) => {
+app.post('/api/ga4/metrics', async (c) => {
   try {
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate } = await c.req.json();
     
-    // We expect the user to either set GOOGLE_APPLICATION_CREDENTIALS 
-    // or GOOGLE_APPLICATION_CREDENTIALS_JSON in env
-    const missing = checkEnvVars(['GA4_PROPERTY_ID']);
-    if (missing.length > 0 || !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
+    const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
+    
+    if (missing.length > 0 || !credentialsJson) {
       console.warn('Missing GA4 credentials. Returning mock data for visualization.');
       
       const mockData = [];
@@ -31,7 +142,7 @@ app.post('/api/ga4/metrics', async (req, res) => {
       const start = startDate ? new Date(startDate) : new Date();
       if (!startDate) start.setDate(end.getDate() - 28);
       
-      for(let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
           mockData.push({
               date: dateStr,
@@ -40,21 +151,14 @@ app.post('/api/ga4/metrics', async (req, res) => {
               revenue: Math.floor(Math.random() * 4000) + 500,
           });
       }
-      return res.json(mockData);
+      return c.json(mockData);
     }
 
-    let authOptions = {};
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-        authOptions = {
-            credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
-        };
-    }
+    const credentials = JSON.parse(credentialsJson);
+    const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
+    const propertyId = getEnv(c, 'GA4_PROPERTY_ID');
 
-    const analyticsDataClient = new BetaAnalyticsDataClient(authOptions);
-    const propertyId = process.env.GA4_PROPERTY_ID;
-
-    const [response] = await analyticsDataClient.runReport({
-      property: `properties/${propertyId}`,
+    const response = await runGa4Report(accessToken, propertyId!, {
       dateRanges: [
         {
           startDate: startDate || '28daysAgo',
@@ -79,7 +183,7 @@ app.post('/api/ga4/metrics', async (req, res) => {
       ]
     });
 
-    const data = response.rows?.map(row => {
+    const data = response.rows?.map((row: any) => {
       return {
         date: row.dimensionValues?.[0].value,
         sessions: parseInt(row.metricValues?.[0].value || '0', 10),
@@ -88,20 +192,22 @@ app.post('/api/ga4/metrics', async (req, res) => {
       };
     }) || [];
 
-    res.json(data);
+    return c.json(data);
   } catch (error: any) {
     console.error('GA4 Error:', error);
-    res.status(500).json({ error: error.message || 'Failed to fetch GA4 data' });
+    return c.json({ error: error.message || 'Failed to fetch GA4 data' }, 500);
   }
 });
 
 // GA4 Funnel API Route
-app.post('/api/ga4/funnel', async (req, res) => {
+app.post('/api/ga4/funnel', async (c) => {
   try {
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate } = await c.req.json();
     
-    const missing = checkEnvVars(['GA4_PROPERTY_ID']);
-    if (missing.length > 0 || !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
+    const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
+    
+    if (missing.length > 0 || !credentialsJson) {
       console.warn('Missing GA4 credentials. Returning mock data for funnel.');
       
       const mockFunnel = {
@@ -112,34 +218,20 @@ app.post('/api/ga4/funnel', async (req, res) => {
         payment: Math.floor(Math.random() * 500) + 100
       };
       
-      // Ensure the funnel makes sense (values decrease)
       mockFunnel.viewItem = Math.min(mockFunnel.visitors, mockFunnel.viewItem);
       mockFunnel.cart = Math.min(mockFunnel.viewItem, mockFunnel.cart);
       mockFunnel.shipping = Math.min(mockFunnel.cart, mockFunnel.shipping);
       mockFunnel.payment = Math.min(mockFunnel.shipping, mockFunnel.payment);
 
-      return res.json(mockFunnel);
+      return c.json(mockFunnel);
     }
 
-    let authOptions = {};
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-        authOptions = {
-            credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
-        };
-    }
+    const credentials = JSON.parse(credentialsJson);
+    const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
+    const propertyId = getEnv(c, 'GA4_PROPERTY_ID');
 
-    const analyticsDataClient = new BetaAnalyticsDataClient(authOptions);
-    const propertyId = process.env.GA4_PROPERTY_ID;
-
-    // To get the funnel, we need distinct users for each event
-    // Note: 'activeUsers' or 'totalUsers' filtered by event_name is typically used.
-    // We'll use a single report with eventName dimension and activeUsers metric.
-    const [
-      [overallResponse], 
-      [eventResponse]
-    ] = await Promise.all([
-      analyticsDataClient.runReport({
-        property: `properties/${propertyId}`,
+    const [overallResponse, eventResponse] = await Promise.all([
+      runGa4Report(accessToken, propertyId!, {
         dateRanges: [
           {
             startDate: startDate || '28daysAgo',
@@ -150,8 +242,7 @@ app.post('/api/ga4/funnel', async (req, res) => {
           { name: 'totalUsers' },
         ],
       }),
-      analyticsDataClient.runReport({
-        property: `properties/${propertyId}`,
+      runGa4Report(accessToken, propertyId!, {
         dateRanges: [
           {
             startDate: startDate || '28daysAgo',
@@ -190,10 +281,9 @@ app.post('/api/ga4/funnel', async (req, res) => {
     }
 
     let viewCartUsers = 0;
-    let addToCartUsers = 0;
 
     if (eventResponse.rows) {
-        eventResponse.rows.forEach(row => {
+        eventResponse.rows.forEach((row: any) => {
             const eventName = row.dimensionValues[0].value;
             const users = parseInt(row.metricValues[0].value, 10);
             
@@ -204,22 +294,21 @@ app.post('/api/ga4/funnel', async (req, res) => {
         });
     }
 
-    // Combine view_cart and add_to_cart (max of both or just add_to_cart as a proxy if we want unique users, but max is a safe bet for a proxy)
     funnel.cart = viewCartUsers;
 
-    res.json(funnel);
+    return c.json(funnel);
   } catch (error: any) {
     console.error('GA4 Funnel Error:', error);
-    res.status(500).json({ error: error.message || 'Failed to fetch GA4 funnel data' });
+    return c.json({ error: error.message || 'Failed to fetch GA4 funnel data' }, 500);
   }
 });
 
 // VTEX API Routes
-app.post('/api/vtex/orders', async (req, res) => {
+app.post('/api/vtex/orders', async (c) => {
   try {
-    const { startDate, endDate, category } = req.body;
+    const { startDate, endDate, category } = await c.req.json();
     
-    const missing = checkEnvVars(['VTEX_ACCOUNT_NAME', 'VTEX_APP_KEY', 'VTEX_APP_TOKEN']);
+    const missing = checkEnvVars(c, ['VTEX_ACCOUNT_NAME', 'VTEX_APP_KEY', 'VTEX_APP_TOKEN']);
     if (missing.length > 0) {
       console.warn('Missing VTEX credentials. Returning mock data for visualization.');
       
@@ -234,13 +323,12 @@ app.post('/api/vtex/orders', async (req, res) => {
         ]
       }));
       
-      return res.json({ list: mockOrders });
+      return c.json({ list: mockOrders });
     }
 
-    const accountName = process.env.VTEX_ACCOUNT_NAME;
-    const environment = process.env.VTEX_ENVIRONMENT || 'vtexcommercestable';
+    const accountName = getEnv(c, 'VTEX_ACCOUNT_NAME');
+    const environment = getEnv(c, 'VTEX_ENVIRONMENT') || 'vtexcommercestable';
     
-    // Convert startDate and endDate to ISO string as required by VTEX API usually
     let fq = '';
     if (startDate && endDate) {
         fq = `creationDate:[${startDate}T00:00:00.000Z TO ${endDate}T23:59:59.999Z]`;
@@ -251,41 +339,21 @@ app.post('/api/vtex/orders', async (req, res) => {
       {
         params: {
           f_creationDate: fq ? fq : undefined,
-          per_page: 100, // Fetch up to 100 recent orders for summary
+          per_page: 100,
         },
         headers: {
-          'X-VTEX-API-AppKey': process.env.VTEX_APP_KEY,
-          'X-VTEX-API-AppToken': process.env.VTEX_APP_TOKEN,
+          'X-VTEX-API-AppKey': getEnv(c, 'VTEX_APP_KEY'),
+          'X-VTEX-API-AppToken': getEnv(c, 'VTEX_APP_TOKEN'),
           'Accept': 'application/json'
         }
       }
     );
 
-    res.json(response.data);
+    return c.json(response.data);
   } catch (error: any) {
     console.error('VTEX Error:', error.response?.data || error.message);
-    res.status(500).json({ error: error.response?.data || error.message || 'Failed to fetch VTEX data' });
+    return c.json({ error: error.response?.data || error.message || 'Failed to fetch VTEX data' }, 500);
   }
 });
 
-async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
-
-startServer();
+export default app;
