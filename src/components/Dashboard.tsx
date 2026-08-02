@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell } from 'recharts';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 
@@ -11,6 +11,8 @@ export default function Dashboard() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [insights, setInsights] = useState<string[]>([]);
+  const [loadingInsights, setLoadingInsights] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
@@ -71,6 +73,60 @@ export default function Dashboard() {
       }
       
       setVtexOrders(vtexJson.list || []); // Assuming the OMS response has a list property
+
+      // Calculate Metrics for Gemini
+      const list = vtexJson.list || [];
+      const ga4 = ga4Json || [];
+      const totalSessions = ga4.reduce((acc: number, row: any) => acc + (row.sessions || 0), 0);
+      const totalVtexOrders = list.length;
+      const totalVtexRevenue = list.reduce((acc: number, order: any) => acc + ((order.totalValue || 0) / 100), 0);
+      const avgConversionRate = totalSessions > 0 ? parseFloat(((totalVtexOrders / totalSessions) * 100).toFixed(2)) : 0;
+      const avgOrderValue = totalVtexOrders > 0 ? (totalVtexRevenue / totalVtexOrders) : 0;
+
+      const totalItemsRevenue = list.reduce((acc: number, order: any) => {
+        const orderItemsSum = order.items?.reduce((sum: number, item: any) => sum + ((item.sellingPrice || 0) * (item.quantity || 0)), 0) || 0;
+        return acc + (orderItemsSum / 100);
+      }, 0);
+      
+      const totalItemsQuantity = list.reduce((acc: number, order: any) => {
+        const orderItemsCount = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+        return acc + orderItemsCount;
+      }, 0);
+
+      const pickupOrdersCount = list.filter((order: any) => order.deliveryChannel === 'pickup-in-point').length;
+      const deliveryOrdersCount = list.filter((order: any) => order.deliveryChannel === 'delivery').length;
+      const totalShippingValue = list.reduce((acc: number, order: any) => acc + ((order.shippingValue || 0) / 100), 0);
+      const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
+
+      // Fetch Gemini Insights
+      setLoadingInsights(true);
+      try {
+        const geminiResponse = await fetch('/api/gemini/insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            totalSessions,
+            totalVtexOrders,
+            totalVtexRevenue,
+            avgConversionRate,
+            avgOrderValue,
+            totalItemsRevenue,
+            totalItemsQuantity,
+            pickupOrdersCount,
+            deliveryOrdersCount,
+            totalShippingValue,
+            avgShippingValue
+          }),
+        });
+        const geminiJson = await geminiResponse.json() as any;
+        if (geminiResponse.ok && geminiJson.insights) {
+          setInsights(geminiJson.insights);
+        }
+      } catch (geminiErr) {
+        console.error("Gemini fetch failed", geminiErr);
+      } finally {
+        setLoadingInsights(false);
+      }
 
     } catch (err: any) {
       setError(err.message);
@@ -208,6 +264,37 @@ export default function Dashboard() {
   
   const totalShippingValue = dashboardFilteredVtexOrders.reduce((acc, order) => acc + ((order.shippingValue || 0) / 100), 0);
   const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
+
+  // Order status distribution data
+  const statusCounts = dashboardFilteredVtexOrders.reduce((acc, order) => {
+    const status = order.status || 'other';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const statusLabelMap: Record<string, string> = {
+    'invoiced': 'Faturado',
+    'handling': 'Preparação',
+    'payment-pending': 'Aguardando Pgto',
+    'canceled': 'Cancelado',
+    'payment-approved': 'Aprovado',
+    'other': 'Outro'
+  };
+
+  const statusColorMap: Record<string, string> = {
+    'invoiced': '#10b981', // emerald
+    'handling': '#3b82f6', // blue
+    'payment-pending': '#f59e0b', // amber
+    'canceled': '#ef4444', // red
+    'payment-approved': '#8b5cf6', // purple
+    'other': '#64748b' // slate
+  };
+
+  const pieData = Object.keys(statusCounts).map(key => ({
+    name: statusLabelMap[key] || key,
+    value: statusCounts[key],
+    color: statusColorMap[key] || '#64748b'
+  }));
 
   // Group VTEX orders by date for chart integration
   const vtexOrdersByDate = dashboardFilteredVtexOrders.reduce((acc, order) => {
@@ -526,6 +613,37 @@ export default function Dashboard() {
             </div>
           </section>
 
+          {/* AI Insights Card */}
+          <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl p-5 border border-indigo-500/20 shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-10 h-10 bg-indigo-500/10 rounded-lg border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <Sparkles className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">Insights do Assistente de IA</h3>
+                <p className="text-xs text-indigo-200 mt-0.5">Recomendações estratégicas geradas a partir dos dados do seu período.</p>
+              </div>
+            </div>
+            
+            <div className="flex-1 w-full flex flex-col gap-2.5">
+              {loadingInsights ? (
+                <div className="flex items-center gap-2.5 text-xs text-indigo-300 py-3">
+                  <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
+                  <span>Analisando suas métricas de vendas e tráfego com o Gemini...</span>
+                </div>
+              ) : insights.length > 0 ? (
+                insights.map((insight, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-xs bg-white/5 border border-white/5 rounded-lg py-2 px-3 hover:bg-white/10 transition-colors">
+                    <span className="text-indigo-400 font-bold shrink-0">#{idx + 1}</span>
+                    <span className="text-slate-200">{insight}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-400">Nenhum insight disponível no momento. Clique em Atualizar Dados.</p>
+              )}
+            </div>
+          </section>
+
           {/* Main Visual Row */}
           <section className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
             {/* Charts */}
@@ -597,64 +715,116 @@ export default function Dashboard() {
 
             </div>
 
-            {/* Funil de Conversão */}
-            <div className="bg-slate-900 rounded-xl p-6 text-white flex flex-col">
-              <h3 className="font-bold text-sm mb-4 border-b border-slate-700 pb-2">Funil de Conversão (GA4)</h3>
-              
-              {!funnelData ? (
-                <div className="flex-1 flex items-center justify-center text-slate-500 text-xs">
-                  {loading ? 'Carregando funil...' : 'Sem dados de funil'}
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col justify-center py-2 w-full">
-                  {[
-                    { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
-                    { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
-                    { label: 'Carrinho', value: funnelData.cart, max: funnelData.visitors },
-                    { label: 'Entrega', value: funnelData.shipping, max: funnelData.visitors },
-                    { label: 'Pagamento', value: funnelData.payment, max: funnelData.visitors },
-                  ].map((step, idx, arr) => {
-                    const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
-                    const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
-                    const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
-                    
-                    return (
-                      <div key={idx} className="flex items-center w-full group relative mb-0.5">
-                        {/* Label on the left */}
-                        <div className="w-24 text-right pr-3 text-[11px] font-medium text-slate-400 leading-tight">
-                          {step.label}
-                        </div>
-                        
-                        {/* Funnel Bar Area */}
-                        <div className="flex-1 flex justify-center items-center h-10 relative">
-                          <div className="absolute w-full h-[1px] bg-slate-800/30 z-0"></div>
+            {/* Right column: Funnel & Order Status */}
+            <div className="col-span-1 flex flex-col gap-6">
+              {/* Funnel de Conversão */}
+              <div className="bg-slate-900 rounded-xl p-6 text-white flex flex-col h-[320px] shrink-0">
+                <h3 className="font-bold text-sm mb-4 border-b border-slate-700 pb-2">Funil de Conversão (GA4)</h3>
+                
+                {!funnelData ? (
+                  <div className="flex-1 flex items-center justify-center text-slate-500 text-xs">
+                    {loading ? 'Carregando funil...' : 'Sem dados de funil'}
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col justify-center py-2 w-full">
+                    {[
+                      { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
+                      { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
+                      { label: 'Carrinho', value: funnelData.cart, max: funnelData.visitors },
+                      { label: 'Entrega', value: funnelData.shipping, max: funnelData.visitors },
+                      { label: 'Pagamento', value: funnelData.payment, max: funnelData.visitors },
+                    ].map((step, idx, arr) => {
+                      const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
+                      const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
+                      const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
+                      
+                      return (
+                        <div key={idx} className="flex items-center w-full group relative mb-0.5">
+                          <div className="w-20 text-right pr-3 text-[10px] font-medium text-slate-400 leading-tight">
+                            {step.label}
+                          </div>
                           
-                          <div 
-                            className={`h-full relative z-10 shadow-sm transition-all duration-500 ${
-                              idx === 0 ? 'bg-blue-500' : idx === arr.length - 1 ? 'bg-emerald-500' : 'bg-slate-600'
-                            }`} 
-                            style={{ 
-                              width: `${Math.max(percentageOverall, 1)}%`,
-                              minWidth: '4px',
-                              borderTopLeftRadius: idx === 0 ? '6px' : '0px',
-                              borderTopRightRadius: idx === 0 ? '6px' : '0px',
-                              borderBottomLeftRadius: idx === arr.length - 1 ? '6px' : '0px',
-                              borderBottomRightRadius: idx === arr.length - 1 ? '6px' : '0px',
-                            }}
-                          >
+                          <div className="flex-1 flex justify-center items-center h-8 relative">
+                            <div className="absolute w-full h-[1px] bg-slate-800/30 z-0"></div>
+                            <div 
+                              className={`h-full relative z-10 shadow-sm transition-all duration-500 ${
+                                idx === 0 ? 'bg-blue-500' : idx === arr.length - 1 ? 'bg-emerald-500' : 'bg-slate-600'
+                              }`} 
+                              style={{ 
+                                width: `${Math.max(percentageOverall, 1)}%`,
+                                minWidth: '4px',
+                                borderTopLeftRadius: idx === 0 ? '6px' : '0px',
+                                borderTopRightRadius: idx === 0 ? '6px' : '0px',
+                                borderBottomLeftRadius: idx === arr.length - 1 ? '6px' : '0px',
+                                borderBottomRightRadius: idx === arr.length - 1 ? '6px' : '0px',
+                              }}
+                            >
+                            </div>
+                          </div>
+                          
+                          <div className="w-20 pl-3 flex flex-col justify-center">
+                            <span className="text-[11px] font-bold text-white leading-tight">{step.value.toLocaleString('pt-BR')}</span>
+                            {idx > 0 && <span className="text-[9px] text-slate-500 leading-tight">↓ {stepConversion.toFixed(1)}%</span>}
                           </div>
                         </div>
-                        
-                        {/* Values on the right */}
-                        <div className="w-24 pl-3 flex flex-col justify-center">
-                          <span className="text-xs font-bold text-white leading-tight">{step.value.toLocaleString('pt-BR')}</span>
-                          {idx > 0 && <span className="text-[10px] text-slate-500 leading-tight">↓ {stepConversion.toFixed(1)}%</span>}
-                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Status dos Pedidos VTEX */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[280px] shrink-0">
+                <h3 className="font-bold text-slate-800 text-sm mb-4 border-b border-slate-100 pb-2">Status dos Pedidos (VTEX)</h3>
+                
+                {pieData.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
+                    {loading ? 'Carregando status...' : 'Nenhum pedido no período'}
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-between gap-2">
+                    <div className="w-[140px] h-[140px] relative">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={35}
+                            outerRadius={55}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => [value, 'Pedidos']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-lg font-bold text-slate-800">{totalVtexOrders}</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-semibold">Total</span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto max-h-[160px] pr-1">
+                      {pieData.map((item, idx) => {
+                        const pct = totalVtexOrders > 0 ? ((item.value / totalVtexOrders) * 100).toFixed(0) : 0;
+                        return (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></div>
+                              <span className="text-slate-600 truncate">{item.name}</span>
+                            </div>
+                            <span className="font-semibold text-slate-800 pl-2">{item.value} ({pct}%)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
           
