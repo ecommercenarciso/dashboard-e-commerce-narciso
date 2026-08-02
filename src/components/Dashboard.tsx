@@ -547,13 +547,13 @@ export default function Dashboard() {
                   <h3 className="font-bold text-slate-800 text-sm">Faturamento & Pedidos (VTEX)</h3>
                   <div className="flex gap-4">
                     <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-indigo-500"></div><span className="text-[10px] text-slate-500">Faturamento</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-emerald-500"></div><span className="text-[10px] text-slate-500">Pedidos</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-emerald-500"></div><span className="text-[10px] text-slate-500">Pedidos</span></div>
                   </div>
                 </div>
                 <div className="flex-1 w-full min-h-[200px]">
                    {chartData.length > 0 ? (
                      <ResponsiveContainer width="100%" height="100%">
-                       <ComposedChart data={chartData}>
+                       <BarChart data={chartData}>
                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                          <XAxis dataKey="displayDate" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                          <YAxis yAxisId="left" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
@@ -566,8 +566,8 @@ export default function Dashboard() {
                            }}
                          />
                          <Bar yAxisId="left" dataKey="vtexRevenue" fill="#6366f1" radius={[4, 4, 0, 0]} name="Faturamento" />
-                         <Line yAxisId="right" type="monotone" dataKey="vtexOrders" stroke="#10b981" strokeWidth={3} dot={false} name="Pedidos" />
-                       </ComposedChart>
+                         <Bar yAxisId="right" dataKey="vtexOrders" fill="#10b981" radius={[4, 4, 0, 0]} name="Pedidos" />
+                       </BarChart>
                      </ResponsiveContainer>
                    ) : (
                       <div className="h-full flex items-center justify-center text-slate-400 text-sm">
