@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart } from 'recharts';
 import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
@@ -544,27 +544,36 @@ export default function Dashboard() {
 
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col flex-1 min-h-[250px]">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-slate-800 text-sm">Tendência de Receita (VTEX)</h3>
+                  <h3 className="font-bold text-slate-800 text-sm">Faturamento & Pedidos (VTEX)</h3>
                   <div className="flex gap-4">
-                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-indigo-500"></div><span className="text-[10px] text-slate-500">Receita</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-indigo-500"></div><span className="text-[10px] text-slate-500">Faturamento</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-emerald-500"></div><span className="text-[10px] text-slate-500">Pedidos</span></div>
                   </div>
                 </div>
                 <div className="flex-1 w-full min-h-[200px]">
                    {chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="displayDate" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value: number) => [`R$${value.toFixed(2)}`, 'Receita (VTEX)']} />
-                        <Bar dataKey="vtexRevenue" fill="#6366f1" radius={[4, 4, 0, 0]} name="Receita Diária" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                     <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                      {loading ? 'Carregando dados...' : 'Sem dados disponíveis para os filtros selecionados.'}
-                    </div>
-                  )}
+                     <ResponsiveContainer width="100%" height="100%">
+                       <ComposedChart data={chartData}>
+                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                         <XAxis dataKey="displayDate" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                         <YAxis yAxisId="left" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
+                         <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val} ped.`} />
+                         <Tooltip 
+                           contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                           formatter={(value: any, name: any) => {
+                             if (name === "Faturamento") return [`R$ ${parseFloat(value).toFixed(2)}`, name];
+                             return [value, name];
+                           }}
+                         />
+                         <Bar yAxisId="left" dataKey="vtexRevenue" fill="#6366f1" radius={[4, 4, 0, 0]} name="Faturamento" />
+                         <Line yAxisId="right" type="monotone" dataKey="vtexOrders" stroke="#10b981" strokeWidth={3} dot={false} name="Pedidos" />
+                       </ComposedChart>
+                     </ResponsiveContainer>
+                   ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                       {loading ? 'Carregando dados...' : 'Sem dados disponíveis para os filtros selecionados.'}
+                     </div>
+                   )}
                 </div>
               </div>
 
