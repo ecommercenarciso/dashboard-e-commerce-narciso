@@ -594,6 +594,21 @@ export default function Dashboard() {
         {/* Content Dashboard */}
         <div className="p-8 flex-1 flex flex-col gap-6 overflow-y-auto">
           
+          {/* Relatório Print Header (Visível apenas na impressão/PDF) */}
+          <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-6">
+            <div className="flex justify-between items-end">
+              <div>
+                <h1 className="text-xl font-bold text-slate-900">Insight Hub - Relatório de Desempenho</h1>
+                <p className="text-xs text-slate-500 mt-1">Integração Analítica VTEX + Google Analytics 4</p>
+              </div>
+              <div className="text-right text-xs text-slate-600">
+                <p className="font-semibold">Filtros Aplicados:</p>
+                <p>Período: {filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType}</p>
+                <p>Categoria: {filters.category === 'All' ? 'Todas' : filters.category} | Status: {filters.status === 'All' ? 'Todos' : filters.status}</p>
+              </div>
+            </div>
+          </div>
+          
           {/* Error State */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-4 shrink-0">
