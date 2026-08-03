@@ -623,11 +623,11 @@ export default function Dashboard() {
             </div>
           </section>
           {/* Main Visual Row */}
-          <section className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Charts */}
             <div className="col-span-1 lg:col-span-2 flex flex-col gap-6">
               
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col flex-1 min-h-[250px]">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-slate-800 text-sm">Tendência de Tráfego & Conversões</h3>
                   <div className="flex gap-4">
@@ -656,7 +656,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col flex-1 min-h-[250px]">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-slate-800 text-sm">Faturamento & Pedidos (VTEX)</h3>
                   <div className="flex gap-4">
@@ -752,7 +752,7 @@ export default function Dashboard() {
               </div>
 
               {/* Status dos Pedidos VTEX */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[280px] shrink-0">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] shrink-0">
                 <h3 className="font-bold text-slate-800 text-sm mb-4 border-b border-slate-100 pb-2">Status dos Pedidos (VTEX)</h3>
                 
                 {pieData.length === 0 ? (
