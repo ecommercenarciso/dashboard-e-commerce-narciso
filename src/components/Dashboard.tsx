@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 
@@ -14,6 +14,8 @@ export default function Dashboard() {
   const [insights, setInsights] = useState<string[]>([]);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [showInsightsModal, setShowInsightsModal] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
@@ -325,14 +327,30 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
+      {/* Backdrop for mobile */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 lg:hidden"
+        ></div>
+      )}
+
       {/* Sidebar: Navigation & Fixed Filters */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
-        <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xl">V</div>
-            <span className="text-xl font-bold text-white tracking-tight">Insight Hub</span>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full shrink-0'}`}>
+        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xl">V</div>
+              <span className="text-xl font-bold text-white tracking-tight">Insight Hub</span>
+            </div>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">VTEX + GA4 Intelligence</p>
           </div>
-          <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">VTEX + GA4 Intelligence</p>
+          <button 
+            onClick={() => setIsSidebarOpen(false)} 
+            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="flex-1 p-6 space-y-8 overflow-y-auto">
@@ -376,23 +394,44 @@ export default function Dashboard() {
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
         <header className="bg-white border-b border-slate-200 flex flex-col px-8 shrink-0">
-          <div className="h-16 flex items-center justify-between">
-            <h1 className="text-lg font-bold text-slate-800">{activeTab === 'executive' ? 'Dashboard de Operações E-commerce' : 'Análise de Vendas (Pedidos)'}</h1>
-            <div className="flex items-center gap-4">
+          <div className="h-16 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden text-slate-600 hover:text-slate-900 p-1.5 rounded-md hover:bg-slate-100 shrink-0"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-800 truncate">{activeTab === 'executive' ? 'Dashboard de Operações' : 'Análise de Vendas'}</h1>
+            </div>
+            
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <button 
+                onClick={() => setShowFiltersMobile(!showFiltersMobile)}
+                className="lg:hidden flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold shadow-sm transition-all"
+              >
+                <Filter className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Filtros</span>
+              </button>
+
               <button 
                 onClick={fetchGeminiInsights} 
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Obter Insights de IA
+                <span className="hidden md:inline">Insights de IA</span>
               </button>
-              <div className="h-8 w-[1px] bg-slate-200"></div>
-              <button onClick={fetchData} className="flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-blue-600 transition-colors">
+              
+              <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
+              
+              <button onClick={fetchData} className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-blue-600 transition-colors">
                 <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                Atualizar Dados
+                <span className="hidden sm:inline">Atualizar</span>
               </button>
-              <div className="h-8 w-[1px] bg-slate-200"></div>
-              <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+              
+              <div className="h-6 w-[1px] bg-slate-200 hidden lg:block"></div>
+              
+              <div className="hidden lg:flex bg-slate-100 rounded-lg p-1 border border-slate-200">
                 <button 
                   onClick={() => handlePeriodChange('Ontem')}
                   className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
@@ -418,15 +457,17 @@ export default function Dashboard() {
                   Mensal
                 </button>
               </div>
-              <div className="h-8 w-[1px] bg-slate-200"></div>
-              <div className="text-xs text-slate-500">
+              
+              <div className="h-6 w-[1px] bg-slate-200 hidden xl:block"></div>
+              
+              <div className="text-xs text-slate-500 hidden xl:block">
                 Sincronização: <span className="text-emerald-600 font-medium italic">{loading ? 'Sincronizando...' : 'Agora mesmo'}</span>
               </div>
             </div>
           </div>
 
           {/* Horizontal Filter Bar */}
-          <div className="border-t border-slate-100 py-3.5 flex flex-wrap items-center gap-6 text-slate-700">
+          <div className={`border-t border-slate-100 py-3.5 flex flex-wrap items-center gap-4 text-slate-700 ${showFiltersMobile ? 'flex' : 'hidden lg:flex'}`}>
             {/* Filtro Período */}
             <div className="flex items-center gap-2">
               <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Período</label>
@@ -795,7 +836,7 @@ export default function Dashboard() {
                 <ShoppingCart className="w-4 h-4 text-indigo-500" />
                 Métricas de Itens Vendidos
               </h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
                   <p className="text-[10px] text-slate-500 uppercase font-semibold">Faturamento Itens</p>
                   <p className="text-lg font-bold text-slate-800 mt-1">R$ {totalItemsRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -817,7 +858,7 @@ export default function Dashboard() {
                 <TrendingUp className="w-4 h-4 text-emerald-500" />
                 Logística e Fretes
               </h3>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                   <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Retiradas</p>
                   <p className="text-base font-bold text-slate-800 mt-1">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
