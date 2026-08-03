@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 
@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
@@ -299,15 +300,20 @@ export default function Dashboard() {
       )}
 
       {/* Sidebar: Navigation & Fixed Filters */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full shrink-0'}`}>
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xl">V</div>
-              <span className="text-xl font-bold text-white tracking-tight">Insight Hub</span>
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 transition-all duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <div className={`p-4 border-b border-slate-800 flex items-center ${isSidebarCollapsed ? 'justify-center py-6' : 'justify-between'}`}>
+          {!isSidebarCollapsed && (
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xl">V</div>
+                <span className="text-xl font-bold text-white tracking-tight">Insight Hub</span>
+              </div>
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">VTEX + GA4 Intelligence</p>
             </div>
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">VTEX + GA4 Intelligence</p>
-          </div>
+          )}
+          {isSidebarCollapsed && (
+            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xl">V</div>
+          )}
           <button 
             onClick={() => setIsSidebarOpen(false)} 
             className="lg:hidden text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800"
@@ -316,38 +322,62 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div className="flex-1 p-6 space-y-8 overflow-y-auto">
+        <div className={`flex-1 space-y-8 overflow-y-auto ${isSidebarCollapsed ? 'p-3' : 'p-6'}`}>
           {/* Navigation */}
           <nav className="space-y-2">
             <div 
               onClick={() => setActiveTab('executive')}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${activeTab === 'executive' ? 'text-white bg-slate-800' : 'hover:text-white'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'executive' ? 'text-white bg-slate-800' : 'hover:text-white'}`}
+              title="Visão Executiva"
             >
-              <div className={`w-4 h-4 border-2 rounded-sm ${activeTab === 'executive' ? 'border-white' : 'border-slate-500 border'}`}></div>
-              <span className="text-sm font-medium">Visão Executiva</span>
+              <LayoutDashboard className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Visão Executiva</span>}
             </div>
             <div 
               onClick={() => setActiveTab('sales')}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${activeTab === 'sales' ? 'text-white bg-slate-800' : 'hover:text-white'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'sales' ? 'text-white bg-slate-800' : 'hover:text-white'}`}
+              title="Análise de Vendas"
             >
-              <div className={`w-4 h-4 border-2 rounded-sm ${activeTab === 'sales' ? 'border-white' : 'border-slate-500 border'}`}></div>
-              <span className="text-sm font-medium">Análise de Vendas</span>
+              <ShoppingCart className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Análise de Vendas</span>}
             </div>
-            <div className="flex items-center gap-3 hover:text-white px-3 py-2 transition-colors cursor-pointer">
-              <div className="w-4 h-4 border border-slate-500 rounded-sm"></div>
-              <span className="text-sm font-medium">Insights de Audiência</span>
+            <div 
+              className={`flex items-center gap-3 py-2 transition-colors cursor-pointer text-slate-500 hover:text-slate-400 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+              title="Insights de Audiência"
+            >
+              <Users className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Insights de Audiência</span>}
             </div>
           </nav>
-
-
         </div>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-950">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600"></div>
-            <div className="text-xs">
-              <p className="text-white font-medium">Usuário Analista</p>
-              <p className="text-slate-500">Plano Enterprise</p>
+        {/* Toggle Button for Desktop and User profile */}
+        <div className="mt-auto flex flex-col border-t border-slate-800">
+          {/* Toggle Expand/Collapse Button (Desktop only) */}
+          <button 
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="hidden lg:flex items-center justify-center py-3 text-slate-500 hover:text-white border-b border-slate-800 transition-colors"
+            title={isSidebarCollapsed ? "Expandir Menu" : "Recolher Menu"}
+          >
+            {isSidebarCollapsed ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <ChevronLeft className="w-4 h-4" />
+                <span>Recolher Menu</span>
+              </div>
+            )}
+          </button>
+
+          <div className={`bg-slate-950 transition-all ${isSidebarCollapsed ? 'p-3 flex justify-center' : 'p-6'}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center font-bold text-white shrink-0">U</div>
+              {!isSidebarCollapsed && (
+                <div className="text-xs">
+                  <p className="text-white font-medium">Usuário Analista</p>
+                  <p className="text-slate-500">Plano Enterprise</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
