@@ -1,1 +1,55 @@
 @import "tailwindcss";
+
+@media print {
+  /* Hide navigation sidebar, toggle buttons, update actions and popups */
+  aside,
+  header button,
+  header .h-8,
+  header .h-6,
+  header .flex.bg-slate-100,
+  header .text-xs,
+  .fixed,
+  button,
+  .fixed.inset-0 {
+    display: none !important;
+  }
+
+  /* Normalize main content canvas */
+  body, html {
+    height: auto !important;
+    overflow: visible !important;
+    background-color: white !important;
+    color: #0f172a !important;
+  }
+
+  main {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  /* Enable scrolling containers to expand fully in print */
+  .overflow-hidden,
+  .overflow-y-auto,
+  .p-8 {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 1rem !important;
+  }
+
+  /* Avoid splitting charts or metric cards across pages */
+  section, .grid > div {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Ensure chart svgs print nicely */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 280px !important;
+  }
+}
