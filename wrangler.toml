@@ -1,0 +1,12 @@
+name = "dashboard-e-commerce-narciso"
+main = "server.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = [ "nodejs_compat" ]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[vars]
+GA4_PROPERTY_ID = "327830771"
+VTEX_ACCOUNT_NAME = "t50349"

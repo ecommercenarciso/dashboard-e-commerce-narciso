@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@media print {
+  /* Hide navigation sidebar, toggle buttons, update actions and popups */
+  aside,
+  header,
+  .fixed,
+  button,
+  .fixed.inset-0 {
+    display: none !important;
+  }
+
+  /* Force background colors and colors to render in PDFs */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Normalize main content canvas */
+  body, html {
+    height: auto !important;
+    overflow: visible !important;
+    background-color: white !important;
+    color: #0f172a !important;
+    font-size: 11px !important;
+  }
+
+  main {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  /* Enable scrolling containers to expand fully in print */
+  .overflow-hidden,
+  .overflow-y-auto {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .p-8 {
+    padding: 0 !important;
+  }
+
+  /* Avoid splitting charts or metric cards across pages */
+  section, .grid > div {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 2rem !important;
+  }
+
+  /* Force grid columns to print efficiently */
+  .grid-cols-1, .\md\:grid-cols-2, .\xl\:grid-cols-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+  }
+
+  /* Main charts row layout for printing: stack main charts, print sidebar elements side-by-side */
+  .\lg\:grid-cols-3 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .\lg\:grid-cols-3 > div.col-span-1 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+
+  /* Make the GA4 Funnel card light-themed for ink economy */
+  .bg-slate-900 {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .bg-slate-900 h3 {
+    color: #0f172a !important;
+    border-bottom-color: #e2e8f0 !important;
+  }
+
+  .bg-slate-900 .text-slate-400 {
+    color: #475569 !important;
+  }
+
+  .bg-slate-900 .text-white {
+    color: #0f172a !important;
+  }
+
+  /* Ensure chart svgs print nicely */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 250px !important;
+  }
+}
