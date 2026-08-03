@@ -115,6 +115,35 @@ async function getGoogleAccessToken(clientEmail: string, privateKeyStr: string):
   return tokenData.access_token;
 }
 
+function parseCredentialsJson(jsonStr: string): any {
+  let cleanStr = jsonStr.trim();
+
+  // Remove potential wrapper quotes (often happens in Cloudflare env var configurations)
+  if (cleanStr.startsWith("'") && cleanStr.endsWith("'")) {
+    cleanStr = cleanStr.slice(1, -1).trim();
+  }
+  if (cleanStr.startsWith('"') && cleanStr.endsWith('"') && (cleanStr.match(/"/g) || []).length === 2) {
+    cleanStr = cleanStr.slice(1, -1).trim();
+  }
+
+  try {
+    return JSON.parse(cleanStr);
+  } catch (err: any) {
+    // Attempt auto-recovery for single quotes or copy-paste smart quote mutations
+    try {
+      const recoveredStr = cleanStr
+        .replace(/'/g, '"') 
+        .replace(/“/g, '"') 
+        .replace(/”/g, '"')
+        .replace(/‘/g, '"')
+        .replace(/’/g, '"');
+      return JSON.parse(recoveredStr);
+    } catch (recoveryErr) {
+      throw new Error(`Credencial JSON inválida. Certifique-se de colar o arquivo JSON original do Google Cloud com aspas duplas ("). Detalhes do erro original: ${err.message}`);
+    }
+  }
+}
+
 // Helper to query GA4 Data API via REST
 async function runGa4Report(accessToken: string, propertyId: string, reportBody: any) {
   const response = await fetch(
@@ -164,7 +193,7 @@ app.post('/api/ga4/metrics', async (c) => {
       return c.json(mockData);
     }
 
-    const credentials = JSON.parse(credentialsJson);
+    const credentials = parseCredentialsJson(credentialsJson);
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
     const propertyId = getEnv(c, 'GA4_PROPERTY_ID');
 
@@ -236,7 +265,7 @@ app.post('/api/ga4/funnel', async (c) => {
       return c.json(mockFunnel);
     }
 
-    const credentials = JSON.parse(credentialsJson);
+    const credentials = parseCredentialsJson(credentialsJson);
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
     const propertyId = getEnv(c, 'GA4_PROPERTY_ID');
 
