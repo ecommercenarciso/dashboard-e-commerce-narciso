@@ -370,8 +370,13 @@ app.post('/api/vtex/orders', async (c) => {
 
     const ordersList = response.data.list || [];
     
+    // Cloudflare Workers have a strict limit of 50 sub-requests per invocation.
+    // We fetch detailed info (items, shipping) for the most recent 40 orders to avoid 522/worker crashes,
+    // and fallback to basic list info for any remaining orders.
+    const ordersToFetch = ordersList.slice(0, 40);
+    
     const detailedOrders = await Promise.all(
-      ordersList.map(async (order: any) => {
+      ordersToFetch.map(async (order: any) => {
         try {
           const detailResponse = await axios.get(
             `https://${accountName}.${environment}.com.br/api/oms/pvt/orders/${order.orderId}`,
@@ -410,7 +415,23 @@ app.post('/api/vtex/orders', async (c) => {
       })
     );
 
-    const list = detailedOrders.filter(o => o !== null);
+    const activeDetailed = detailedOrders.filter((o): o is NonNullable<typeof o> => o !== null);
+    const fetchedIds = new Set(activeDetailed.map(o => o.orderId));
+    
+    const remainingOrders = ordersList
+      .filter((o: any) => !fetchedIds.has(o.orderId))
+      .map((o: any) => ({
+        orderId: o.orderId,
+        creationDate: o.creationDate,
+        clientName: o.clientName || 'Cliente Indefinido',
+        totalValue: o.totalValue || o.value,
+        status: o.status,
+        items: [],
+        shippingValue: 0,
+        deliveryChannel: 'delivery'
+      }));
+
+    const list = [...activeDetailed, ...remainingOrders];
     return c.json({ list });
   } catch (error: any) {
     console.error('VTEX Error:', error.response?.data || error.message);
