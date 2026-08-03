@@ -494,22 +494,6 @@ export default function Dashboard() {
                 </div>
               </>
             )}
-
-            {/* Filtro Categoria */}
-            <div className="flex flex-col gap-1 w-full lg:w-auto">
-              <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Categoria</label>
-              <select 
-                value={filters.category}
-                onChange={(e) => setFilters({...filters, category: e.target.value})}
-                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-44"
-              >
-                <option value="All">Todas as Categorias</option>
-                <option value="Electronics">Eletrônicos</option>
-                <option value="Apparel">Moda & Vestuário</option>
-                <option value="Home">Casa & Jardim</option>
-              </select>
-            </div>
-
             {/* Filtro Conversão Mínima */}
             <div className="flex flex-col gap-1 w-full lg:w-auto">
               <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Conv. Mínima</label>
@@ -555,8 +539,7 @@ export default function Dashboard() {
               </div>
               <div className="text-right text-xs text-slate-600">
                 <p className="font-semibold">Filtros Aplicados:</p>
-                <p>Período: {filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType}</p>
-                <p>Categoria: {filters.category === 'All' ? 'Todas' : filters.category} | Status: {filters.status === 'All' ? 'Todos' : filters.status}</p>
+                <p>Período: {filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType} | Status: {filters.status === 'All' ? 'Todos' : filters.status}</p>
               </div>
             </div>
           </div>
