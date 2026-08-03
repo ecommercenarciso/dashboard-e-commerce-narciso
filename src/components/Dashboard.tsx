@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [loadingInsights, setLoadingInsights] = useState(false);
+  const [showInsightsModal, setShowInsightsModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
@@ -74,64 +75,46 @@ export default function Dashboard() {
       
       setVtexOrders(vtexJson.list || []); // Assuming the OMS response has a list property
 
-      // Calculate Metrics for Gemini
-      const list = vtexJson.list || [];
-      const ga4 = ga4Json || [];
-      const totalSessions = ga4.reduce((acc: number, row: any) => acc + (row.sessions || 0), 0);
-      const totalVtexOrders = list.length;
-      const totalVtexRevenue = list.reduce((acc: number, order: any) => acc + ((order.totalValue || 0) / 100), 0);
-      const avgConversionRate = totalSessions > 0 ? parseFloat(((totalVtexOrders / totalSessions) * 100).toFixed(2)) : 0;
-      const avgOrderValue = totalVtexOrders > 0 ? (totalVtexRevenue / totalVtexOrders) : 0;
-
-      const totalItemsRevenue = list.reduce((acc: number, order: any) => {
-        const orderItemsSum = order.items?.reduce((sum: number, item: any) => sum + ((item.sellingPrice || 0) * (item.quantity || 0)), 0) || 0;
-        return acc + (orderItemsSum / 100);
-      }, 0);
-      
-      const totalItemsQuantity = list.reduce((acc: number, order: any) => {
-        const orderItemsCount = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
-        return acc + orderItemsCount;
-      }, 0);
-
-      const pickupOrdersCount = list.filter((order: any) => order.deliveryChannel === 'pickup-in-point').length;
-      const deliveryOrdersCount = list.filter((order: any) => order.deliveryChannel === 'delivery').length;
-      const totalShippingValue = list.reduce((acc: number, order: any) => acc + ((order.shippingValue || 0) / 100), 0);
-      const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
-
-      // Fetch Gemini Insights
-      setLoadingInsights(true);
-      try {
-        const geminiResponse = await fetch('/api/gemini/insights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            totalSessions,
-            totalVtexOrders,
-            totalVtexRevenue,
-            avgConversionRate,
-            avgOrderValue,
-            totalItemsRevenue,
-            totalItemsQuantity,
-            pickupOrdersCount,
-            deliveryOrdersCount,
-            totalShippingValue,
-            avgShippingValue
-          }),
-        });
-        const geminiJson = await geminiResponse.json() as any;
-        if (geminiResponse.ok && geminiJson.insights) {
-          setInsights(geminiJson.insights);
-        }
-      } catch (geminiErr) {
-        console.error("Gemini fetch failed", geminiErr);
-      } finally {
-        setLoadingInsights(false);
-      }
-
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchGeminiInsights = async () => {
+    setShowInsightsModal(true);
+    setLoadingInsights(true);
+    setInsights([]);
+    try {
+      const geminiResponse = await fetch('/api/gemini/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          totalSessions,
+          totalVtexOrders,
+          totalVtexRevenue,
+          avgConversionRate: parseFloat(avgConversionRate),
+          avgOrderValue,
+          totalItemsRevenue,
+          totalItemsQuantity,
+          pickupOrdersCount,
+          deliveryOrdersCount,
+          totalShippingValue,
+          avgShippingValue
+        }),
+      });
+      const geminiJson = await geminiResponse.json() as any;
+      if (geminiResponse.ok && geminiJson.insights) {
+        setInsights(geminiJson.insights);
+      } else {
+        setInsights(["Não foi possível obter recomendações personalizadas da IA neste momento. Por favor, verifique se sua API Key no Cloudflare está configurada."]);
+      }
+    } catch (geminiErr: any) {
+      console.error("Gemini fetch failed", geminiErr);
+      setInsights([`Erro de conexão ao buscar insights: ${geminiErr.message}`]);
+    } finally {
+      setLoadingInsights(false);
     }
   };
 
@@ -396,6 +379,14 @@ export default function Dashboard() {
           <div className="h-16 flex items-center justify-between">
             <h1 className="text-lg font-bold text-slate-800">{activeTab === 'executive' ? 'Dashboard de Operações E-commerce' : 'Análise de Vendas (Pedidos)'}</h1>
             <div className="flex items-center gap-4">
+              <button 
+                onClick={fetchGeminiInsights} 
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Obter Insights de IA
+              </button>
+              <div className="h-8 w-[1px] bg-slate-200"></div>
               <button onClick={fetchData} className="flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-blue-600 transition-colors">
                 <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar Dados
@@ -612,38 +603,6 @@ export default function Dashboard() {
               </div>
             </div>
           </section>
-
-          {/* AI Insights Card */}
-          <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl p-5 border border-indigo-500/20 shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="w-10 h-10 bg-indigo-500/10 rounded-lg border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0">
-                <Sparkles className="w-5 h-5 animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold tracking-tight">Insights do Assistente de IA</h3>
-                <p className="text-xs text-indigo-200 mt-0.5">Recomendações estratégicas geradas a partir dos dados do seu período.</p>
-              </div>
-            </div>
-            
-            <div className="flex-1 w-full flex flex-col gap-2.5">
-              {loadingInsights ? (
-                <div className="flex items-center gap-2.5 text-xs text-indigo-300 py-3">
-                  <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
-                  <span>Analisando suas métricas de vendas e tráfego com o Gemini...</span>
-                </div>
-              ) : insights.length > 0 ? (
-                insights.map((insight, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-xs bg-white/5 border border-white/5 rounded-lg py-2 px-3 hover:bg-white/10 transition-colors">
-                    <span className="text-indigo-400 font-bold shrink-0">#{idx + 1}</span>
-                    <span className="text-slate-200">{insight}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400">Nenhum insight disponível no momento. Clique em Atualizar Dados.</p>
-              )}
-            </div>
-          </section>
-
           {/* Main Visual Row */}
           <section className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
             {/* Charts */}
@@ -957,6 +916,97 @@ export default function Dashboard() {
 
         </div>
       </main>
+
+      {/* Modal de Insights de IA */}
+      {showInsightsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Header do Modal */}
+            <div className="px-6 py-4 bg-gradient-to-r from-slate-950 to-indigo-950 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-indigo-500/10 rounded-lg border border-indigo-400/20 flex items-center justify-center text-indigo-400 shrink-0">
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white tracking-tight">Insights de IA (Gemini 1.5)</h3>
+                  <p className="text-[10px] text-indigo-200/70">Métricas analisadas para o filtro aplicado</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowInsightsModal(false)}
+                className="text-slate-400 hover:text-white transition-colors text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700"
+              >
+                Fechar
+              </button>
+            </div>
+            
+            {/* Corpo do Modal */}
+            <div className="p-6 overflow-y-auto space-y-5 text-white">
+              
+              {/* Resumo do filtro atual */}
+              <div className="bg-slate-950/55 rounded-xl border border-slate-800 p-4">
+                <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Escopo da Análise Atual</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">Sessões (GA4)</span>
+                    <span className="font-bold text-slate-200">{totalSessions.toLocaleString('pt-BR')}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Pedidos (VTEX)</span>
+                    <span className="font-bold text-slate-200">{totalVtexOrders}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Conversão</span>
+                    <span className="font-bold text-emerald-400">{avgConversionRate}%</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Faturamento</span>
+                    <span className="font-bold text-indigo-400">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Insights List */}
+              <div className="space-y-4">
+                {loadingInsights ? (
+                  <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                    <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
+                    <span className="text-xs text-slate-400">O Gemini está analisando suas métricas atuais para gerar as melhores recomendações...</span>
+                  </div>
+                ) : insights.length > 0 ? (
+                  <>
+                    <h4 className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Recomendações Estratégicas</h4>
+                    <div className="space-y-3">
+                      {insights.map((insight, idx) => (
+                        <div key={idx} className="flex items-start gap-3.5 bg-slate-950/40 border border-slate-800 rounded-xl p-4 hover:border-indigo-500/20 transition-all">
+                          <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-indigo-400 shrink-0">
+                            {idx + 1}
+                          </div>
+                          <p className="text-xs text-slate-200 leading-relaxed mt-0.5">{insight}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-400 text-center py-8">Nenhum insight disponível.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer do Modal */}
+            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-3">
+              <button 
+                onClick={() => setShowInsightsModal(false)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-lg"
+              >
+                Entendido
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
