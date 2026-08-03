@@ -687,7 +687,7 @@ export default function Dashboard() {
                     {loading ? 'Carregando funil...' : 'Sem dados de funil'}
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col justify-center py-2 w-full">
+                  <div className="flex-1 flex flex-col justify-between py-1 w-full gap-2">
                     {[
                       { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
                       { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
@@ -700,32 +700,38 @@ export default function Dashboard() {
                       const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
                       
                       return (
-                        <div key={idx} className="flex items-center w-full group relative mb-0.5">
-                          <div className="w-20 text-right pr-3 text-[10px] font-medium text-slate-400 leading-tight">
+                        <div key={idx} className="flex items-center w-full gap-3">
+                          {/* Label do Passo */}
+                          <div className="w-20 text-right text-xs font-semibold text-slate-400 truncate shrink-0">
                             {step.label}
                           </div>
                           
-                          <div className="flex-1 flex justify-center items-center h-8 relative">
-                            <div className="absolute w-full h-[1px] bg-slate-800/30 z-0"></div>
+                          {/* Barra do Funil */}
+                          <div className="flex-1 h-7 bg-slate-950/40 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-800/80 min-w-0">
                             <div 
-                              className={`h-full relative z-10 shadow-sm transition-all duration-500 ${
-                                idx === 0 ? 'bg-blue-500' : idx === arr.length - 1 ? 'bg-emerald-500' : 'bg-slate-600'
+                              className={`h-full rounded-md transition-all duration-500 flex items-center justify-end px-2 ${
+                                idx === 0 ? 'bg-blue-600' : idx === arr.length - 1 ? 'bg-emerald-500' : 'bg-slate-600'
                               }`} 
                               style={{ 
-                                width: `${Math.max(percentageOverall, 1)}%`,
-                                minWidth: '4px',
-                                borderTopLeftRadius: idx === 0 ? '6px' : '0px',
-                                borderTopRightRadius: idx === 0 ? '6px' : '0px',
-                                borderBottomLeftRadius: idx === arr.length - 1 ? '6px' : '0px',
-                                borderBottomRightRadius: idx === arr.length - 1 ? '6px' : '0px',
+                                width: `${Math.max(percentageOverall, 12)}%`,
                               }}
                             >
+                              {percentageOverall > 20 && (
+                                <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
+                              )}
                             </div>
                           </div>
                           
-                          <div className="w-20 pl-3 flex flex-col justify-center">
-                            <span className="text-[11px] font-bold text-white leading-tight">{step.value.toLocaleString('pt-BR')}</span>
-                            {idx > 0 && <span className="text-[9px] text-slate-500 leading-tight">↓ {stepConversion.toFixed(1)}%</span>}
+                          {/* Valores e Taxas */}
+                          <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
+                            <span className="text-xs font-bold text-white truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
+                            {idx > 0 ? (
+                              <span className="text-[10px] font-semibold text-emerald-400 leading-tight">
+                                {stepConversion.toFixed(1)}% <span className="text-slate-500 font-normal">conv.</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 font-medium leading-tight">100% total</span>
+                            )}
                           </div>
                         </div>
                       );
