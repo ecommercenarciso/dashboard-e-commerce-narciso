@@ -8,6 +8,7 @@ type Bindings = {
   VTEX_APP_KEY: string;
   VTEX_APP_TOKEN: string;
   VTEX_ENVIRONMENT?: string;
+  GEMINI_API_KEY?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -461,7 +462,7 @@ Métricas do Período Atual:
 `;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
