@@ -53,20 +53,20 @@
   }
 
   /* Force grid columns to print efficiently */
-  .grid-cols-1, .md:grid-cols-2, .xl:grid-cols-4 {
+  .grid-cols-1, .\md\:grid-cols-2, .\xl\:grid-cols-4 {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 1rem !important;
   }
 
   /* Main charts row layout for printing: stack main charts, print sidebar elements side-by-side */
-  .lg:grid-cols-3 {
+  .\lg\:grid-cols-3 {
     display: flex !important;
     flex-direction: column !important;
     gap: 1.5rem !important;
   }
 
-  .lg:grid-cols-3 > div.col-span-1 {
+  .\lg\:grid-cols-3 > div.col-span-1 {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 1.5rem !important;
