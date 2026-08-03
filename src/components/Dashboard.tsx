@@ -605,6 +605,61 @@ export default function Dashboard() {
               </div>
             </div>
           </section>
+          {/* Métricas Detalhadas (VTEX) */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
+            {/* Bloco 1: Itens */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4 text-indigo-500" />
+                Métricas de Itens Vendidos
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Faturamento Itens</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">R$ {totalItemsRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Quantidade Itens</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">{totalItemsQuantity.toLocaleString('pt-BR')}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Valor Médio Item</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">R$ {avgValuePerItem.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Itens por Pedido</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">{avgItemsPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bloco 2: Logística e Fretes */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                Logística e Fretes
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Retiradas</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Entregas</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">{deliveryOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Total Fretes</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">R$ {totalShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Média Frete</p>
+                  <p className="text-base font-bold text-slate-800 mt-1">R$ {avgShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Main Visual Row */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Charts */}
@@ -791,61 +846,6 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          </section>
-          
-          {/* Métricas Detalhadas (VTEX) */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
-            {/* Bloco 1: Itens */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-indigo-500" />
-                Métricas de Itens Vendidos
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Faturamento Itens</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {totalItemsRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Quantidade Itens</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{totalItemsQuantity.toLocaleString('pt-BR')}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Valor Médio Item</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {avgValuePerItem.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Itens por Pedido</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{avgItemsPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Bloco 2: Logística e Fretes */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                Logística e Fretes
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Retiradas</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Entregas</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{deliveryOrdersCount.toLocaleString('pt-BR')} ped.</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Total Fretes</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {totalShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Média Frete</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {avgShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
               </div>
             </div>
           </section>
