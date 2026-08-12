@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
   const [comparisonType, setComparisonType] = useState<'days' | 'period'>('period');
+  const [chartInterval, setChartInterval] = useState<'day' | 'week' | 'month'>('day');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
 
@@ -411,6 +412,64 @@ export default function Dashboard() {
           vtexRevenue: vtexMetrics.revenue
       }
   }).filter(row => row.conversionRate >= filters.minConversionRate);
+
+  // Aggregated Chart Data based on chartInterval state
+  const aggregatedChartData = (() => {
+    if (chartInterval === 'day') {
+      return chartData;
+    }
+    
+    const groups: { [key: string]: any } = {};
+    
+    chartData.forEach(row => {
+      const d = String(row.date); // yyyymmdd
+      const year = parseInt(d.substring(0, 4), 10);
+      const month = parseInt(d.substring(4, 6), 10) - 1;
+      const day = parseInt(d.substring(6, 8), 10);
+      const dateObj = new Date(year, month, day);
+      
+      let key = '';
+      let displayDate = '';
+      
+      if (chartInterval === 'week') {
+        const startOfWeekDate = startOfWeek(dateObj, { weekStartsOn: 1 });
+        key = format(startOfWeekDate, 'yyyy-MM-dd');
+        displayDate = `Sem ${format(startOfWeekDate, 'dd/MM')}`;
+      } else {
+        const startOfMonthDate = startOfMonth(dateObj);
+        key = format(startOfMonthDate, 'yyyy-MM');
+        displayDate = format(startOfMonthDate, 'MM/yyyy');
+      }
+      
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          displayDate,
+          visitors: 0,
+          viewItem: 0,
+          cart: 0,
+          shipping: 0,
+          payment: 0,
+          sessions: 0,
+          conversions: 0,
+          vtexOrders: 0,
+          vtexRevenue: 0
+        };
+      }
+      
+      groups[key].visitors += row.visitors || 0;
+      groups[key].viewItem += row.viewItem || 0;
+      groups[key].cart += row.cart || 0;
+      groups[key].shipping += row.shipping || 0;
+      groups[key].payment += row.payment || 0;
+      groups[key].sessions += row.sessions || 0;
+      groups[key].conversions += row.conversions || 0;
+      groups[key].vtexOrders += row.vtexOrders || 0;
+      groups[key].vtexRevenue += row.vtexRevenue || 0;
+    });
+    
+    return Object.values(groups).sort((a: any, b: any) => a.key.localeCompare(b.key));
+  })();
 
   const filteredOrders = currentVtexOrders.filter(order => {
     const matchesSearch = orderSearch === '' || 
@@ -854,11 +913,24 @@ export default function Dashboard() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold text-slate-800 text-sm">Tendência do Funil de Vendas (GA4)</h3>
+                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
+                    {(['day', 'week', 'month'] as const).map((interval) => (
+                      <button
+                        key={interval}
+                        onClick={() => setChartInterval(interval)}
+                        className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                          chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        {interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex-1 w-full min-h-[200px]">
-                  {chartData.length > 0 ? (
+                  {aggregatedChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                      <LineChart data={aggregatedChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                         <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
