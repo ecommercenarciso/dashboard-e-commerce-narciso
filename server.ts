@@ -438,21 +438,29 @@ app.post('/api/ga4/funnel', async (c) => {
 // VTEX API Routes
 app.post('/api/vtex/orders', async (c) => {
   try {
-    const { startDate, endDate, category } = await c.req.json();
+    const { startDate, endDate, prevStartDate, prevEndDate, category } = await c.req.json();
     
     const missing = checkEnvVars(c, ['VTEX_ACCOUNT_NAME', 'VTEX_APP_KEY', 'VTEX_APP_TOKEN']);
     if (missing.length > 0) {
       console.warn('Missing VTEX credentials. Returning mock data for visualization.');
       
-    const mockOrders = Array.from({ length: 50 }).map((_, i) => {
+      const currentOrdersCount = 40;
+      const prevOrdersCount = 30;
+      
+      const mockCurrent = Array.from({ length: currentOrdersCount }).map((_, i) => {
         const itemQuantity = Math.floor(Math.random() * 3) + 1;
         const itemPrice = (Math.floor(Math.random() * 200) + 10) * 100;
         const shippingValue = Math.random() > 0.3 ? (Math.floor(Math.random() * 30) + 10) * 100 : 0;
         const deliveryChannel = Math.random() > 0.3 ? 'delivery' : 'pickup-in-point';
         const totalValue = (itemPrice * itemQuantity) + (deliveryChannel === 'delivery' ? shippingValue : 0);
+        
+        const startMs = new Date(startDate).getTime();
+        const endMs = new Date(endDate).getTime();
+        const randDate = new Date(startMs + Math.random() * (endMs - startMs));
+        
         return {
           orderId: `v-${1000000000 + Math.floor(Math.random() * 9000000000)}`,
-          creationDate: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString(),
+          creationDate: randDate.toISOString(),
           clientName: `Cliente Exemplo ${i + 1}`,
           totalValue: totalValue,
           status: ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)],
@@ -463,23 +471,45 @@ app.post('/api/vtex/orders', async (c) => {
           deliveryChannel: deliveryChannel
         };
       });
+
+      const mockPrev = prevStartDate && prevEndDate ? Array.from({ length: prevOrdersCount }).map((_, i) => {
+        const itemQuantity = Math.floor(Math.random() * 2) + 1;
+        const itemPrice = (Math.floor(Math.random() * 150) + 10) * 100;
+        const shippingValue = Math.random() > 0.3 ? (Math.floor(Math.random() * 25) + 10) * 100 : 0;
+        const deliveryChannel = Math.random() > 0.3 ? 'delivery' : 'pickup-in-point';
+        const totalValue = (itemPrice * itemQuantity) + (deliveryChannel === 'delivery' ? shippingValue : 0);
+        
+        const startMs = new Date(prevStartDate).getTime();
+        const endMs = new Date(prevEndDate).getTime();
+        const randDate = new Date(startMs + Math.random() * (endMs - startMs));
+        
+        return {
+          orderId: `v-${1000000000 + Math.floor(Math.random() * 9000000000)}`,
+          creationDate: randDate.toISOString(),
+          clientName: `Cliente Antigo ${i + 1}`,
+          totalValue: totalValue,
+          status: ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)],
+          items: [
+            { name: 'Produto Exemplo Antigo', quantity: itemQuantity, price: itemPrice, sellingPrice: itemPrice }
+          ],
+          shippingValue: deliveryChannel === 'delivery' ? shippingValue : 0,
+          deliveryChannel: deliveryChannel
+        };
+      }) : [];
       
-      return c.json({ list: mockOrders });
+      return c.json({ list: [...mockCurrent, ...mockPrev] });
     }
 
     const accountName = cleanEnvString(getEnv(c, 'VTEX_ACCOUNT_NAME'));
     const environment = cleanEnvString(getEnv(c, 'VTEX_ENVIRONMENT')) || 'vtexcommercestable';
-    
-    let fq = '';
-    if (startDate && endDate) {
-        fq = `creationDate:[${startDate}T00:00:00.000Z TO ${endDate}T23:59:59.999Z]`;
-    }
 
-    const response = await axios.get(
+    const currentFq = `creationDate:[${startDate}T00:00:00.000Z TO ${endDate}T23:59:59.999Z]`;
+
+    const currentPromise = axios.get(
       `https://${accountName}.${environment}.com.br/api/oms/pvt/orders`,
       {
         params: {
-          f_creationDate: fq ? fq : undefined,
+          f_creationDate: currentFq,
           per_page: 100,
         },
         headers: {
@@ -490,12 +520,30 @@ app.post('/api/vtex/orders', async (c) => {
       }
     );
 
-    const ordersList = response.data.list || [];
-    
-    // Cloudflare Workers have a strict limit of 50 sub-requests per invocation.
-    // We fetch detailed info (items, shipping) for the most recent 5 orders to avoid VTEX API 429 rate limits,
-    // and fallback to basic list info for any remaining orders.
-    const ordersToFetch = ordersList.slice(0, 5);
+    const prevPromise = prevStartDate && prevEndDate
+      ? axios.get(
+          `https://${accountName}.${environment}.com.br/api/oms/pvt/orders`,
+          {
+            params: {
+              f_creationDate: `creationDate:[${prevStartDate}T00:00:00.000Z TO ${prevEndDate}T23:59:59.999Z]`,
+              per_page: 100,
+            },
+            headers: {
+              'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
+              'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
+              'Accept': 'application/json'
+            }
+          }
+        )
+      : Promise.resolve({ data: { list: [] } });
+
+    const [currentRes, prevRes] = await Promise.all([currentPromise, prevPromise]);
+
+    const currentList = currentRes.data.list || [];
+    const prevList = prevRes.data.list || [];
+
+    // Only request details for the top 5 orders of the CURRENT period to avoid rate limits
+    const ordersToFetch = currentList.slice(0, 5);
     
     const detailedOrders = await Promise.all(
       ordersToFetch.map(async (order: any) => {
@@ -540,7 +588,7 @@ app.post('/api/vtex/orders', async (c) => {
     const activeDetailed = detailedOrders.filter((o): o is NonNullable<typeof o> => o !== null);
     const fetchedIds = new Set(activeDetailed.map(o => o.orderId));
     
-    const remainingOrders = ordersList
+    const remainingCurrent = currentList
       .filter((o: any) => !fetchedIds.has(o.orderId))
       .map((o: any) => ({
         orderId: o.orderId,
@@ -553,7 +601,18 @@ app.post('/api/vtex/orders', async (c) => {
         deliveryChannel: 'delivery'
       }));
 
-    const list = [...activeDetailed, ...remainingOrders];
+    const formattedPrev = prevList.map((o: any) => ({
+      orderId: o.orderId,
+      creationDate: o.creationDate,
+      clientName: o.clientName || 'Cliente Indefinido',
+      totalValue: o.totalValue || o.value,
+      status: o.status,
+      items: [],
+      shippingValue: 0,
+      deliveryChannel: 'delivery'
+    }));
+
+    const list = [...activeDetailed, ...remainingCurrent, ...formattedPrev];
     return c.json({ list });
   } catch (error: any) {
     console.error('VTEX Error:', error.response?.data || error.message);

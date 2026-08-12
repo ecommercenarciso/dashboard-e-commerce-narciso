@@ -41,41 +41,56 @@ export default function Dashboard() {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
       let prevStart = new Date(start);
+      let prevEnd = new Date(end);
 
       if (comparisonType === 'days') {
         prevStart.setDate(prevStart.getDate() - diffDays);
+        prevEnd.setDate(prevEnd.getDate() - diffDays);
       } else {
         const p = periodType;
         if (p === 'Hoje' || p === 'Ontem') {
           prevStart = subDays(start, 1);
+          prevEnd = subDays(end, 1);
         } else if (p.includes('semana') || p === 'Últimos 7 dias') {
           prevStart = subDays(start, 7);
+          prevEnd = subDays(end, 7);
         } else if (p === 'Últimos 14 dias') {
           prevStart = subDays(start, 14);
+          prevEnd = subDays(end, 14);
         } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado') {
           prevStart = subMonths(start, 1);
+          prevEnd = subMonths(end, 1);
         } else if (p.includes('trimestre') || p === 'Trimestre passado') {
           prevStart = subQuarters(start, 1);
+          prevEnd = subQuarters(end, 1);
         } else if (p.includes('ano') || p === 'Ano passado') {
           prevStart = subYears(start, 1);
+          prevEnd = subYears(end, 1);
         } else {
           if (diffDays >= 6 && diffDays <= 8) {
             prevStart = subDays(start, 7);
+            prevEnd = subDays(end, 7);
           } else if (diffDays >= 13 && diffDays <= 15) {
             prevStart = subDays(start, 14);
+            prevEnd = subDays(end, 14);
           } else if (diffDays >= 27 && diffDays <= 32) {
             prevStart = subMonths(start, 1);
+            prevEnd = subMonths(end, 1);
           } else if (diffDays >= 80 && diffDays <= 95) {
             prevStart = subQuarters(start, 1);
+            prevEnd = subQuarters(end, 1);
           } else if (diffDays >= 350 && diffDays <= 380) {
             prevStart = subYears(start, 1);
+            prevEnd = subYears(end, 1);
           } else {
             prevStart.setDate(prevStart.getDate() - diffDays);
+            prevEnd.setDate(prevEnd.getDate() - diffDays);
           }
         }
       }
 
       const prevStartDateStr = format(prevStart, 'yyyy-MM-dd');
+      const prevEndDateStr = format(prevEnd, 'yyyy-MM-dd');
 
       // Fetch GA4 Data (using doubled date range starting from prevStartDateStr)
       const ga4Response = await fetch('/api/ga4/metrics', {
@@ -106,11 +121,17 @@ export default function Dashboard() {
         setFunnelData(funnelJson);
       }
 
-      // Fetch VTEX Data (using doubled date range starting from prevStartDateStr)
+      // Fetch VTEX Data (using separate current and previous period date ranges)
       const vtexResponse = await fetch('/api/vtex/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: prevStartDateStr, endDate: filters.endDate, category: filters.category }),
+        body: JSON.stringify({ 
+          startDate: filters.startDate, 
+          endDate: filters.endDate, 
+          prevStartDate: prevStartDateStr,
+          prevEndDate: prevEndDateStr,
+          category: filters.category 
+        }),
       });
       
       const vtexJson = await vtexResponse.json();
