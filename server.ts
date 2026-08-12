@@ -493,9 +493,9 @@ app.post('/api/vtex/orders', async (c) => {
     const ordersList = response.data.list || [];
     
     // Cloudflare Workers have a strict limit of 50 sub-requests per invocation.
-    // We fetch detailed info (items, shipping) for the most recent 40 orders to avoid 522/worker crashes,
+    // We fetch detailed info (items, shipping) for the most recent 5 orders to avoid VTEX API 429 rate limits,
     // and fallback to basic list info for any remaining orders.
-    const ordersToFetch = ordersList.slice(0, 40);
+    const ordersToFetch = ordersList.slice(0, 5);
     
     const detailedOrders = await Promise.all(
       ordersToFetch.map(async (order: any) => {
