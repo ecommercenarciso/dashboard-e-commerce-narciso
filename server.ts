@@ -217,23 +217,27 @@ app.post('/api/ga4/metrics', async (c) => {
       
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
-          const baseVisitors = Math.floor(Math.random() * 800) + 400;
-          const viewItem = Math.floor(baseVisitors * (Math.random() * 0.2 + 0.4));
-          const addToCart = Math.floor(viewItem * (Math.random() * 0.15 + 0.1));
-          const beginCheckout = Math.floor(addToCart * (Math.random() * 0.3 + 0.1));
-          const purchase = Math.floor(beginCheckout * (Math.random() * 0.5 + 0.5));
+          for (let h = 0; h < 24; h++) {
+              const hourStr = String(h).padStart(2, '0');
+              const baseVisitors = Math.floor(Math.random() * 40) + 10;
+              const viewItem = Math.floor(baseVisitors * (Math.random() * 0.2 + 0.4));
+              const addToCart = Math.floor(viewItem * (Math.random() * 0.15 + 0.1));
+              const beginCheckout = Math.floor(addToCart * (Math.random() * 0.3 + 0.1));
+              const purchase = Math.floor(beginCheckout * (Math.random() * 0.5 + 0.5));
 
-          mockData.push({
-              date: dateStr,
-              sessions: Math.floor(baseVisitors * 1.2),
-              conversions: purchase,
-              revenue: purchase * 150,
-              visitors: baseVisitors,
-              viewItem: viewItem,
-              cart: addToCart,
-              shipping: beginCheckout,
-              payment: purchase
-          });
+              mockData.push({
+                  date: dateStr,
+                  hour: hourStr,
+                  sessions: Math.floor(baseVisitors * 1.2),
+                  conversions: purchase,
+                  revenue: purchase * 150,
+                  visitors: baseVisitors,
+                  viewItem: viewItem,
+                  cart: addToCart,
+                  shipping: beginCheckout,
+                  payment: purchase
+              });
+          }
       }
       return c.json(mockData);
     }
@@ -242,7 +246,7 @@ app.post('/api/ga4/metrics', async (c) => {
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
     const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
-    // Run parallel reports: one for general metrics and unique visitors, one for specific event counts (unique users) by date
+    // Run parallel reports: one for general metrics and unique visitors, one for specific event counts (unique users) by date and hour
     const [responseGeneral, responseEvents] = await Promise.all([
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [
@@ -251,7 +255,7 @@ app.post('/api/ga4/metrics', async (c) => {
             endDate: clampEndDate(endDate),
           },
         ],
-        dimensions: [{ name: 'date' }],
+        dimensions: [{ name: 'date' }, { name: 'hour' }],
         metrics: [
           { name: 'sessions' },
           { name: 'conversions' },
@@ -266,7 +270,7 @@ app.post('/api/ga4/metrics', async (c) => {
             endDate: clampEndDate(endDate),
           },
         ],
-        dimensions: [{ name: 'date' }, { name: 'eventName' }],
+        dimensions: [{ name: 'date' }, { name: 'hour' }, { name: 'eventName' }],
         metrics: [{ name: 'totalUsers' }], // Query unique users per event
         dimensionFilter: {
           filter: {
@@ -283,8 +287,11 @@ app.post('/api/ga4/metrics', async (c) => {
 
     responseGeneral.rows?.forEach((row: any) => {
       const date = row.dimensionValues?.[0].value;
-      dateMap[date] = {
+      const hour = row.dimensionValues?.[1].value;
+      const key = `${date}_${hour}`;
+      dateMap[key] = {
         date,
+        hour,
         sessions: parseInt(row.metricValues?.[0].value || '0', 10),
         conversions: parseInt(row.metricValues?.[1].value || '0', 10),
         revenue: parseFloat(row.metricValues?.[2].value || '0'),
@@ -298,32 +305,34 @@ app.post('/api/ga4/metrics', async (c) => {
 
     responseEvents.rows?.forEach((row: any) => {
       const date = row.dimensionValues?.[0].value;
-      const eventName = row.dimensionValues?.[1].value;
+      const hour = row.dimensionValues?.[1].value;
+      const eventName = row.dimensionValues?.[2].value;
       const users = parseInt(row.metricValues?.[0].value || '0', 10);
+      const key = `${date}_${hour}`;
 
-      if (dateMap[date]) {
+      if (dateMap[key]) {
         if (eventName === 'view_item') {
-          dateMap[date].viewItem = users;
+          dateMap[key].viewItem = users;
         } else if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') {
-          dateMap[date].cart = Math.max(dateMap[date].cart, users);
+          dateMap[key].cart = Math.max(dateMap[key].cart, users);
         } else if (eventName === 'Checkout Entrega') {
-          dateMap[date].shipping = users;
+          dateMap[key].shipping = users;
         } else if (eventName === 'Checkout Pagamento') {
-          dateMap[date].payment = users;
+          dateMap[key].payment = users;
         }
       }
     });
 
-    // Enforce funnel cascading rules by date to avoid crossovers (visitors >= viewItem >= cart >= shipping >= payment)
-    Object.keys(dateMap).forEach((date) => {
-      const d = dateMap[date];
+    // Enforce funnel cascading rules by date+hour to avoid crossovers (visitors >= viewItem >= cart >= shipping >= payment)
+    Object.keys(dateMap).forEach((key) => {
+      const d = dateMap[key];
       d.viewItem = Math.min(d.visitors, d.viewItem);
       d.cart = Math.min(d.viewItem, d.cart);
       d.shipping = Math.min(d.cart, d.shipping);
       d.payment = Math.min(d.shipping, d.payment);
     });
 
-    const data = Object.values(dateMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
+    const data = Object.values(dateMap).sort((a: any, b: any) => `${a.date}_${a.hour}`.localeCompare(`${b.date}_${b.hour}`));
     return c.json(data);
   } catch (error: any) {
     console.error('GA4 Error:', error);

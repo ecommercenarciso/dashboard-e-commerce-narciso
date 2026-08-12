@@ -18,7 +18,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
   const [comparisonType, setComparisonType] = useState<'days' | 'period'>('period');
-  const [chartInterval, setChartInterval] = useState<'day' | 'week' | 'month'>('day');
+  const [chartInterval, setChartInterval] = useState<'hour' | 'day' | 'week' | 'month'>('day');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
@@ -441,44 +441,53 @@ export default function Dashboard() {
     color: statusColorMap[key] || '#64748b'
   }));
 
-  // Group VTEX orders by date for chart integration - based on current period only
-  const vtexOrdersByDate = currentVtexOrders.reduce((acc, order) => {
+  // Group VTEX orders by date and hour for chart integration - based on current period only
+  const vtexOrdersByDateAndHour = currentVtexOrders.reduce((acc, order) => {
     try {
       const dateObj = new Date(order.creationDate);
       const dateStr = format(dateObj, 'yyyy-MM-dd');
-      if (!acc[dateStr]) {
-        acc[dateStr] = { orders: 0, revenue: 0 };
+      const hourStr = format(dateObj, 'HH');
+      const key = `${dateStr}_${hourStr}`;
+      if (!acc[key]) {
+        acc[key] = { orders: 0, revenue: 0 };
       }
-      acc[dateStr].orders += 1;
-      acc[dateStr].revenue += (order.totalValue || 0) / 100;
+      acc[key].orders += 1;
+      acc[key].revenue += (order.totalValue || 0) / 100;
     } catch (e) {
       console.warn("Invalid date format in order", order);
     }
     return acc;
   }, {} as Record<string, { orders: number, revenue: number }>);
 
-  // Format Data for Charts
+  // Format Data for Charts (raw hourly data)
   const chartData = currentGa4Data.map(row => {
       const d = String(row.date);
       const isoDate = d.length === 8 ? `${d.substring(0,4)}-${d.substring(4,6)}-${d.substring(6,8)}` : String(row.date);
-      const displayDate = d.length === 8 ? `${d.substring(6,8)}/${d.substring(4,6)}` : String(row.date);
+      const hourKey = `${isoDate}_${row.hour}`;
       
-      const vtexMetrics = vtexOrdersByDate[isoDate] || { orders: 0, revenue: 0 };
+      const vtexMetrics = vtexOrdersByDateAndHour[hourKey] || { orders: 0, revenue: 0 };
       const cr = row.sessions > 0 ? (vtexMetrics.orders / row.sessions) * 100 : 0;
       
       return {
           ...row,
-          displayDate,
+          displayDate: '', // Set dynamically during aggregation
           conversionRate: cr,
           vtexOrders: vtexMetrics.orders,
           vtexRevenue: vtexMetrics.revenue
       }
-  }).filter(row => row.conversionRate >= filters.minConversionRate);
+  });
 
   // Aggregated Chart Data based on chartInterval state
   const aggregatedChartData = (() => {
-    if (chartInterval === 'day') {
-      return chartData;
+    if (chartInterval === 'hour') {
+      const isSingleDay = filters.startDate === filters.endDate;
+      return chartData.map(row => {
+        const d = String(row.date);
+        const displayDate = isSingleDay 
+          ? `${row.hour}:00`
+          : `${d.substring(6,8)}/${d.substring(4,6)} ${row.hour}:00`;
+        return { ...row, displayDate };
+      });
     }
     
     const groups: { [key: string]: any } = {};
@@ -493,7 +502,10 @@ export default function Dashboard() {
       let key = '';
       let displayDate = '';
       
-      if (chartInterval === 'week') {
+      if (chartInterval === 'day') {
+        key = d;
+        displayDate = `${d.substring(6,8)}/${d.substring(4,6)}`;
+      } else if (chartInterval === 'week') {
         const startOfWeekDate = startOfWeek(dateObj, { weekStartsOn: 1 });
         key = format(startOfWeekDate, 'yyyy-MM-dd');
         displayDate = `Sem ${format(startOfWeekDate, 'dd/MM')}`;
@@ -1012,7 +1024,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold text-slate-800 text-sm">Tendência do Funil de Vendas (GA4)</h3>
                   <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
-                    {(['day', 'week', 'month'] as const).map((interval) => (
+                    {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
                       <button
                         key={interval}
                         onClick={() => setChartInterval(interval)}
@@ -1020,7 +1032,7 @@ export default function Dashboard() {
                           chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
                         }`}
                       >
-                        {interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                        {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
                       </button>
                     ))}
                   </div>
