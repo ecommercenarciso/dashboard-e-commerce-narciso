@@ -242,7 +242,7 @@ app.post('/api/ga4/metrics', async (c) => {
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
     const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
-    // Run parallel reports: one for general metrics and unique visitors, one for specific event counts by date
+    // Run parallel reports: one for general metrics and unique visitors, one for specific event counts (unique users) by date
     const [responseGeneral, responseEvents] = await Promise.all([
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [
@@ -267,12 +267,12 @@ app.post('/api/ga4/metrics', async (c) => {
           },
         ],
         dimensions: [{ name: 'date' }, { name: 'eventName' }],
-        metrics: [{ name: 'eventCount' }],
+        metrics: [{ name: 'totalUsers' }], // Query unique users per event
         dimensionFilter: {
           filter: {
             fieldName: 'eventName',
             inListFilter: {
-              values: ['view_item', 'add_to_cart', 'begin_checkout', 'purchase']
+              values: ['view_item', 'add_to_cart', 'Checkout Carrinho', 'Checkout Entrega', 'Checkout Pagamento', 'begin_checkout']
             }
           }
         }
@@ -299,14 +299,28 @@ app.post('/api/ga4/metrics', async (c) => {
     responseEvents.rows?.forEach((row: any) => {
       const date = row.dimensionValues?.[0].value;
       const eventName = row.dimensionValues?.[1].value;
-      const count = parseInt(row.metricValues?.[0].value || '0', 10);
+      const users = parseInt(row.metricValues?.[0].value || '0', 10);
 
       if (dateMap[date]) {
-        if (eventName === 'view_item') dateMap[date].viewItem = count;
-        else if (eventName === 'add_to_cart') dateMap[date].cart = count;
-        else if (eventName === 'begin_checkout') dateMap[date].shipping = count;
-        else if (eventName === 'purchase') dateMap[date].payment = count;
+        if (eventName === 'view_item') {
+          dateMap[date].viewItem = users;
+        } else if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') {
+          dateMap[date].cart = Math.max(dateMap[date].cart, users);
+        } else if (eventName === 'Checkout Entrega') {
+          dateMap[date].shipping = users;
+        } else if (eventName === 'Checkout Pagamento') {
+          dateMap[date].payment = users;
+        }
       }
+    });
+
+    // Enforce funnel cascading rules by date to avoid crossovers (visitors >= viewItem >= cart >= shipping >= payment)
+    Object.keys(dateMap).forEach((date) => {
+      const d = dateMap[date];
+      d.viewItem = Math.min(d.visitors, d.viewItem);
+      d.cart = Math.min(d.viewItem, d.cart);
+      d.shipping = Math.min(d.cart, d.shipping);
+      d.payment = Math.min(d.shipping, d.payment);
     });
 
     const data = Object.values(dateMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
