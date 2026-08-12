@@ -17,6 +17,7 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
+  const [comparisonType, setComparisonType] = useState<'days' | 'period'>('period');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
 
@@ -37,8 +38,41 @@ export default function Dashboard() {
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      const prevStart = new Date(start);
-      prevStart.setDate(prevStart.getDate() - diffDays);
+      let prevStart = new Date(start);
+
+      if (comparisonType === 'days') {
+        prevStart.setDate(prevStart.getDate() - diffDays);
+      } else {
+        const p = periodType;
+        if (p === 'Hoje' || p === 'Ontem') {
+          prevStart = subDays(start, 1);
+        } else if (p.includes('semana') || p === 'Últimos 7 dias') {
+          prevStart = subDays(start, 7);
+        } else if (p === 'Últimos 14 dias') {
+          prevStart = subDays(start, 14);
+        } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado') {
+          prevStart = subMonths(start, 1);
+        } else if (p.includes('trimestre') || p === 'Trimestre passado') {
+          prevStart = subQuarters(start, 1);
+        } else if (p.includes('ano') || p === 'Ano passado') {
+          prevStart = subYears(start, 1);
+        } else {
+          if (diffDays >= 6 && diffDays <= 8) {
+            prevStart = subDays(start, 7);
+          } else if (diffDays >= 13 && diffDays <= 15) {
+            prevStart = subDays(start, 14);
+          } else if (diffDays >= 27 && diffDays <= 32) {
+            prevStart = subMonths(start, 1);
+          } else if (diffDays >= 80 && diffDays <= 95) {
+            prevStart = subQuarters(start, 1);
+          } else if (diffDays >= 350 && diffDays <= 380) {
+            prevStart = subYears(start, 1);
+          } else {
+            prevStart.setDate(prevStart.getDate() - diffDays);
+          }
+        }
+      }
+
       const prevStartDateStr = format(prevStart, 'yyyy-MM-dd');
 
       // Fetch GA4 Data (using doubled date range starting from prevStartDateStr)
@@ -191,7 +225,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [filters]); // Re-fetch when filters change (debouncing would be better in a real app, but this is fine for now)
+  }, [filters, comparisonType]);
 
   // Calculate Aggregates
   const dashboardFilteredVtexOrders = vtexOrders.filter(order => filters.status === 'All' || order.status === filters.status);
@@ -199,9 +233,68 @@ export default function Dashboard() {
   const startYmd = filters.startDate.replace(/-/g, '');
   const endYmd = filters.endDate.replace(/-/g, '');
 
+  const start = new Date(filters.startDate);
+  const end = new Date(filters.endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  let prevStart = new Date(start);
+  let prevEnd = new Date(end);
+
+  if (comparisonType === 'days') {
+    prevStart.setDate(prevStart.getDate() - diffDays);
+    prevEnd.setDate(prevEnd.getDate() - diffDays);
+  } else {
+    const p = periodType;
+    if (p === 'Hoje' || p === 'Ontem') {
+      prevStart = subDays(start, 1);
+      prevEnd = subDays(end, 1);
+    } else if (p.includes('semana') || p === 'Últimos 7 dias') {
+      prevStart = subDays(start, 7);
+      prevEnd = subDays(end, 7);
+    } else if (p === 'Últimos 14 dias') {
+      prevStart = subDays(start, 14);
+      prevEnd = subDays(end, 14);
+    } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado') {
+      prevStart = subMonths(start, 1);
+      prevEnd = subMonths(end, 1);
+    } else if (p.includes('trimestre') || p === 'Trimestre passado') {
+      prevStart = subQuarters(start, 1);
+      prevEnd = subQuarters(end, 1);
+    } else if (p.includes('ano') || p === 'Ano passado') {
+      prevStart = subYears(start, 1);
+      prevEnd = subYears(end, 1);
+    } else {
+      if (diffDays >= 6 && diffDays <= 8) {
+        prevStart = subDays(start, 7);
+        prevEnd = subDays(end, 7);
+      } else if (diffDays >= 13 && diffDays <= 15) {
+        prevStart = subDays(start, 14);
+        prevEnd = subDays(end, 14);
+      } else if (diffDays >= 27 && diffDays <= 32) {
+        prevStart = subMonths(start, 1);
+        prevEnd = subMonths(end, 1);
+      } else if (diffDays >= 80 && diffDays <= 95) {
+        prevStart = subQuarters(start, 1);
+        prevEnd = subQuarters(end, 1);
+      } else if (diffDays >= 350 && diffDays <= 380) {
+        prevStart = subYears(start, 1);
+        prevEnd = subYears(end, 1);
+      } else {
+        prevStart.setDate(prevStart.getDate() - diffDays);
+        prevEnd.setDate(prevEnd.getDate() - diffDays);
+      }
+    }
+  }
+
+  const prevStartYmd = format(prevStart, 'yyyyMMdd');
+  const prevEndYmd = format(prevEnd, 'yyyyMMdd');
+  const prevStartDateStr = format(prevStart, 'yyyy-MM-dd');
+  const prevEndDateStr = format(prevEnd, 'yyyy-MM-dd');
+
   // Split GA4 Data by period
   const currentGa4Data = ga4Data.filter(row => String(row.date) >= startYmd && String(row.date) <= endYmd);
-  const previousGa4Data = ga4Data.filter(row => String(row.date) < startYmd);
+  const previousGa4Data = ga4Data.filter(row => String(row.date) >= prevStartYmd && String(row.date) <= prevEndYmd);
 
   // Split VTEX Orders by period
   const currentVtexOrders = dashboardFilteredVtexOrders.filter(order => {
@@ -210,7 +303,7 @@ export default function Dashboard() {
   });
   const previousVtexOrders = dashboardFilteredVtexOrders.filter(order => {
     const orderDate = order.creationDate ? order.creationDate.split('T')[0] : '';
-    return orderDate < filters.startDate;
+    return orderDate >= prevStartDateStr && orderDate <= prevEndDateStr;
   });
 
   // Calculate current aggregates
@@ -564,6 +657,19 @@ export default function Dashboard() {
                 </div>
               </>
             )}
+            
+            {/* Comparar com */}
+            <div className="flex flex-col gap-1 w-full lg:w-auto">
+              <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Comparar com</label>
+              <select 
+                value={comparisonType}
+                onChange={(e) => setComparisonType(e.target.value as 'days' | 'period')}
+                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-48"
+              >
+                <option value="period">Período equivalente anterior</option>
+                <option value="days">Mesmo nº de dias anteriores</option>
+              </select>
+            </div>
             {/* Filtro Conversão Mínima */}
             <div className="flex flex-col gap-1 w-full lg:w-auto">
               <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Conv. Mínima</label>
