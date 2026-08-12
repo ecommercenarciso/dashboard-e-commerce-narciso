@@ -139,7 +139,8 @@ function parseCredentialsJson(jsonStr: string): any {
         .replace(/’/g, '"');
       return JSON.parse(recoveredStr);
     } catch (recoveryErr) {
-      throw new Error(`Credencial JSON inválida. Certifique-se de colar o arquivo JSON original do Google Cloud com aspas duplas ("). Detalhes do erro original: ${err.message}`);
+      const snippet = cleanStr.substring(0, 40);
+      throw new Error(`Credencial JSON inválida (Inicia com: "${snippet}", Comprimento: ${cleanStr.length}). Certifique-se de colar o arquivo JSON original do Google Cloud com aspas duplas ("). Detalhes do erro original: ${err.message}`);
     }
   }
 }
