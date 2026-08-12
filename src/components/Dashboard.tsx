@@ -42,7 +42,8 @@ export default function Dashboard() {
       const ga4Json = await ga4Response.json();
       
       if (!ga4Response.ok) {
-        throw new Error(ga4Json.error || 'Failed to fetch GA4 data');
+        const errMsg = typeof ga4Json.error === 'object' ? JSON.stringify(ga4Json.error) : ga4Json.error;
+        throw new Error(errMsg || 'Failed to fetch GA4 data');
       }
       
       setGa4Data(ga4Json);
@@ -70,7 +71,8 @@ export default function Dashboard() {
       const vtexJson = await vtexResponse.json();
       
       if (!vtexResponse.ok) {
-        throw new Error(vtexJson.error || 'Failed to fetch VTEX data');
+        const errMsg = typeof vtexJson.error === 'object' ? JSON.stringify(vtexJson.error) : vtexJson.error;
+        throw new Error(errMsg || 'Failed to fetch VTEX data');
       }
       
       setVtexOrders(vtexJson.list || []); // Assuming the OMS response has a list property
