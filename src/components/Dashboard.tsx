@@ -698,24 +698,23 @@ export default function Dashboard() {
             <div className="col-span-1 lg:col-span-2 flex flex-col gap-6">
               
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-slate-800 text-sm">Tendência de Tráfego & Conversões</h3>
-                  <div className="flex gap-4">
-                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span className="text-[10px] text-slate-500">Sessões</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-[10px] text-slate-500">Conversões</span></div>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-slate-800 text-sm">Tendência do Funil de Vendas (GA4)</h3>
                 </div>
                 <div className="flex-1 w-full min-h-[200px]">
                   {chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData}>
+                      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="displayDate" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis yAxisId="left" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Line yAxisId="left" type="monotone" dataKey="sessions" stroke="#3b82f6" strokeWidth={3} dot={chartData.length === 1 ? { r: 4 } : false} activeDot={{ r: 6 }} name="Sessões (GA4)" />
-                        <Line yAxisId="right" type="monotone" dataKey="vtexOrders" stroke="#10b981" strokeWidth={3} dot={chartData.length === 1 ? { r: 4 } : false} activeDot={{ r: 6 }} name="Pedidos (VTEX)" />
+                        <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                        <Line type="monotone" dataKey="visitors" stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="1. Visitantes Únicos" />
+                        <Line type="monotone" dataKey="viewItem" stroke="#a855f7" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="2. Viu Produto" />
+                        <Line type="monotone" dataKey="cart" stroke="#f97316" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="3. Carrinho" />
+                        <Line type="monotone" dataKey="shipping" stroke="#0ea5e9" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="4. Entrega" />
+                        <Line type="monotone" dataKey="payment" stroke="#10b981" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} name="5. Pagamento" />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (

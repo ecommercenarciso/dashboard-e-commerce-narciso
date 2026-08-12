@@ -217,11 +217,22 @@ app.post('/api/ga4/metrics', async (c) => {
       
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
+          const baseVisitors = Math.floor(Math.random() * 800) + 400;
+          const viewItem = Math.floor(baseVisitors * (Math.random() * 0.2 + 0.4));
+          const addToCart = Math.floor(viewItem * (Math.random() * 0.15 + 0.1));
+          const beginCheckout = Math.floor(addToCart * (Math.random() * 0.3 + 0.1));
+          const purchase = Math.floor(beginCheckout * (Math.random() * 0.5 + 0.5));
+
           mockData.push({
               date: dateStr,
-              sessions: Math.floor(Math.random() * 800) + 400,
-              conversions: Math.floor(Math.random() * 40) + 5,
-              revenue: Math.floor(Math.random() * 4000) + 500,
+              sessions: Math.floor(baseVisitors * 1.2),
+              conversions: purchase,
+              revenue: purchase * 150,
+              visitors: baseVisitors,
+              viewItem: viewItem,
+              cart: addToCart,
+              shipping: beginCheckout,
+              payment: purchase
           });
       }
       return c.json(mockData);
@@ -231,40 +242,74 @@ app.post('/api/ga4/metrics', async (c) => {
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
     const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
-    const response = await runGa4Report(accessToken, propertyId!, {
-      dateRanges: [
-        {
-          startDate: startDate || '28daysAgo',
-          endDate: clampEndDate(endDate),
-        },
-      ],
-      dimensions: [
-        {
-          name: 'date',
-        },
-      ],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'conversions' },
-        { name: 'totalRevenue' },
-      ],
-      orderBys: [
+    // Run parallel reports: one for general metrics and unique visitors, one for specific event counts by date
+    const [responseGeneral, responseEvents] = await Promise.all([
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [
           {
-              dimension: { dimensionName: 'date' },
-              desc: false
+            startDate: startDate || '28daysAgo',
+            endDate: clampEndDate(endDate),
+          },
+        ],
+        dimensions: [{ name: 'date' }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'conversions' },
+          { name: 'totalRevenue' },
+          { name: 'totalUsers' },
+        ],
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [
+          {
+            startDate: startDate || '28daysAgo',
+            endDate: clampEndDate(endDate),
+          },
+        ],
+        dimensions: [{ name: 'date' }, { name: 'eventName' }],
+        metrics: [{ name: 'eventCount' }],
+        dimensionFilter: {
+          filter: {
+            fieldName: 'eventName',
+            inListFilter: {
+              values: ['view_item', 'add_to_cart', 'begin_checkout', 'purchase']
+            }
           }
-      ]
-    });
+        }
+      })
+    ]);
 
-    const data = response.rows?.map((row: any) => {
-      return {
-        date: row.dimensionValues?.[0].value,
+    const dateMap: { [key: string]: any } = {};
+
+    responseGeneral.rows?.forEach((row: any) => {
+      const date = row.dimensionValues?.[0].value;
+      dateMap[date] = {
+        date,
         sessions: parseInt(row.metricValues?.[0].value || '0', 10),
         conversions: parseInt(row.metricValues?.[1].value || '0', 10),
         revenue: parseFloat(row.metricValues?.[2].value || '0'),
+        visitors: parseInt(row.metricValues?.[3].value || '0', 10),
+        viewItem: 0,
+        cart: 0,
+        shipping: 0,
+        payment: 0
       };
-    }) || [];
+    });
 
+    responseEvents.rows?.forEach((row: any) => {
+      const date = row.dimensionValues?.[0].value;
+      const eventName = row.dimensionValues?.[1].value;
+      const count = parseInt(row.metricValues?.[0].value || '0', 10);
+
+      if (dateMap[date]) {
+        if (eventName === 'view_item') dateMap[date].viewItem = count;
+        else if (eventName === 'add_to_cart') dateMap[date].cart = count;
+        else if (eventName === 'begin_checkout') dateMap[date].shipping = count;
+        else if (eventName === 'purchase') dateMap[date].payment = count;
+      }
+    });
+
+    const data = Object.values(dateMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
     return c.json(data);
   } catch (error: any) {
     console.error('GA4 Error:', error);
