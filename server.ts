@@ -118,12 +118,31 @@ async function getGoogleAccessToken(clientEmail: string, privateKeyStr: string):
 function parseCredentialsJson(jsonStr: string): any {
   let cleanStr = jsonStr.trim();
 
-  // Remove potential wrapper quotes (often happens in Cloudflare env var configurations)
-  if (cleanStr.startsWith("'") && cleanStr.endsWith("'")) {
-    cleanStr = cleanStr.slice(1, -1).trim();
+  // Strip any leading single quotes, double quotes, or backticks
+  while (cleanStr.startsWith("'") || cleanStr.startsWith('"') || cleanStr.startsWith("`")) {
+    const quote = cleanStr[0];
+    // If it's a double quote, only strip if it also ends with double quote and doesn't contain internal double quotes,
+    // to avoid breaking valid JSON. Single quotes can be stripped freely.
+    if (quote === '"') {
+      if (cleanStr.endsWith('"') && (cleanStr.match(/"/g) || []).length === 2) {
+        cleanStr = cleanStr.slice(1, -1).trim();
+      } else {
+        break;
+      }
+    } else {
+      cleanStr = cleanStr.substring(1).trim();
+    }
   }
-  if (cleanStr.startsWith('"') && cleanStr.endsWith('"') && (cleanStr.match(/"/g) || []).length === 2) {
-    cleanStr = cleanStr.slice(1, -1).trim();
+
+  // Strip any trailing single quotes, double quotes, or backticks
+  while (cleanStr.endsWith("'") || cleanStr.endsWith('"') || cleanStr.endsWith("`")) {
+    const lastChar = cleanStr[cleanStr.length - 1];
+    if (lastChar === '"') {
+      // already handled or mismatch
+      break;
+    } else {
+      cleanStr = cleanStr.slice(0, -1).trim();
+    }
   }
 
   try {
