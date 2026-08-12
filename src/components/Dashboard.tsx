@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [periodType, setPeriodType] = useState('Últimos 28 dias');
   const [comparisonType, setComparisonType] = useState<'days' | 'period'>('period');
   const [chartInterval, setChartInterval] = useState<'day' | 'week' | 'month'>('day');
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
 
@@ -27,7 +28,7 @@ export default function Dashboard() {
     endDate: format(new Date(), 'yyyy-MM-dd'),
     category: 'All',
     minConversionRate: 0,
-    status: 'All',
+    status: [],
   });
 
   const fetchData = async () => {
@@ -129,6 +130,20 @@ export default function Dashboard() {
   };
 
 
+  const handleStatusCheckboxChange = (status: string) => {
+    if (filters.status.includes(status)) {
+      setFilters({
+        ...filters,
+        status: filters.status.filter(s => s !== status)
+      });
+    } else {
+      setFilters({
+        ...filters,
+        status: [...filters.status, status]
+      });
+    }
+  };
+
   const handlePeriodChange = (period: string) => {
     setPeriodType(period);
     
@@ -229,7 +244,7 @@ export default function Dashboard() {
   }, [filters, comparisonType]);
 
   // Calculate Aggregates
-  const dashboardFilteredVtexOrders = vtexOrders.filter(order => filters.status === 'All' || order.status === filters.status);
+  const dashboardFilteredVtexOrders = vtexOrders.filter(order => filters.status.length === 0 || filters.status.includes(order.status));
   
   const startYmd = filters.startDate.replace(/-/g, '');
   const endYmd = filters.endDate.replace(/-/g, '');
@@ -744,20 +759,56 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Filtro Status do Pedido */}
-            <div className="flex flex-col gap-1 w-full lg:w-auto">
+            {/* Filtro Status do Pedido (Checkbox Multi-select) */}
+            <div className="flex flex-col gap-1 w-full lg:w-auto relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
               <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status</label>
-              <select 
-                value={filters.status}
-                onChange={(e) => setFilters({...filters, status: e.target.value})}
-                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-44"
+              <button 
+                type="button"
+                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-44 flex items-center justify-between gap-1 text-left"
               >
-                <option value="All">Todos os Status</option>
-                <option value="invoiced">Faturado</option>
-                <option value="handling">Em Preparação</option>
-                <option value="payment-pending">Pagamento Pendente</option>
-                <option value="canceled">Cancelado</option>
-              </select>
+                <span className="truncate">
+                  {filters.status.length === 0 
+                    ? 'Todos os Status' 
+                    : filters.status.map(s => statusLabelMap[s] || s).join(', ')}
+                </span>
+                <span className="text-[9px] text-slate-400">▼</span>
+              </button>
+              
+              {isStatusDropdownOpen && (
+                <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-2">
+                  {[
+                    { value: 'invoiced', label: 'Faturado' },
+                    { value: 'handling', label: 'Em Preparação' },
+                    { value: 'payment-pending', label: 'Pagamento Pendente' },
+                    { value: 'canceled', label: 'Cancelado' },
+                    { value: 'payment-approved', label: 'Aprovado' }
+                  ].map((opt) => {
+                    const isChecked = filters.status.includes(opt.value);
+                    return (
+                      <label key={opt.value} className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none py-0.5">
+                        <input 
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleStatusCheckboxChange(opt.value)}
+                          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{opt.label}</span>
+                      </label>
+                    );
+                  })}
+                  
+                  {filters.status.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setFilters({ ...filters, status: [] })}
+                      className="text-[10px] text-red-500 hover:text-red-700 font-semibold border-t border-slate-100 pt-1.5 mt-0.5 text-left w-full"
+                    >
+                      Limpar Filtros
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -774,7 +825,7 @@ export default function Dashboard() {
               </div>
               <div className="text-right text-xs text-slate-600">
                 <p className="font-semibold">Filtros Aplicados:</p>
-                <p>Período: {filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType} | Status: {filters.status === 'All' ? 'Todos' : filters.status}</p>
+                <p>Período: {filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType} | Status: {filters.status.length === 0 ? 'Todos' : filters.status.map(s => statusLabelMap[s] || s).join(', ')}</p>
               </div>
             </div>
           </div>

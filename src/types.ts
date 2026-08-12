@@ -25,7 +25,7 @@ export interface DashboardFilter {
   endDate: string;
   category: string;
   minConversionRate: number;
-  status: string;
+  status: string[];
 }
 
 export interface FunnelData {
