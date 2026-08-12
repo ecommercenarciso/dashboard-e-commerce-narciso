@@ -838,7 +838,24 @@ export default function Dashboard() {
               </button>
               
               {isStatusDropdownOpen && (
-                <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-2">
+                <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-0.5 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFilters({ ...filters, status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'] })}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer select-none"
+                    >
+                      Marcar todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFilters({ ...filters, status: [] })}
+                      className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
+                    >
+                      Limpar todos
+                    </button>
+                  </div>
+                  
                   {[
                     { value: 'invoiced', label: 'Faturado' },
                     { value: 'handling', label: 'Em Preparação' },
@@ -859,16 +876,6 @@ export default function Dashboard() {
                       </label>
                     );
                   })}
-                  
-                  {filters.status.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setFilters({ ...filters, status: [] })}
-                      className="text-[10px] text-red-500 hover:text-red-700 font-semibold border-t border-slate-100 pt-1.5 mt-0.5 text-left w-full"
-                    >
-                      Limpar Filtros
-                    </button>
-                  )}
                 </div>
               )}
             </div>
