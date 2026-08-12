@@ -166,6 +166,18 @@ function parseCredentialsJson(jsonStr: string): any {
   }
 }
 
+function cleanEnvString(val: string | undefined): string | undefined {
+  if (!val) return val;
+  let clean = val.trim();
+  if (clean.startsWith('"') && clean.endsWith('"')) {
+    clean = clean.slice(1, -1).trim();
+  }
+  if (clean.startsWith("'") && clean.endsWith("'")) {
+    clean = clean.slice(1, -1).trim();
+  }
+  return clean;
+}
+
 // Helper to query GA4 Data API via REST
 async function runGa4Report(accessToken: string, propertyId: string, reportBody: any) {
   const response = await fetch(
@@ -217,7 +229,7 @@ app.post('/api/ga4/metrics', async (c) => {
 
     const credentials = parseCredentialsJson(credentialsJson);
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
-    const propertyId = getEnv(c, 'GA4_PROPERTY_ID');
+    const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
     const response = await runGa4Report(accessToken, propertyId!, {
       dateRanges: [
@@ -289,7 +301,7 @@ app.post('/api/ga4/funnel', async (c) => {
 
     const credentials = parseCredentialsJson(credentialsJson);
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
-    const propertyId = getEnv(c, 'GA4_PROPERTY_ID');
+    const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
     const [overallResponse, eventResponse] = await Promise.all([
       runGa4Report(accessToken, propertyId!, {
@@ -396,8 +408,8 @@ app.post('/api/vtex/orders', async (c) => {
       return c.json({ list: mockOrders });
     }
 
-    const accountName = getEnv(c, 'VTEX_ACCOUNT_NAME');
-    const environment = getEnv(c, 'VTEX_ENVIRONMENT') || 'vtexcommercestable';
+    const accountName = cleanEnvString(getEnv(c, 'VTEX_ACCOUNT_NAME'));
+    const environment = cleanEnvString(getEnv(c, 'VTEX_ENVIRONMENT')) || 'vtexcommercestable';
     
     let fq = '';
     if (startDate && endDate) {
@@ -412,8 +424,8 @@ app.post('/api/vtex/orders', async (c) => {
           per_page: 100,
         },
         headers: {
-          'X-VTEX-API-AppKey': getEnv(c, 'VTEX_APP_KEY'),
-          'X-VTEX-API-AppToken': getEnv(c, 'VTEX_APP_TOKEN'),
+          'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
+          'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
           'Accept': 'application/json'
         }
       }
@@ -433,8 +445,8 @@ app.post('/api/vtex/orders', async (c) => {
             `https://${accountName}.${environment}.com.br/api/oms/pvt/orders/${order.orderId}`,
             {
               headers: {
-                'X-VTEX-API-AppKey': getEnv(c, 'VTEX_APP_KEY'),
-                'X-VTEX-API-AppToken': getEnv(c, 'VTEX_APP_TOKEN'),
+                'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
+                'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
                 'Accept': 'application/json'
               }
             }
