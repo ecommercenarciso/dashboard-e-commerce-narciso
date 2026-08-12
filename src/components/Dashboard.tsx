@@ -32,11 +32,20 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch GA4 Data
+      const start = new Date(filters.startDate);
+      const end = new Date(filters.endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const prevStart = new Date(start);
+      prevStart.setDate(prevStart.getDate() - diffDays);
+      const prevStartDateStr = format(prevStart, 'yyyy-MM-dd');
+
+      // Fetch GA4 Data (using doubled date range starting from prevStartDateStr)
       const ga4Response = await fetch('/api/ga4/metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: filters.startDate, endDate: filters.endDate }),
+        body: JSON.stringify({ startDate: prevStartDateStr, endDate: filters.endDate }),
       });
       
       const ga4Json = await ga4Response.json();
@@ -48,7 +57,7 @@ export default function Dashboard() {
       
       setGa4Data(ga4Json);
 
-      // Fetch GA4 Funnel Data
+      // Fetch GA4 Funnel Data (using current selected period)
       const funnelResponse = await fetch('/api/ga4/funnel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,11 +70,11 @@ export default function Dashboard() {
         setFunnelData(funnelJson);
       }
 
-      // Fetch VTEX Data
+      // Fetch VTEX Data (using doubled date range starting from prevStartDateStr)
       const vtexResponse = await fetch('/api/vtex/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: filters.startDate, endDate: filters.endDate, category: filters.category }),
+        body: JSON.stringify({ startDate: prevStartDateStr, endDate: filters.endDate, category: filters.category }),
       });
       
       const vtexJson = await vtexResponse.json();
@@ -187,21 +196,50 @@ export default function Dashboard() {
   // Calculate Aggregates
   const dashboardFilteredVtexOrders = vtexOrders.filter(order => filters.status === 'All' || order.status === filters.status);
   
-  const totalSessions = ga4Data.reduce((acc, row) => acc + row.sessions, 0);
-  const totalConversionsGA4 = ga4Data.reduce((acc, row) => acc + row.conversions, 0);
-  const totalRevenueGA4 = ga4Data.reduce((acc, row) => acc + row.revenue, 0);
-  const totalVtexRevenue = dashboardFilteredVtexOrders.reduce((acc, order) => acc + ((order.totalValue || 0) / 100), 0);
-  const totalVtexOrders = dashboardFilteredVtexOrders.length;
+  const startYmd = filters.startDate.replace(/-/g, '');
+  const endYmd = filters.endDate.replace(/-/g, '');
+
+  // Split GA4 Data by period
+  const currentGa4Data = ga4Data.filter(row => String(row.date) >= startYmd && String(row.date) <= endYmd);
+  const previousGa4Data = ga4Data.filter(row => String(row.date) < startYmd);
+
+  // Split VTEX Orders by period
+  const currentVtexOrders = dashboardFilteredVtexOrders.filter(order => {
+    const orderDate = order.creationDate ? order.creationDate.split('T')[0] : '';
+    return orderDate >= filters.startDate && orderDate <= filters.endDate;
+  });
+  const previousVtexOrders = dashboardFilteredVtexOrders.filter(order => {
+    const orderDate = order.creationDate ? order.creationDate.split('T')[0] : '';
+    return orderDate < filters.startDate;
+  });
+
+  // Calculate current aggregates
+  const totalSessions = currentGa4Data.reduce((acc, row) => acc + row.sessions, 0);
+  const totalVtexRevenue = currentVtexOrders.reduce((acc, order) => acc + ((order.totalValue || 0) / 100), 0);
+  const totalVtexOrders = currentVtexOrders.length;
   const avgConversionRate = totalSessions > 0 ? ((totalVtexOrders / totalSessions) * 100).toFixed(2) : '0.00';
   const avgOrderValue = totalVtexOrders > 0 ? (totalVtexRevenue / totalVtexOrders) : 0;
 
-  // New Group 1 Calculations (Items)
-  const totalItemsRevenue = dashboardFilteredVtexOrders.reduce((acc, order) => {
+  // Calculate previous aggregates for comparisons
+  const prevSessions = previousGa4Data.reduce((acc, row) => acc + row.sessions, 0);
+  const prevVtexRevenue = previousVtexOrders.reduce((acc, order) => acc + ((order.totalValue || 0) / 100), 0);
+  const prevVtexOrders = previousVtexOrders.length;
+  const prevAvgConversionRate = prevSessions > 0 ? ((prevVtexOrders / prevSessions) * 100).toFixed(2) : '0.00';
+  const prevAvgOrderValue = prevVtexOrders > 0 ? (prevVtexRevenue / prevVtexOrders) : 0;
+
+  // Calculate comparison percentages
+  const revenueDiffPct = prevVtexRevenue > 0 ? ((totalVtexRevenue - prevVtexRevenue) / prevVtexRevenue) * 100 : (totalVtexRevenue > 0 ? 100 : 0);
+  const ordersDiffPct = prevVtexOrders > 0 ? ((totalVtexOrders - prevVtexOrders) / prevVtexOrders) * 100 : (totalVtexOrders > 0 ? 100 : 0);
+  const conversionDiffPct = parseFloat(avgConversionRate) - parseFloat(prevAvgConversionRate);
+  const avgOrderValueDiffPct = prevAvgOrderValue > 0 ? ((avgOrderValue - prevAvgOrderValue) / prevAvgOrderValue) * 100 : (avgOrderValue > 0 ? 100 : 0);
+
+  // New Group 1 Calculations (Items) - based on current period only
+  const totalItemsRevenue = currentVtexOrders.reduce((acc, order) => {
     const orderItemsSum = order.items?.reduce((sum: number, item: any) => sum + ((item.sellingPrice || 0) * (item.quantity || 0)), 0) || 0;
     return acc + (orderItemsSum / 100);
   }, 0);
   
-  const totalItemsQuantity = dashboardFilteredVtexOrders.reduce((acc, order) => {
+  const totalItemsQuantity = currentVtexOrders.reduce((acc, order) => {
     const orderItemsCount = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
     return acc + orderItemsCount;
   }, 0);
@@ -209,15 +247,15 @@ export default function Dashboard() {
   const avgValuePerItem = totalItemsQuantity > 0 ? (totalItemsRevenue / totalItemsQuantity) : 0;
   const avgItemsPerOrder = totalVtexOrders > 0 ? (totalItemsQuantity / totalVtexOrders) : 0;
 
-  // New Group 2 Calculations (Logistics)
-  const pickupOrdersCount = dashboardFilteredVtexOrders.filter(order => order.deliveryChannel === 'pickup-in-point').length;
-  const deliveryOrdersCount = dashboardFilteredVtexOrders.filter(order => order.deliveryChannel === 'delivery').length;
+  // New Group 2 Calculations (Logistics) - based on current period only
+  const pickupOrdersCount = currentVtexOrders.filter(order => order.deliveryChannel === 'pickup-in-point').length;
+  const deliveryOrdersCount = currentVtexOrders.filter(order => order.deliveryChannel === 'delivery').length;
   
-  const totalShippingValue = dashboardFilteredVtexOrders.reduce((acc, order) => acc + ((order.shippingValue || 0) / 100), 0);
+  const totalShippingValue = currentVtexOrders.reduce((acc, order) => acc + ((order.shippingValue || 0) / 100), 0);
   const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
 
-  // Order status distribution data
-  const statusCounts = dashboardFilteredVtexOrders.reduce((acc, order) => {
+  // Order status distribution data - based on current period only
+  const statusCounts = currentVtexOrders.reduce((acc, order) => {
     const status = order.status || 'other';
     acc[status] = (acc[status] || 0) + 1;
     return acc;
@@ -247,8 +285,8 @@ export default function Dashboard() {
     color: statusColorMap[key] || '#64748b'
   }));
 
-  // Group VTEX orders by date for chart integration
-  const vtexOrdersByDate = dashboardFilteredVtexOrders.reduce((acc, order) => {
+  // Group VTEX orders by date for chart integration - based on current period only
+  const vtexOrdersByDate = currentVtexOrders.reduce((acc, order) => {
     try {
       const dateObj = new Date(order.creationDate);
       const dateStr = format(dateObj, 'yyyy-MM-dd');
@@ -264,7 +302,7 @@ export default function Dashboard() {
   }, {} as Record<string, { orders: number, revenue: number }>);
 
   // Format Data for Charts
-  const chartData = ga4Data.map(row => {
+  const chartData = currentGa4Data.map(row => {
       const d = String(row.date);
       const isoDate = d.length === 8 ? `${d.substring(0,4)}-${d.substring(4,6)}-${d.substring(6,8)}` : String(row.date);
       const displayDate = d.length === 8 ? `${d.substring(6,8)}/${d.substring(4,6)}` : String(row.date);
@@ -281,7 +319,7 @@ export default function Dashboard() {
       }
   }).filter(row => row.conversionRate >= filters.minConversionRate);
 
-  const filteredOrders = dashboardFilteredVtexOrders.filter(order => {
+  const filteredOrders = currentVtexOrders.filter(order => {
     const matchesSearch = orderSearch === '' || 
       order.orderId.toLowerCase().includes(orderSearch.toLowerCase()) || 
       (order.clientName && order.clientName.toLowerCase().includes(orderSearch.toLowerCase()));
@@ -597,46 +635,56 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* KPI Cards Row */}
           {activeTab === 'executive' && (
             <>
               <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 shrink-0">
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Receita Total (VTEX)</p>
-              <div className="flex items-end gap-2">
-                <h2 className="text-2xl font-bold text-slate-900">R${totalVtexRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
-                <span className="text-[10px] font-bold text-emerald-600 pb-1">+12.5%</span>
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Receita Total (VTEX)</p>
+                <div className="flex items-end gap-2">
+                  <h2 className="text-2xl font-bold text-slate-900">R${totalVtexRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
+                  <span className={`text-[10px] font-bold pb-1 ${revenueDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {revenueDiffPct >= 0 ? '+' : ''}{revenueDiffPct.toFixed(1)}%
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Vs período anterior (R$ {prevVtexRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
               </div>
-              <p className="text-[10px] text-slate-400 mt-2">Vs período anterior (R$0,00)</p>
-            </div>
-            
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Total de Pedidos (VTEX)</p>
-              <div className="flex items-end gap-2">
-                <h2 className="text-2xl font-bold text-slate-900">{totalVtexOrders.toLocaleString('pt-BR')}</h2>
-                <span className="text-[10px] font-bold text-emerald-600 pb-1">+5.2%</span>
+              
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Total de Pedidos (VTEX)</p>
+                <div className="flex items-end gap-2">
+                  <h2 className="text-2xl font-bold text-slate-900">{totalVtexOrders.toLocaleString('pt-BR')}</h2>
+                  <span className={`text-[10px] font-bold pb-1 ${ordersDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {ordersDiffPct >= 0 ? '+' : ''}{ordersDiffPct.toFixed(1)}%
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Vs período anterior ({prevVtexOrders} ped.) | GA4: {totalSessions.toLocaleString('pt-BR')} sessões</p>
               </div>
-              <p className="text-[10px] text-slate-400 mt-2">De {totalSessions.toLocaleString('pt-BR')} sessões (GA4)</p>
-            </div>
-            
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Taxa de Conversão Média</p>
-              <div className="flex items-end gap-2">
-                <h2 className="text-2xl font-bold text-slate-900">{avgConversionRate}%</h2>
-                <span className="text-[10px] font-bold text-emerald-600 pb-1">+0.8%</span>
+              
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Taxa de Conversão Média</p>
+                <div className="flex items-end gap-2">
+                  <h2 className="text-2xl font-bold text-slate-900">{avgConversionRate}%</h2>
+                  <span className={`text-[10px] font-bold pb-1 ${conversionDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {conversionDiffPct >= 0 ? '+' : ''}{conversionDiffPct.toFixed(2)}%
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Vs período anterior ({prevAvgConversionRate}%)</p>
               </div>
-              <p className="text-[10px] text-slate-400 mt-2">Acima da meta base (2.5%)</p>
-            </div>
-            
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm bg-gradient-to-br from-indigo-50 to-white">
-              <p className="text-xs font-semibold text-indigo-800 uppercase tracking-tight mb-1">Ticket Médio (VTEX)</p>
-              <div className="flex items-end gap-2">
-                <h2 className="text-2xl font-bold text-indigo-900">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(avgOrderValue)}
-                </h2>
+              
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm bg-gradient-to-br from-indigo-50 to-white">
+                <p className="text-xs font-semibold text-indigo-800 uppercase tracking-tight mb-1">Ticket Médio (VTEX)</p>
+                <div className="flex items-end gap-2">
+                  <h2 className="text-2xl font-bold text-indigo-900">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(avgOrderValue)}
+                  </h2>
+                  <span className={`text-[10px] font-bold pb-1 ${avgOrderValueDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {avgOrderValueDiffPct >= 0 ? '+' : ''}{avgOrderValueDiffPct.toFixed(1)}%
+                  </span>
+                </div>
+                <p className="text-[10px] text-indigo-400 mt-2">Vs anterior (R$ {prevAvgOrderValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
               </div>
-            </div>
-          </section>
+            </section>
+
           {/* Métricas Detalhadas (VTEX) */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
             {/* Bloco 1: Itens */}
