@@ -463,13 +463,15 @@ export default function Dashboard() {
   const chartData = currentGa4Data.map(row => {
       const d = String(row.date);
       const isoDate = d.length === 8 ? `${d.substring(0,4)}-${d.substring(4,6)}-${d.substring(6,8)}` : String(row.date);
-      const hourKey = `${isoDate}_${row.hour}`;
+      const hourStr = String(row.hour || '00').padStart(2, '0');
+      const hourKey = `${isoDate}_${hourStr}`;
       
       const vtexMetrics = vtexOrdersByDateAndHour[hourKey] || { orders: 0, revenue: 0 };
       const cr = row.sessions > 0 ? (vtexMetrics.orders / row.sessions) * 100 : 0;
       
       return {
           ...row,
+          hour: hourStr,
           displayDate: '', // Set dynamically during aggregation
           conversionRate: cr,
           vtexOrders: vtexMetrics.orders,
@@ -481,7 +483,8 @@ export default function Dashboard() {
   const aggregatedChartData = (() => {
     if (chartInterval === 'hour') {
       const isSingleDay = filters.startDate === filters.endDate;
-      return chartData.map(row => {
+      const sorted = [...chartData].sort((a: any, b: any) => `${a.date}_${a.hour}`.localeCompare(`${b.date}_${b.hour}`));
+      return sorted.map(row => {
         const d = String(row.date);
         const displayDate = isSingleDay 
           ? `${row.hour}:00`

@@ -287,7 +287,7 @@ app.post('/api/ga4/metrics', async (c) => {
 
     responseGeneral.rows?.forEach((row: any) => {
       const date = row.dimensionValues?.[0].value;
-      const hour = row.dimensionValues?.[1].value;
+      const hour = String(row.dimensionValues?.[1].value || '00').padStart(2, '0');
       const key = `${date}_${hour}`;
       dateMap[key] = {
         date,
@@ -305,7 +305,7 @@ app.post('/api/ga4/metrics', async (c) => {
 
     responseEvents.rows?.forEach((row: any) => {
       const date = row.dimensionValues?.[0].value;
-      const hour = row.dimensionValues?.[1].value;
+      const hour = String(row.dimensionValues?.[1].value || '00').padStart(2, '0');
       const eventName = row.dimensionValues?.[2].value;
       const users = parseInt(row.metricValues?.[0].value || '0', 10);
       const key = `${date}_${hour}`;
