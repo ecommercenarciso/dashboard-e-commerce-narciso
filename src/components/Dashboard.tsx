@@ -333,13 +333,26 @@ export default function Dashboard() {
   const currentGa4Data = ga4Data.filter(row => String(row.date) >= startYmd && String(row.date) <= endYmd);
   const previousGa4Data = ga4Data.filter(row => String(row.date) >= prevStartYmd && String(row.date) <= prevEndYmd);
 
+  const getLocalDateStr = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      return '';
+    }
+  };
+
   // Split VTEX Orders by period
   const currentVtexOrders = dashboardFilteredVtexOrders.filter(order => {
-    const orderDate = order.creationDate ? order.creationDate.split('T')[0] : '';
+    const orderDate = getLocalDateStr(order.creationDate);
     return orderDate >= filters.startDate && orderDate <= filters.endDate;
   });
   const previousVtexOrders = dashboardFilteredVtexOrders.filter(order => {
-    const orderDate = order.creationDate ? order.creationDate.split('T')[0] : '';
+    const orderDate = getLocalDateStr(order.creationDate);
     return orderDate >= prevStartDateStr && orderDate <= prevEndDateStr;
   });
 
