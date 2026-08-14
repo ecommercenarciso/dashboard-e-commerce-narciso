@@ -657,7 +657,8 @@ export default function Dashboard() {
         const displayDate = isSingleDay 
           ? `${row.hour}:00`
           : `${d.substring(6,8)}/${d.substring(4,6)} ${row.hour}:00`;
-        return { ...row, displayDate };
+        const vtexTicket = row.vtexOrders > 0 ? (row.vtexRevenue / row.vtexOrders) : 0;
+        return { ...row, displayDate, vtexTicket };
       });
     }
     
@@ -713,7 +714,12 @@ export default function Dashboard() {
       groups[key].vtexRevenue += row.vtexRevenue || 0;
     });
     
-    return Object.values(groups).sort((a: any, b: any) => a.key.localeCompare(b.key));
+    return Object.values(groups)
+      .map((g: any) => ({
+        ...g,
+        vtexTicket: g.vtexOrders > 0 ? (g.vtexRevenue / g.vtexOrders) : 0
+      }))
+      .sort((a: any, b: any) => a.key.localeCompare(b.key));
   })();
 
   const filteredOrders = currentVtexOrders.filter(order => {
@@ -1264,13 +1270,16 @@ export default function Dashboard() {
                          <Tooltip 
                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
                            formatter={(value: any, name: any) => {
-                             if (name === "Faturamento") return [`R$ ${parseFloat(value).toFixed(2)}`, name];
+                             if (name === "Faturamento" || name === "Ticket Médio") return [`R$ ${parseFloat(value).toFixed(2)}`, name];
                              return [value, name];
                            }}
                          />
                          <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
                          <Line type="linear" yAxisId="left" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Faturamento">
                             <LabelList dataKey="vtexRevenue" position="top" style={{ fontSize: '8px', fill: '#6366f1', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val)}` : ''} />
+                          </Line>
+                          <Line type="linear" yAxisId="left" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Ticket Médio">
+                            <LabelList dataKey="vtexTicket" position="top" style={{ fontSize: '8px', fill: '#f59e0b', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val)}` : ''} />
                           </Line>
                           <Line type="linear" yAxisId="right" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Pedidos">
                             <LabelList dataKey="vtexOrders" position="bottom" style={{ fontSize: '8px', fill: '#10b981', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
