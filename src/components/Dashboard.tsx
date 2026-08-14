@@ -487,7 +487,7 @@ export default function Dashboard() {
       return acc + orderItemsCount;
     }, 0);
 
-    const detailedPickupCount = detailedOrdersList.filter(order => order.deliveryChannel === 'pickup-in-point').length;
+    const detailedPickupCount = detailedOrdersList.filter(order => order.deliveryChannel !== 'delivery').length;
     const detailedDeliveryCount = detailedOrdersList.filter(order => order.deliveryChannel === 'delivery').length;
     const detailedShippingValue = detailedOrdersList.reduce((acc, order) => acc + ((order.shippingValue || 0) / 100), 0);
 
@@ -633,7 +633,7 @@ export default function Dashboard() {
 
   if (detailedOrdersList.length > 0) {
     const sampleDeliveryOrders = detailedOrdersList.filter(o => o.deliveryChannel === 'delivery' && o.city && o.city !== 'Não Informado');
-    const samplePickupOrders = detailedOrdersList.filter(o => o.deliveryChannel === 'pickup-in-point' && o.city && o.city !== 'Não Informado');
+    const samplePickupOrders = detailedOrdersList.filter(o => o.deliveryChannel !== 'delivery' && o.city && o.city !== 'Não Informado');
     
     // 1. Delivery Cities - exact counts
     const rawDeliveryCities: Record<string, number> = {};
