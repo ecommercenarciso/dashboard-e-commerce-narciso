@@ -624,140 +624,23 @@ app.post('/api/vtex/orders', async (c) => {
       return true;
     });
 
-    // Check Cloudflare CDN cache first for ALL orders in parallel (this doesn't count against subrequest limits)
-    const cache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
-    const host = new URL(c.req.url).host;
-
-    const cachedDetails = await Promise.all(
-      currentList.map(async (order: any) => {
-        if (!cache) return null;
-        try {
-          const cacheKey = new Request(`https://${host}/api/vtex/cache/order/${order.orderId}`, { method: 'GET' });
-          const cachedResponse = await cache.match(cacheKey);
-          if (cachedResponse) {
-            return await cachedResponse.json();
-          }
-        } catch (e) {
-          console.error(`Cache match failed for ${order.orderId}`, e);
-        }
-        return null;
-      })
-    );
-
-    // Identify which orders are NOT cached
-    const uncachedOrders = currentList.filter((_, idx) => !cachedDetails[idx]);
-
-    // Fetch uncached orders from VTEX up to a safe budget (35 per request to stay under Cloudflare Free limit of 50)
-    const fetchBudget = 35;
-    const ordersToFetch = uncachedOrders.slice(0, fetchBudget);
-
-    const newlyFetchedDetails = await Promise.all(
-      ordersToFetch.map(async (order: any) => {
-        try {
-          const detailResponse = await axios.get(
-            `https://${accountName}.${environment}.com.br/api/oms/pvt/orders/${order.orderId}`,
-            {
-              headers: {
-                'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
-                'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
-                'Accept': 'application/json'
-              }
-            }
-          );
-          const o = detailResponse.data;
-
-          const shippingTotal = o.totals?.find((t: any) => t.id === 'Shipping')?.value || 0;
-          const deliveryChannel = o.shippingData?.logisticsInfo?.[0]?.deliveryChannel || 'delivery';
-          
-          const city = o.shippingData?.address?.city || 'Não Informado';
-          const carrier = o.shippingData?.logisticsInfo?.[0]?.selectedCourierName || o.shippingData?.logisticsInfo?.[0]?.selectedSla || 'Não Informado';
-          
-          const paymentMethod = o.paymentData?.transactions?.[0]?.payments?.[0]?.paymentSystemName || 'Pix';
-          const installments = o.paymentData?.transactions?.[0]?.payments?.[0]?.installments || 1;
-          
-          const cancelReason = o.cancelReason || null;
-          
-          const authorizedDate = o.authorizedDate || null;
-          const invoicedDate = o.packageAttachment?.packages?.[0]?.issuingDate || o.invoicedDate || null;
-
-          const formatted = {
-            orderId: o.orderId,
-            creationDate: o.creationDate,
-            authorizedDate,
-            invoicedDate,
-            clientName: o.clientProfileData ? `${o.clientProfileData.firstName} ${o.clientProfileData.lastName || ''}`.trim() : 'Cliente Indefinido',
-            totalValue: o.value,
-            status: o.status,
-            items: o.items?.map((item: any) => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              sellingPrice: item.sellingPrice
-            })) || [],
-            shippingValue: shippingTotal,
-            deliveryChannel: deliveryChannel,
-            city,
-            carrier,
-            paymentMethod,
-            installments,
-            cancelReason
-          };
-
-          // Cache the response if status is final (invoiced or canceled)
-          if (cache && (o.status === 'invoiced' || o.status === 'canceled')) {
-            try {
-              const cacheKey = new Request(`https://${host}/api/vtex/cache/order/${order.orderId}`, { method: 'GET' });
-              const responseToCache = new Response(JSON.stringify(formatted), {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
-                }
-              });
-              await cache.put(cacheKey, responseToCache);
-            } catch (e) {
-              console.error(`Cache put failed for ${order.orderId}`, e);
-            }
-          }
-          return formatted;
-        } catch (err: any) {
-          console.error(`Failed to fetch details for order ${order.orderId}:`, err.message);
-          return null;
-        }
-      })
-    );
-
-    // Combine cached and newly fetched details
-    const newlyFetchedMap = new Map(newlyFetchedDetails.filter(o => o !== null).map(o => [o.orderId, o]));
-    
-    const activeDetailed = currentList.map((order, idx) => {
-      const cached = cachedDetails[idx];
-      if (cached) return cached;
-      const newlyFetched = newlyFetchedMap.get(order.orderId);
-      if (newlyFetched) return newlyFetched;
-      return null;
-    }).filter((o): o is NonNullable<typeof o> => o !== null);
-
-    const fetchedIds = new Set(activeDetailed.map(o => o.orderId));
-    
-    const remainingCurrent = currentList
-      .filter((o: any) => !fetchedIds.has(o.orderId))
-      .map((o: any) => ({
-        orderId: o.orderId,
-        creationDate: o.creationDate,
-        authorizedDate: null,
-        invoicedDate: null,
-        clientName: o.clientName || 'Cliente Indefinido',
-        totalValue: o.totalValue || o.value,
-        status: o.status,
-        items: [],
-        shippingValue: 0,
-        deliveryChannel: 'delivery',
-        city: 'Não Informado',
-        carrier: 'Não Informado',
-        paymentMethod: 'Pix',
-        installments: 1,
-        cancelReason: null
-      }));
+    const formattedCurrent = currentList.map((o: any) => ({
+      orderId: o.orderId,
+      creationDate: o.creationDate,
+      authorizedDate: null,
+      invoicedDate: null,
+      clientName: o.clientName || 'Cliente Indefinido',
+      totalValue: o.totalValue || o.value,
+      status: o.status,
+      items: [],
+      shippingValue: 0,
+      deliveryChannel: 'delivery',
+      city: 'Não Informado',
+      carrier: 'Não Informado',
+      paymentMethod: 'Pix',
+      installments: 1,
+      cancelReason: null
+    }));
 
     const formattedPrev = prevList.map((o: any) => ({
       orderId: o.orderId,
@@ -777,7 +660,7 @@ app.post('/api/vtex/orders', async (c) => {
       cancelReason: null
     }));
 
-    const list = [...activeDetailed, ...remainingCurrent, ...formattedPrev];
+    const list = [...formattedCurrent, ...formattedPrev];
     return c.json({ list });
   } catch (error: any) {
     console.error('VTEX Error:', error.response?.data || error.message);

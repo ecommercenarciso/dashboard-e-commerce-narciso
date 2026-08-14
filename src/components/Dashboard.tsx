@@ -169,54 +169,75 @@ export default function Dashboard() {
 
     // Find orders in the current list that don't have detailed information
     const uncached = vtexOrders.filter(order => {
-      const cached = localStorage.getItem(`order_detail_${order.orderId}`);
-      if (cached) return false;
+      const cachedStr = localStorage.getItem(`order_detail_${order.orderId}`);
+      if (cachedStr) {
+        try {
+          const parsed = JSON.parse(cachedStr);
+          // If it failed recently (less than 2 minutes ago), skip it to prevent loops
+          if (parsed.failed && Date.now() - parsed.timestamp < 120000) {
+            return false;
+          }
+        } catch (e) {
+          // ignore
+        }
+        if (!JSON.parse(cachedStr).failed) return false;
+      }
       return order.city === 'Não Informado' && !fetchingIds.has(order.orderId);
     });
 
     if (uncached.length === 0) return;
 
-    // Fetch in batches of 5 to respect rate limits and keep response interactive
-    const batch = uncached.slice(0, 5);
-    
-    setFetchingIds(prev => {
-      const next = new Set(prev);
-      batch.forEach(o => next.add(o.orderId));
-      return next;
-    });
-
-    Promise.all(
-      batch.map(async (order) => {
-        try {
-          const res = await fetch(`/api/vtex/order-detail/${order.orderId}`);
-          if (!res.ok) throw new Error('Fetch failed');
-          const detail = await res.json();
-          localStorage.setItem(`order_detail_${order.orderId}`, JSON.stringify(detail));
-          return detail;
-        } catch (err) {
-          console.error(`Error fetching order detail for ${order.orderId}:`, err);
-          return null;
-        }
-      })
-    ).then((results) => {
-      const successful = results.filter(r => r !== null);
-      if (successful.length > 0) {
-        setVtexOrders(prev => 
-          prev.map(order => {
-            const detail = successful.find(r => r.orderId === order.orderId);
-            if (detail) {
-              return { ...order, ...detail };
-            }
-            return order;
-          })
-        );
-      }
+    // Introduce a delay of 1.5 seconds between batches to stay under VTEX rate limits
+    const timer = setTimeout(() => {
+      const batch = uncached.slice(0, 5);
+      
       setFetchingIds(prev => {
         const next = new Set(prev);
-        batch.forEach(o => next.delete(o.orderId));
+        batch.forEach(o => next.add(o.orderId));
         return next;
       });
-    });
+
+      Promise.all(
+        batch.map(async (order) => {
+          try {
+            const res = await fetch(`/api/vtex/order-detail/${order.orderId}`);
+            if (!res.ok) throw new Error('Fetch failed');
+            const detail = await res.json();
+            localStorage.setItem(`order_detail_${order.orderId}`, JSON.stringify(detail));
+            return detail;
+          } catch (err) {
+            console.error(`Error fetching order detail for ${order.orderId}:`, err);
+            // Save placeholder with failed flag to avoid infinite rate-limiting loop
+            localStorage.setItem(`order_detail_${order.orderId}`, JSON.stringify({
+              orderId: order.orderId,
+              failed: true,
+              timestamp: Date.now()
+            }));
+            return null;
+          }
+        })
+      ).then((results) => {
+        const successful = results.filter(r => r !== null && !r.failed);
+        if (successful.length > 0) {
+          setVtexOrders(prev => 
+            prev.map(order => {
+              const detail = successful.find(r => r.orderId === order.orderId);
+              if (detail) {
+                return { ...order, ...detail };
+              }
+              return order;
+            })
+          );
+        }
+        setFetchingIds(prev => {
+          const next = new Set(prev);
+          batch.forEach(o => next.delete(o.orderId));
+          return next;
+        });
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, [vtexOrders, fetchingIds, loading]);
 
   const handleStatusCheckboxChange = (status: string) => {
@@ -702,6 +723,33 @@ export default function Dashboard() {
       }
     });
     avgInvoiceTimeHours = timedOrdersCount > 0 ? (totalDiffMs / (1000 * 60 * 60 * timedOrdersCount)).toFixed(1) : '0';
+
+    // Add "Aguardando Sincronização..." placeholder rows if there are uncached orders
+    const unmappedCount = currentVtexOrders.length - detailedOrdersList.length;
+    if (unmappedCount > 0) {
+      carriersList.push({
+        name: 'Aguardando Sincronização...',
+        count: unmappedCount,
+        revenue: 0
+      });
+      
+      const deliveryRatio = deliveryOrdersCount > 0 ? deliveryOrdersCount / totalVtexOrders : 0.8;
+      const unmappedDelivery = Math.round(unmappedCount * deliveryRatio);
+      if (unmappedDelivery > 0) {
+        topDeliveryCities.push({
+          city: 'Aguardando Sincronização...',
+          count: unmappedDelivery
+        });
+      }
+
+      const unmappedPickup = unmappedCount - unmappedDelivery;
+      if (unmappedPickup > 0) {
+        topPickupCities.push({
+          city: 'Aguardando Sincronização...',
+          count: unmappedPickup
+        });
+      }
+    }
   } else {
     // Graceful fallback for empty detailedOrdersList
     topDeliveryCities = [
