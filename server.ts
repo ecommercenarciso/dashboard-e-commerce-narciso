@@ -246,16 +246,36 @@ app.post('/api/ga4/metrics', async (c) => {
     const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
     const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
-    // Run parallel reports: one for general metrics and unique visitors, one for specific event counts (unique users) by date and hour
+    const startStr = startDate || '28daysAgo';
+    const endStr = clampEndDate(endDate);
+
+    // Calculate if we should fetch hourly data (only for ranges <= 7 days to avoid timeouts)
+    let useHourly = true;
+    if (startStr.includes('daysAgo')) {
+      const days = parseInt(startStr.replace('daysAgo', ''), 10);
+      if (days > 7) useHourly = false;
+    } else {
+      try {
+        const startObj = new Date(startStr);
+        const endObj = new Date(endStr);
+        const diffTime = Math.abs(endObj.getTime() - startObj.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 7) useHourly = false;
+      } catch (e) {
+        useHourly = false;
+      }
+    }
+
+    // Run parallel reports: one for general metrics and unique visitors, one for specific event counts (unique users)
     const [responseGeneral, responseEvents] = await Promise.all([
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [
           {
-            startDate: startDate || '28daysAgo',
-            endDate: clampEndDate(endDate),
+            startDate: startStr,
+            endDate: endStr,
           },
         ],
-        dimensions: [{ name: 'date' }, { name: 'hour' }],
+        dimensions: useHourly ? [{ name: 'date' }, { name: 'hour' }] : [{ name: 'date' }],
         metrics: [
           { name: 'sessions' },
           { name: 'conversions' },
@@ -266,11 +286,11 @@ app.post('/api/ga4/metrics', async (c) => {
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [
           {
-            startDate: startDate || '28daysAgo',
-            endDate: clampEndDate(endDate),
+            startDate: startStr,
+            endDate: endStr,
           },
         ],
-        dimensions: [{ name: 'date' }, { name: 'hour' }, { name: 'eventName' }],
+        dimensions: useHourly ? [{ name: 'date' }, { name: 'hour' }, { name: 'eventName' }] : [{ name: 'date' }, { name: 'eventName' }],
         metrics: [{ name: 'totalUsers' }], // Query unique users per event
         dimensionFilter: {
           filter: {
@@ -287,7 +307,7 @@ app.post('/api/ga4/metrics', async (c) => {
 
     responseGeneral.rows?.forEach((row: any) => {
       const date = row.dimensionValues?.[0].value;
-      const hour = String(row.dimensionValues?.[1].value || '00').padStart(2, '0');
+      const hour = useHourly ? String(row.dimensionValues?.[1].value || '00').padStart(2, '0') : '00';
       const key = `${date}_${hour}`;
       dateMap[key] = {
         date,
@@ -305,8 +325,8 @@ app.post('/api/ga4/metrics', async (c) => {
 
     responseEvents.rows?.forEach((row: any) => {
       const date = row.dimensionValues?.[0].value;
-      const hour = String(row.dimensionValues?.[1].value || '00').padStart(2, '0');
-      const eventName = row.dimensionValues?.[2].value;
+      const hour = useHourly ? String(row.dimensionValues?.[1].value || '00').padStart(2, '0') : '00';
+      const eventName = useHourly ? row.dimensionValues?.[2].value : row.dimensionValues?.[1].value;
       const users = parseInt(row.metricValues?.[0].value || '0', 10);
       const key = `${date}_${hour}`;
 
