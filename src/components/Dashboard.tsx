@@ -185,11 +185,11 @@ export default function Dashboard() {
             break;
         case 'Esta semana (começa no domingo)':
             start = startOfWeek(today, { weekStartsOn: 0 });
-            end = endOfWeek(today, { weekStartsOn: 0 });
+            end = today;
             break;
         case 'Esta semana (começa na segunda-feira)':
             start = startOfWeek(today, { weekStartsOn: 1 });
-            end = endOfWeek(today, { weekStartsOn: 1 });
+            end = today;
             break;
         case 'Este mês':
             start = startOfMonth(today);
