@@ -28,7 +28,7 @@ export default function Dashboard() {
     endDate: format(new Date(), 'yyyy-MM-dd'),
     category: 'All',
     minConversionRate: 0,
-    status: [],
+    status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'],
   });
 
   const fetchData = async () => {
@@ -819,22 +819,7 @@ export default function Dashboard() {
                 <option value="days">Mesmo nº de dias anteriores</option>
               </select>
             </div>
-            {/* Filtro Conversão Mínima */}
-            <div className="flex flex-col gap-1 w-full lg:w-auto">
-              <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Conv. Mínima</label>
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3 h-9 rounded-lg w-full lg:w-40">
-                <input 
-                  type="range" 
-                  min="0" max="100" step="0.1"
-                  value={filters.minConversionRate}
-                  onChange={(e) => setFilters({...filters, minConversionRate: parseFloat(e.target.value) || 0})}
-                  className="w-full h-1 bg-slate-200 appearance-none rounded-lg accent-blue-600 cursor-pointer"
-                />
-                <span className="text-xs text-slate-500 font-semibold shrink-0 min-w-[34px] text-right">{filters.minConversionRate}%</span>
-              </div>
-            </div>
-
-            {/* Filtro Status do Pedido (Checkbox Multi-select) */}
+             {/* Filtro Status do Pedido (Checkbox Multi-select) */}
             <div className="flex flex-col gap-1 w-full lg:w-auto relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
               <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status</label>
               <button 
@@ -843,7 +828,7 @@ export default function Dashboard() {
                 className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-44 flex items-center justify-between gap-1 text-left"
               >
                 <span className="truncate">
-                  {filters.status.length === 0 
+                  {filters.status.length === 0 || filters.status.length === 5
                     ? 'Todos os Status' 
                     : filters.status.map(s => statusLabelMap[s] || s).join(', ')}
                 </span>
