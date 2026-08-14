@@ -1943,6 +1943,8 @@ export default function Dashboard() {
                           <th className="px-4 py-2 font-semibold">ID</th>
                           <th className="px-4 py-2 font-semibold">Data</th>
                           <th className="px-4 py-2 font-semibold">Cliente</th>
+                          <th className="px-4 py-2 font-semibold">Cidade</th>
+                          <th className="px-4 py-2 font-semibold">Pagamento</th>
                           <th className="px-4 py-2 font-semibold">Status</th>
                           <th className="px-4 py-2 font-semibold text-right">Total</th>
                         </tr>
@@ -1953,6 +1955,20 @@ export default function Dashboard() {
                             <td className="px-4 py-3 font-semibold text-blue-600">{order.orderId}</td>
                             <td className="px-4 py-3 text-slate-500">{new Date(order.creationDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
                             <td className="px-4 py-3 truncate max-w-[120px]">{order.clientName || 'Cliente Indefinido'}</td>
+                            <td className="px-4 py-3 truncate max-w-[100px] font-medium text-slate-600">
+                              {order.city === 'Não Informado' ? (
+                                <span className="text-slate-400 italic text-[10px]">Sincronizando...</span>
+                              ) : (
+                                order.city
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-slate-600 font-medium truncate max-w-[120px]">
+                              {order.city === 'Não Informado' ? (
+                                <span className="text-slate-400 italic text-[10px]">Sincronizando...</span>
+                              ) : (
+                                `${order.paymentMethod}${order.installments > 1 ? ` (${order.installments}x)` : ''}`
+                              )}
+                            </td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                                 order.status === 'invoiced' ? 'bg-emerald-100 text-emerald-800' :
