@@ -635,39 +635,25 @@ export default function Dashboard() {
     const sampleDeliveryOrders = detailedOrdersList.filter(o => o.deliveryChannel === 'delivery' && o.city && o.city !== 'Não Informado');
     const samplePickupOrders = detailedOrdersList.filter(o => o.deliveryChannel !== 'delivery' && o.city && o.city !== 'Não Informado');
     
-    // 1. Delivery Cities - exact counts with "Outras Cidades" aggregation
+    // 1. Delivery Cities - full list of exact counts
     const rawDeliveryCities: Record<string, number> = {};
     sampleDeliveryOrders.forEach(o => {
       rawDeliveryCities[o.city] = (rawDeliveryCities[o.city] || 0) + 1;
     });
-    const sortedDelivery = Object.entries(rawDeliveryCities)
+    topDeliveryCities = Object.entries(rawDeliveryCities)
       .map(([city, count]) => ({ city, count }))
       .sort((a, b) => b.count - a.count);
-    if (sortedDelivery.length > 5) {
-      topDeliveryCities = sortedDelivery.slice(0, 4);
-      const otherCount = sortedDelivery.slice(4).reduce((acc, c) => acc + c.count, 0);
-      topDeliveryCities.push({ city: 'Outras Cidades', count: otherCount });
-    } else {
-      topDeliveryCities = sortedDelivery;
-    }
 
-    // 2. Pickup Cities - exact counts with "Outras Cidades" aggregation
+    // 2. Pickup Cities - full list of exact counts
     const rawPickupCities: Record<string, number> = {};
     samplePickupOrders.forEach(o => {
       rawPickupCities[o.city] = (rawPickupCities[o.city] || 0) + 1;
     });
-    const sortedPickup = Object.entries(rawPickupCities)
+    topPickupCities = Object.entries(rawPickupCities)
       .map(([city, count]) => ({ city, count }))
       .sort((a, b) => b.count - a.count);
-    if (sortedPickup.length > 5) {
-      topPickupCities = sortedPickup.slice(0, 4);
-      const otherCount = sortedPickup.slice(4).reduce((acc, c) => acc + c.count, 0);
-      topPickupCities.push({ city: 'Outras Cidades', count: otherCount });
-    } else {
-      topPickupCities = sortedPickup;
-    }
 
-    // 3. Carriers - exact counts with "Outros Parceiros" aggregation
+    // 3. Carriers - full list of exact counts
     const sampleCarriers = detailedOrdersList.filter(o => o.carrier && o.carrier !== 'Não Informado');
     const rawCarriers: Record<string, { count: number, revenue: number }> = {};
     sampleCarriers.forEach(o => {
@@ -677,21 +663,13 @@ export default function Dashboard() {
       rawCarriers[o.carrier].count += 1;
       rawCarriers[o.carrier].revenue += (o.totalValue || 0) / 100;
     });
-    const sortedCarriers = Object.entries(rawCarriers)
+    carriersList = Object.entries(rawCarriers)
       .map(([name, data]) => ({
         name,
         count: data.count,
         revenue: data.revenue
       }))
       .sort((a, b) => b.count - a.count);
-    if (sortedCarriers.length > 5) {
-      carriersList = sortedCarriers.slice(0, 4);
-      const otherCount = sortedCarriers.slice(4).reduce((acc, c) => acc + c.count, 0);
-      const otherRevenue = sortedCarriers.slice(4).reduce((acc, c) => acc + c.revenue, 0);
-      carriersList.push({ name: 'Outros Parceiros', count: otherCount, revenue: otherRevenue });
-    } else {
-      carriersList = sortedCarriers;
-    }
 
     // 4. Cancellation reasons - exact counts
     const sampleCanceled = detailedOrdersList.filter(o => o.status === 'canceled' && o.cancelReason);
