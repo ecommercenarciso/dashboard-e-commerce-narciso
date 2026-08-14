@@ -624,10 +624,33 @@ app.post('/api/vtex/orders', async (c) => {
       return true;
     });
 
-    // Increase details retrieval threshold to top 20 orders of the current period to identify all carriers and cities for small/medium sets
-    const ordersToFetch = currentList.slice(0, 20);
-    
-    const detailedOrders = await Promise.all(
+    // Check Cloudflare CDN cache first for ALL orders in parallel (this doesn't count against subrequest limits)
+    const cache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
+
+    const cachedDetails = await Promise.all(
+      currentList.map(async (order: any) => {
+        if (!cache) return null;
+        try {
+          const cacheKey = new Request(`https://api.vtex.cache/order/${order.orderId}`, { method: 'GET' });
+          const cachedResponse = await cache.match(cacheKey);
+          if (cachedResponse) {
+            return await cachedResponse.json();
+          }
+        } catch (e) {
+          console.error(`Cache match failed for ${order.orderId}`, e);
+        }
+        return null;
+      })
+    );
+
+    // Identify which orders are NOT cached
+    const uncachedOrders = currentList.filter((_, idx) => !cachedDetails[idx]);
+
+    // Fetch uncached orders from VTEX up to a safe budget (35 per request to stay under Cloudflare Free limit of 50)
+    const fetchBudget = 35;
+    const ordersToFetch = uncachedOrders.slice(0, fetchBudget);
+
+    const newlyFetchedDetails = await Promise.all(
       ordersToFetch.map(async (order: any) => {
         try {
           const detailResponse = await axios.get(
@@ -641,7 +664,7 @@ app.post('/api/vtex/orders', async (c) => {
             }
           );
           const o = detailResponse.data;
-          
+
           const shippingTotal = o.totals?.find((t: any) => t.id === 'Shipping')?.value || 0;
           const deliveryChannel = o.shippingData?.logisticsInfo?.[0]?.deliveryChannel || 'delivery';
           
@@ -656,7 +679,7 @@ app.post('/api/vtex/orders', async (c) => {
           const authorizedDate = o.authorizedDate || null;
           const invoicedDate = o.packageAttachment?.packages?.[0]?.issuingDate || o.invoicedDate || null;
 
-          return {
+          const formatted = {
             orderId: o.orderId,
             creationDate: o.creationDate,
             authorizedDate,
@@ -678,14 +701,41 @@ app.post('/api/vtex/orders', async (c) => {
             installments,
             cancelReason
           };
-        } catch (err) {
-          console.error(`Failed to fetch details for order ${order.orderId}`, err);
+
+          // Cache the response if status is final (invoiced or canceled)
+          if (cache && (o.status === 'invoiced' || o.status === 'canceled')) {
+            try {
+              const cacheKey = new Request(`https://api.vtex.cache/order/${order.orderId}`, { method: 'GET' });
+              const responseToCache = new Response(JSON.stringify(formatted), {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
+                }
+              });
+              await cache.put(cacheKey, responseToCache);
+            } catch (e) {
+              console.error(`Cache put failed for ${order.orderId}`, e);
+            }
+          }
+          return formatted;
+        } catch (err: any) {
+          console.error(`Failed to fetch details for order ${order.orderId}:`, err.message);
           return null;
         }
       })
     );
 
-    const activeDetailed = detailedOrders.filter((o): o is NonNullable<typeof o> => o !== null);
+    // Combine cached and newly fetched details
+    const newlyFetchedMap = new Map(newlyFetchedDetails.filter(o => o !== null).map(o => [o.orderId, o]));
+    
+    const activeDetailed = currentList.map((order, idx) => {
+      const cached = cachedDetails[idx];
+      if (cached) return cached;
+      const newlyFetched = newlyFetchedMap.get(order.orderId);
+      if (newlyFetched) return newlyFetched;
+      return null;
+    }).filter((o): o is NonNullable<typeof o> => o !== null);
+
     const fetchedIds = new Set(activeDetailed.map(o => o.orderId));
     
     const remainingCurrent = currentList

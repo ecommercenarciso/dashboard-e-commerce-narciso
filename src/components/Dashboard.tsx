@@ -529,9 +529,10 @@ export default function Dashboard() {
     paidShippingCount = totalVtexOrders - freeShippingCount;
   }
   const freeShippingRate = totalVtexOrders > 0 ? (freeShippingCount / totalVtexOrders) * 100 : 0;
+  const detailedCount = currentVtexOrders.filter(o => o.city && o.city !== 'Não Informado').length;
 
   // New detailed logistics, cancelation, and payments indicators calculations:
-  // We use detailedOrdersList as our active sample and extrapolate the distributions proportionally over the entire set of currentVtexOrders.
+  // We use detailedOrdersList as our active sample and query the exact counts without scaling/projection.
   
   let topDeliveryCities: { city: string, count: number }[] = [];
   let topPickupCities: { city: string, count: number }[] = [];
@@ -545,31 +546,27 @@ export default function Dashboard() {
     const sampleDeliveryOrders = detailedOrdersList.filter(o => o.deliveryChannel === 'delivery' && o.city && o.city !== 'Não Informado');
     const samplePickupOrders = detailedOrdersList.filter(o => o.deliveryChannel === 'pickup-in-point' && o.city && o.city !== 'Não Informado');
     
-    // 1. Delivery Cities extrapolation
+    // 1. Delivery Cities - exact counts
     const rawDeliveryCities: Record<string, number> = {};
     sampleDeliveryOrders.forEach(o => {
       rawDeliveryCities[o.city] = (rawDeliveryCities[o.city] || 0) + 1;
     });
-    const totalSampleDelivery = sampleDeliveryOrders.length;
-    const deliveryScale = totalSampleDelivery > 0 ? (deliveryOrdersCount / totalSampleDelivery) : 1;
     topDeliveryCities = Object.entries(rawDeliveryCities)
-      .map(([city, count]) => ({ city, count: Math.round(count * deliveryScale) }))
+      .map(([city, count]) => ({ city, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // 2. Pickup Cities extrapolation
+    // 2. Pickup Cities - exact counts
     const rawPickupCities: Record<string, number> = {};
     samplePickupOrders.forEach(o => {
       rawPickupCities[o.city] = (rawPickupCities[o.city] || 0) + 1;
     });
-    const totalSamplePickup = samplePickupOrders.length;
-    const pickupScale = totalSamplePickup > 0 ? (pickupOrdersCount / totalSamplePickup) : 1;
     topPickupCities = Object.entries(rawPickupCities)
-      .map(([city, count]) => ({ city, count: Math.round(count * pickupScale) }))
+      .map(([city, count]) => ({ city, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // 3. Carriers extrapolation
+    // 3. Carriers - exact counts
     const sampleCarriers = detailedOrdersList.filter(o => o.carrier && o.carrier !== 'Não Informado');
     const rawCarriers: Record<string, { count: number, revenue: number }> = {};
     sampleCarriers.forEach(o => {
@@ -579,54 +576,45 @@ export default function Dashboard() {
       rawCarriers[o.carrier].count += 1;
       rawCarriers[o.carrier].revenue += (o.totalValue || 0) / 100;
     });
-    const totalSampleCarriers = sampleCarriers.length;
-    const carrierScale = totalSampleCarriers > 0 ? (totalVtexOrders / totalSampleCarriers) : 1;
     carriersList = Object.entries(rawCarriers)
       .map(([name, data]) => ({
         name,
-        count: Math.round(data.count * carrierScale),
-        revenue: data.revenue * carrierScale
+        count: data.count,
+        revenue: data.revenue
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // 4. Cancellation reasons extrapolation
+    // 4. Cancellation reasons - exact counts
     const sampleCanceled = detailedOrdersList.filter(o => o.status === 'canceled' && o.cancelReason);
     const rawCancelReasons: Record<string, number> = {};
     sampleCanceled.forEach(o => {
       rawCancelReasons[o.cancelReason] = (rawCancelReasons[o.cancelReason] || 0) + 1;
     });
-    const totalSampleCanceled = sampleCanceled.length;
-    const cancelScale = totalSampleCanceled > 0 ? (canceledCount / totalSampleCanceled) : 1;
     cancelReasonsList = Object.entries(rawCancelReasons)
-      .map(([reason, count]) => ({ reason, count: Math.round(count * cancelScale) }))
+      .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // 5. Payment methods extrapolation
+    // 5. Payment methods - exact counts
     const samplePayments = detailedOrdersList.filter(o => o.paymentMethod);
     const rawPaymentMethods: Record<string, number> = {};
     samplePayments.forEach(o => {
       rawPaymentMethods[o.paymentMethod] = (rawPaymentMethods[o.paymentMethod] || 0) + 1;
     });
-    const totalSamplePayments = samplePayments.length;
-    const paymentScale = totalSamplePayments > 0 ? (totalVtexOrders / totalSamplePayments) : 1;
     paymentMethodsData = Object.entries(rawPaymentMethods)
-      .map(([name, value]) => ({ name, value: Math.round(value * paymentScale) }))
+      .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
-    // 6. Installments extrapolation
+    // 6. Installments - exact counts
     const sampleCardPayments = detailedOrdersList.filter(o => o.paymentMethod && o.paymentMethod !== 'Pix' && o.paymentMethod !== 'Boleto');
     const rawInstallments: Record<string, number> = {};
     sampleCardPayments.forEach(o => {
       const inst = `${o.installments || 1}x`;
       rawInstallments[inst] = (rawInstallments[inst] || 0) + 1;
     });
-    const totalSampleCardPayments = sampleCardPayments.length;
-    const totalActualCardPayments = currentVtexOrders.filter(o => o.paymentMethod !== 'Pix' && o.paymentMethod !== 'Boleto').length;
-    const cardScale = totalSampleCardPayments > 0 ? (totalActualCardPayments / totalSampleCardPayments) : 1;
     installmentsData = Object.entries(rawInstallments)
-      .map(([name, value]) => ({ name, value: Math.round(value * cardScale) }))
+      .map(([name, value]) => ({ name, value }))
       .sort((a, b) => {
         const aNum = parseInt(a.name) || 1;
         const bNum = parseInt(b.name) || 1;
@@ -975,7 +963,13 @@ export default function Dashboard() {
               <div className="h-6 w-[1px] bg-slate-200 hidden xl:block"></div>
               
               <div className="text-xs text-slate-500 hidden xl:block">
-                Sincronização: <span className="text-emerald-600 font-medium italic">{loading ? 'Sincronizando...' : 'Agora mesmo'}</span>
+                Sincronização: <span className="text-emerald-600 font-medium italic">
+                  {loading ? 'Sincronizando...' : (
+                    detailedCount < currentVtexOrders.length 
+                      ? `Mapeando cidades (${detailedCount}/${currentVtexOrders.length})` 
+                      : 'Agora mesmo'
+                  )}
+                </span>
               </div>
             </div>
           </div>
