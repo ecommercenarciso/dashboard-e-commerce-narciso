@@ -626,12 +626,13 @@ app.post('/api/vtex/orders', async (c) => {
 
     // Check Cloudflare CDN cache first for ALL orders in parallel (this doesn't count against subrequest limits)
     const cache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
+    const host = new URL(c.req.url).host;
 
     const cachedDetails = await Promise.all(
       currentList.map(async (order: any) => {
         if (!cache) return null;
         try {
-          const cacheKey = new Request(`https://api.vtex.cache/order/${order.orderId}`, { method: 'GET' });
+          const cacheKey = new Request(`https://${host}/api/vtex/cache/order/${order.orderId}`, { method: 'GET' });
           const cachedResponse = await cache.match(cacheKey);
           if (cachedResponse) {
             return await cachedResponse.json();
@@ -705,7 +706,7 @@ app.post('/api/vtex/orders', async (c) => {
           // Cache the response if status is final (invoiced or canceled)
           if (cache && (o.status === 'invoiced' || o.status === 'canceled')) {
             try {
-              const cacheKey = new Request(`https://api.vtex.cache/order/${order.orderId}`, { method: 'GET' });
+              const cacheKey = new Request(`https://${host}/api/vtex/cache/order/${order.orderId}`, { method: 'GET' });
               const responseToCache = new Response(JSON.stringify(formatted), {
                 headers: {
                   'Content-Type': 'application/json',
