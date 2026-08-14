@@ -571,8 +571,7 @@ export default function Dashboard() {
 
   const topClients = Object.entries(clientOrdersMap)
     .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
+    .sort((a, b) => b.total - a.total);
 
   let items1Count = 0;
   let items2Count = 0;
