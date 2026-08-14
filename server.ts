@@ -553,43 +553,76 @@ app.post('/api/vtex/orders', async (c) => {
     const environment = cleanEnvString(getEnv(c, 'VTEX_ENVIRONMENT')) || 'vtexcommercestable';
 
     const currentFq = `creationDate:[${startDate}T00:00:00.000Z TO ${endDate}T23:59:59.999Z]`;
+    const headers = {
+      'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
+      'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
+      'Accept': 'application/json'
+    };
 
-    const currentPromise = axios.get(
-      `https://${accountName}.${environment}.com.br/api/oms/pvt/orders`,
-      {
+    // Query up to 5 pages (500 orders) in parallel to get full history for large date ranges
+    const pages = [1, 2, 3, 4, 5];
+
+    const currentPromises = pages.map(page =>
+      axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
         params: {
           f_creationDate: currentFq,
           per_page: 100,
+          page
         },
-        headers: {
-          'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
-          'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
-          'Accept': 'application/json'
-        }
-      }
+        headers
+      }).catch(err => {
+        console.error(`Failed to fetch current page ${page}:`, err.message);
+        return { data: { list: [] } };
+      })
     );
 
-    const prevPromise = prevStartDate && prevEndDate
-      ? axios.get(
-          `https://${accountName}.${environment}.com.br/api/oms/pvt/orders`,
-          {
+    const prevPromises = prevStartDate && prevEndDate
+      ? pages.map(page =>
+          axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
             params: {
               f_creationDate: `creationDate:[${prevStartDate}T00:00:00.000Z TO ${prevEndDate}T23:59:59.999Z]`,
               per_page: 100,
+              page
             },
-            headers: {
-              'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
-              'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
-              'Accept': 'application/json'
-            }
-          }
+            headers
+          }).catch(err => {
+            console.error(`Failed to fetch prev page ${page}:`, err.message);
+            return { data: { list: [] } };
+          })
         )
-      : Promise.resolve({ data: { list: [] } });
+      : [];
 
-    const [currentRes, prevRes] = await Promise.all([currentPromise, prevPromise]);
+    const currentResponses = await Promise.all(currentPromises);
+    const prevResponses = prevPromises.length > 0 ? await Promise.all(prevPromises) : [];
 
-    const currentList = currentRes.data.list || [];
-    const prevList = prevRes.data.list || [];
+    let currentList: any[] = [];
+    currentResponses.forEach(res => {
+      if (res.data && res.data.list) {
+        currentList = [...currentList, ...res.data.list];
+      }
+    });
+
+    let prevList: any[] = [];
+    prevResponses.forEach(res => {
+      if (res.data && res.data.list) {
+        prevList = [...prevList, ...res.data.list];
+      }
+    });
+
+    // Remove duplicates
+    const seenCurrent = new Set();
+    currentList = currentList.filter(o => {
+      if (!o.orderId || seenCurrent.has(o.orderId)) return false;
+      seenCurrent.add(o.orderId);
+      return true;
+    });
+
+    const seenPrev = new Set();
+    prevList = prevList.filter(o => {
+      if (!o.orderId || seenPrev.has(o.orderId)) return false;
+      seenPrev.add(o.orderId);
+      return true;
+    });
 
     // Increase details retrieval threshold to top 20 orders of the current period to identify all carriers and cities for small/medium sets
     const ordersToFetch = currentList.slice(0, 20);
