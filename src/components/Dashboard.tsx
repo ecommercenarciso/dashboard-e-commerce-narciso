@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
+  const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
 
   const [filters, setFilters] = useState<DashboardFilter>({
     startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -141,7 +142,19 @@ export default function Dashboard() {
         throw new Error(errMsg || 'Failed to fetch VTEX data');
       }
       
-      setVtexOrders(vtexJson.list || []); // Assuming the OMS response has a list property
+      // Enrich orders with local cached details first
+      const enrichedList = (vtexJson.list || []).map((order: any) => {
+        const cached = localStorage.getItem(`order_detail_${order.orderId}`);
+        if (cached) {
+          try {
+            return { ...order, ...JSON.parse(cached) };
+          } catch (e) {
+            // ignore
+          }
+        }
+        return order;
+      });
+      setVtexOrders(enrichedList);
 
     } catch (err: any) {
       setError(err.message);
@@ -150,6 +163,61 @@ export default function Dashboard() {
     }
   };
 
+  // Background fetcher hook to dynamically load missing order details in batches
+  useEffect(() => {
+    if (vtexOrders.length === 0 || loading) return;
+
+    // Find orders in the current list that don't have detailed information
+    const uncached = vtexOrders.filter(order => {
+      const cached = localStorage.getItem(`order_detail_${order.orderId}`);
+      if (cached) return false;
+      return order.city === 'Não Informado' && !fetchingIds.has(order.orderId);
+    });
+
+    if (uncached.length === 0) return;
+
+    // Fetch in batches of 5 to respect rate limits and keep response interactive
+    const batch = uncached.slice(0, 5);
+    
+    setFetchingIds(prev => {
+      const next = new Set(prev);
+      batch.forEach(o => next.add(o.orderId));
+      return next;
+    });
+
+    Promise.all(
+      batch.map(async (order) => {
+        try {
+          const res = await fetch(`/api/vtex/order-detail/${order.orderId}`);
+          if (!res.ok) throw new Error('Fetch failed');
+          const detail = await res.json();
+          localStorage.setItem(`order_detail_${order.orderId}`, JSON.stringify(detail));
+          return detail;
+        } catch (err) {
+          console.error(`Error fetching order detail for ${order.orderId}:`, err);
+          return null;
+        }
+      })
+    ).then((results) => {
+      const successful = results.filter(r => r !== null);
+      if (successful.length > 0) {
+        setVtexOrders(prev => 
+          prev.map(order => {
+            const detail = successful.find(r => r.orderId === order.orderId);
+            if (detail) {
+              return { ...order, ...detail };
+            }
+            return order;
+          })
+        );
+      }
+      setFetchingIds(prev => {
+        const next = new Set(prev);
+        batch.forEach(o => next.delete(o.orderId));
+        return next;
+      });
+    });
+  }, [vtexOrders, fetchingIds, loading]);
 
   const handleStatusCheckboxChange = (status: string) => {
     if (filters.status.includes(status)) {

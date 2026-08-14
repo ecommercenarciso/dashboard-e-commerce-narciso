@@ -785,4 +785,91 @@ app.post('/api/vtex/orders', async (c) => {
   }
 });
 
+app.get('/api/vtex/order-detail/:orderId', async (c) => {
+  try {
+    const orderId = c.req.param('orderId');
+    const missing = checkEnvVars(c, ['VTEX_ACCOUNT_NAME', 'VTEX_APP_KEY', 'VTEX_APP_TOKEN']);
+    if (missing.length > 0) {
+      // Mock details
+      const itemQuantity = Math.floor(Math.random() * 3) + 1;
+      const itemPrice = (Math.floor(Math.random() * 200) + 10) * 100;
+      const shippingValue = Math.random() > 0.3 ? (Math.floor(Math.random() * 30) + 10) * 100 : 0;
+      const deliveryChannel = Math.random() > 0.3 ? 'delivery' : 'pickup-in-point';
+      const totalValue = (itemPrice * itemQuantity) + (deliveryChannel === 'delivery' ? shippingValue : 0);
+      return c.json({
+        orderId,
+        creationDate: new Date().toISOString(),
+        authorizedDate: new Date().toISOString(),
+        invoicedDate: new Date().toISOString(),
+        clientName: 'Cliente Mocked Detalhado',
+        totalValue,
+        status: 'invoiced',
+        items: [{ name: 'Produto Mocked Detalhado', quantity: itemQuantity, price: itemPrice, sellingPrice: itemPrice }],
+        shippingValue,
+        deliveryChannel,
+        city: ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba', 'Porto Alegre'][Math.floor(Math.random() * 5)],
+        carrier: deliveryChannel === 'delivery' ? ['Correios', 'Total Express', 'Jadlog'][Math.floor(Math.random() * 3)] : 'Retirada em Loja',
+        paymentMethod: ['Pix', 'Visa', 'MasterCard', 'Boleto'][Math.floor(Math.random() * 4)],
+        installments: Math.floor(Math.random() * 6) + 1,
+        cancelReason: null
+      });
+    }
+
+    const accountName = cleanEnvString(getEnv(c, 'VTEX_ACCOUNT_NAME'));
+    const environment = cleanEnvString(getEnv(c, 'VTEX_ENVIRONMENT')) || 'vtexcommercestable';
+
+    const detailResponse = await axios.get(
+      `https://${accountName}.${environment}.com.br/api/oms/pvt/orders/${orderId}`,
+      {
+        headers: {
+          'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
+          'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
+          'Accept': 'application/json'
+        }
+      }
+    );
+    const o = detailResponse.data;
+    
+    const shippingTotal = o.totals?.find((t: any) => t.id === 'Shipping')?.value || 0;
+    const deliveryChannel = o.shippingData?.logisticsInfo?.[0]?.deliveryChannel || 'delivery';
+    
+    const city = o.shippingData?.address?.city || 'Não Informado';
+    const carrier = o.shippingData?.logisticsInfo?.[0]?.selectedCourierName || o.shippingData?.logisticsInfo?.[0]?.selectedSla || 'Não Informado';
+    
+    const paymentMethod = o.paymentData?.transactions?.[0]?.payments?.[0]?.paymentSystemName || 'Pix';
+    const installments = o.paymentData?.transactions?.[0]?.payments?.[0]?.installments || 1;
+    
+    const cancelReason = o.cancelReason || null;
+    
+    const authorizedDate = o.authorizedDate || null;
+    const invoicedDate = o.packageAttachment?.packages?.[0]?.issuingDate || o.invoicedDate || null;
+
+    return c.json({
+      orderId: o.orderId,
+      creationDate: o.creationDate,
+      authorizedDate,
+      invoicedDate,
+      clientName: o.clientProfileData ? `${o.clientProfileData.firstName} ${o.clientProfileData.lastName || ''}`.trim() : 'Cliente Indefinido',
+      totalValue: o.value,
+      status: o.status,
+      items: o.items?.map((item: any) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        sellingPrice: item.sellingPrice
+      })) || [],
+      shippingValue: shippingTotal,
+      deliveryChannel: deliveryChannel,
+      city,
+      carrier,
+      paymentMethod,
+      installments,
+      cancelReason
+    });
+  } catch (err: any) {
+    console.error(`Failed to fetch details for order ${c.req.param('orderId')}:`, err.message);
+    return c.json({ error: err.message }, 500);
+  }
+});
+
 export default app;
