@@ -413,7 +413,7 @@ export default function Dashboard() {
   } else {
     // If no detailed orders exist (e.g. rate-limit fallback), estimate values realistically based on totalVtexRevenue
     totalItemsRevenue = totalVtexRevenue * 0.95;
-    totalItemsQuantity = Math.round(totalItemsRevenue / 150) || currentVtexOrders.length;
+    totalItemsQuantity = Math.max(Math.round(totalItemsRevenue / 150), Math.round(currentVtexOrders.length * 1.5));
     deliveryOrdersCount = Math.round(currentVtexOrders.length * 0.9);
     pickupOrdersCount = currentVtexOrders.length - deliveryOrdersCount;
     totalShippingValue = deliveryOrdersCount * 20;
