@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
-  const [periodType, setPeriodType] = useState('Últimos 28 dias');
+  const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period'>('period');
   const [chartInterval, setChartInterval] = useState<'hour' | 'day' | 'week' | 'month'>('day');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -24,7 +24,7 @@ export default function Dashboard() {
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
 
   const [filters, setFilters] = useState<DashboardFilter>({
-    startDate: format(subDays(new Date(), 28), 'yyyy-MM-dd'),
+    startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
     category: 'All',
     minConversionRate: 0,
