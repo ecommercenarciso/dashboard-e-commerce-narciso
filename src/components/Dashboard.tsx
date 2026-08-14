@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList } from 'recharts';
 import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
@@ -607,11 +607,14 @@ export default function Dashboard() {
 
 
   // Group VTEX orders by date and hour for chart integration - based on current period only
+  // If GA4 doesn't have hourly data (for periods > 7 days), group VTEX orders to hour '00' to match GA4 rows
+  const isGa4Hourly = currentGa4Data.some(r => r.hour && r.hour !== '00');
+  
   const vtexOrdersByDateAndHour = currentVtexOrders.reduce((acc, order) => {
     try {
       const dateObj = new Date(order.creationDate);
       const dateStr = format(dateObj, 'yyyy-MM-dd');
-      const hourStr = format(dateObj, 'HH');
+      const hourStr = isGa4Hourly ? format(dateObj, 'HH') : '00';
       const key = `${dateStr}_${hourStr}`;
       if (!acc[key]) {
         acc[key] = { orders: 0, revenue: 0 };
@@ -1256,8 +1259,12 @@ export default function Dashboard() {
                            }}
                          />
                          <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                         <Line type="monotone" yAxisId="left" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Faturamento" />
-                         <Line type="monotone" yAxisId="right" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Pedidos" />
+                         <Line type="linear" yAxisId="left" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Faturamento">
+                            <LabelList dataKey="vtexRevenue" position="top" style={{ fontSize: '8px', fill: '#6366f1', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val)}` : ''} />
+                          </Line>
+                          <Line type="linear" yAxisId="right" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Pedidos">
+                            <LabelList dataKey="vtexOrders" position="bottom" style={{ fontSize: '8px', fill: '#10b981', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
+                          </Line>
                        </LineChart>
                      </ResponsiveContainer>
                    ) : (
