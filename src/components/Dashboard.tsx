@@ -1209,11 +1209,21 @@ export default function Dashboard() {
                         <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                         <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                        <Line type="monotone" dataKey="visitors" stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="1. Visitantes Únicos" />
-                        <Line type="monotone" dataKey="viewItem" stroke="#a855f7" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="2. Viu Produto" />
-                        <Line type="monotone" dataKey="cart" stroke="#f97316" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="3. Carrinho" />
-                        <Line type="monotone" dataKey="shipping" stroke="#0ea5e9" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="4. Entrega" />
-                        <Line type="monotone" dataKey="payment" stroke="#10b981" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} name="5. Pagamento" />
+                        <Line type="linear" dataKey="visitors" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="1. Visitantes Únicos">
+                           <LabelList dataKey="visitors" position="top" style={{ fontSize: '8.5px', fill: '#3b82f6', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
+                         </Line>
+                         <Line type="linear" dataKey="viewItem" stroke="#a855f7" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto">
+                           <LabelList dataKey="viewItem" position="top" style={{ fontSize: '8px', fill: '#a855f7', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
+                         </Line>
+                         <Line type="linear" dataKey="cart" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho">
+                           <LabelList dataKey="cart" position="bottom" style={{ fontSize: '8px', fill: '#f97316', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
+                         </Line>
+                         <Line type="linear" dataKey="shipping" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega">
+                           <LabelList dataKey="shipping" position="top" style={{ fontSize: '8px', fill: '#0ea5e9', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
+                         </Line>
+                         <Line type="linear" dataKey="payment" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento">
+                           <LabelList dataKey="payment" position="bottom" style={{ fontSize: '8.5px', fill: '#10b981', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
+                         </Line>
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
