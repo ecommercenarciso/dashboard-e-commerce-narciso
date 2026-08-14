@@ -530,6 +530,81 @@ export default function Dashboard() {
   }
   const freeShippingRate = totalVtexOrders > 0 ? (freeShippingCount / totalVtexOrders) * 100 : 0;
 
+  // New detailed logistics, cancelation, and payments indicators calculations:
+  // Cities mapping
+  const citiesDeliveryMap: Record<string, number> = {};
+  const citiesPickupMap: Record<string, number> = {};
+  currentVtexOrders.forEach(o => {
+    const city = o.city || 'Não Informado';
+    if (city === 'Não Informado') return;
+    if (o.deliveryChannel === 'pickup-in-point') {
+      citiesPickupMap[city] = (citiesPickupMap[city] || 0) + 1;
+    } else {
+      citiesDeliveryMap[city] = (citiesDeliveryMap[city] || 0) + 1;
+    }
+  });
+  const topDeliveryCities = Object.entries(citiesDeliveryMap).map(([city, count]) => ({ city, count })).sort((a,b)=>b.count-a.count).slice(0, 5);
+  const topPickupCities = Object.entries(citiesPickupMap).map(([city, count]) => ({ city, count })).sort((a,b)=>b.count-a.count).slice(0, 5);
+
+  // Carriers mapping
+  const carriersMap: Record<string, { count: number, revenue: number }> = {};
+  currentVtexOrders.forEach(o => {
+    const carrier = o.carrier || 'Não Informado';
+    if (carrier === 'Não Informado') return;
+    if (!carriersMap[carrier]) {
+      carriersMap[carrier] = { count: 0, revenue: 0 };
+    }
+    carriersMap[carrier].count += 1;
+    carriersMap[carrier].revenue += (o.totalValue || 0) / 100;
+  });
+  const carriersList = Object.entries(carriersMap).map(([name, data]) => ({ name, ...data })).sort((a,b)=>b.count-a.count).slice(0, 5);
+
+  // Cancellation reasons
+  const cancelReasonsMap: Record<string, number> = {};
+  currentVtexOrders.forEach(o => {
+    if (o.status === 'canceled') {
+      const reason = o.cancelReason || 'Outros / Não Especificado';
+      cancelReasonsMap[reason] = (cancelReasonsMap[reason] || 0) + 1;
+    }
+  });
+  const cancelReasonsList = Object.entries(cancelReasonsMap).map(([reason, count]) => ({ reason, count })).sort((a,b)=>b.count-a.count).slice(0, 5);
+
+  // Payment methods
+  const paymentMethodsMap: Record<string, number> = {};
+  currentVtexOrders.forEach(o => {
+    const method = o.paymentMethod || 'Pix';
+    paymentMethodsMap[method] = (paymentMethodsMap[method] || 0) + 1;
+  });
+  const paymentMethodsData = Object.entries(paymentMethodsMap).map(([name, value]) => ({ name, value })).sort((a,b)=>b.value-a.value);
+
+  // Installments mapping
+  const installmentsMap: Record<string, number> = {};
+  currentVtexOrders.forEach(o => {
+    if (o.paymentMethod !== 'Pix' && o.paymentMethod !== 'Boleto') {
+      const inst = `${o.installments || 1}x`;
+      installmentsMap[inst] = (installmentsMap[inst] || 0) + 1;
+    }
+  });
+  const installmentsData = Object.entries(installmentsMap).map(([name, value]) => ({ name, value })).sort((a,b) => {
+    const aNum = parseInt(a.name) || 1;
+    const bNum = parseInt(b.name) || 1;
+    return aNum - bNum;
+  });
+
+  // Time from Authorized to Invoiced (Order Stages SLA)
+  let totalDiffMs = 0;
+  let timedOrdersCount = 0;
+  currentVtexOrders.forEach(o => {
+    if (o.authorizedDate && o.invoicedDate) {
+      const diff = new Date(o.invoicedDate).getTime() - new Date(o.authorizedDate).getTime();
+      if (diff > 0) {
+        totalDiffMs += diff;
+        timedOrdersCount++;
+      }
+    }
+  });
+  const avgInvoiceTimeHours = timedOrdersCount > 0 ? (totalDiffMs / (1000 * 60 * 60 * timedOrdersCount)).toFixed(1) : '0';
+
 
   // Group VTEX orders by date and hour for chart integration - based on current period only
   const vtexOrdersByDateAndHour = currentVtexOrders.reduce((acc, order) => {
@@ -1320,63 +1395,128 @@ export default function Dashboard() {
           {activeTab === 'sales' && (
             <div className="flex flex-col gap-6 w-full">
               
-              {/* KPIs Superiores */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Linha 1: KPIs Superiores (Repetindo KPIs principais e adicionando Cancelados) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                {/* KPI 1: Saúde das Vendas */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-36">
+                {/* KPI 1: Faturamento */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Saúde das Vendas</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Faturamento Aprovado</span>
                     <h3 className="text-xl font-bold text-slate-800 mt-1">R$ {approvedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Faturamento Aprovado/Faturado</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Total Geral: R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                   </div>
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                    <span className="text-[11px] font-semibold text-rose-600">Taxa de Cancelamento: {canceledRate.toFixed(1)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium">Perda: R$ {canceledRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
-                  </div>
-                </div>
-
-                {/* KPI 2: Recorrência de Clientes */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-36">
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Recorrência de Clientes</span>
-                    <h3 className="text-xl font-bold text-slate-800 mt-1">{recurrentRate.toFixed(1)}%</h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Taxa de Clientes Recorrentes</p>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                    <span className="text-[11px] font-semibold text-blue-600">Clientes Únicos: {totalUniqueClients}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">Compraram 2x+: {recurrentClientsCount}</span>
+                  <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 border-t border-slate-100 pt-2.5">
+                    <span>Taxa de Aprovação: {totalVtexOrders > 0 ? ((approvedCount / totalVtexOrders) * 100).toFixed(1) : 0}%</span>
                   </div>
                 </div>
 
-                {/* KPI 3: Logística & Fretes */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-36">
+                {/* KPI 2: Ticket Médio */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Métricas de Frete</span>
-                    <h3 className="text-xl font-bold text-slate-800 mt-1">R$ {avgShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Custo de Frete Médio por Pedido</p>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ticket Médio (VTEX)</span>
+                    <h3 className="text-xl font-bold text-slate-800 mt-1">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                    <p className="text-[10px] text-slate-400 mt-1">Média por pedido aprovado</p>
                   </div>
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                    <span className="text-[11px] font-semibold text-emerald-600">Frete Grátis: {freeShippingRate.toFixed(1)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium">Retirada (Pickup): {pickupOrdersCount} ped.</span>
+                  <div className="text-[10px] text-slate-500 font-semibold border-t border-slate-100 pt-2.5">
+                    Valor médio por item: R$ {avgValuePerItem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                {/* KPI 3: Total de Pedidos */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total de Pedidos</span>
+                    <h3 className="text-xl font-bold text-slate-800 mt-1">{totalVtexOrders}</h3>
+                    <p className="text-[10px] text-slate-400 mt-1">Pedidos criados no período</p>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-semibold border-t border-slate-100 pt-2.5">
+                    Itens por pedido: {avgItemsPerOrder.toFixed(1)}
+                  </div>
+                </div>
+
+                {/* KPI 4: Pedidos Cancelados */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pedidos Cancelados</span>
+                    <h3 className="text-xl font-bold text-rose-600 mt-1">{canceledCount}</h3>
+                    <p className="text-[10px] text-rose-500 mt-1">Taxa de Cancelamento: {canceledRate.toFixed(1)}%</p>
+                  </div>
+                  <div className="text-[10px] text-rose-600 font-semibold border-t border-slate-100 pt-2.5 flex items-center justify-between">
+                    <span>Faturamento Perdido:</span>
+                    <span>R$ {canceledRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
                   </div>
                 </div>
 
               </div>
 
-              {/* Gráficos e Distribuições */}
+              {/* Linha 2: Cancelamentos & SLA (Tempos de Processamento) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Motivos de Cancelamento (2/3 de espaço) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[280px] lg:col-span-2">
+                  <h3 className="font-bold text-slate-800 text-sm mb-4">Motivos de Cancelamento</h3>
+                  <div className="overflow-y-auto flex-1">
+                    <table className="w-full text-left">
+                      <thead className="text-[10px] text-slate-500 uppercase border-b border-slate-100">
+                        <tr>
+                          <th className="pb-2 font-semibold">Motivo do Cancelamento</th>
+                          <th className="pb-2 font-semibold text-right">Pedidos</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
+                        {cancelReasonsList.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 font-medium">{item.reason}</td>
+                            <td className="py-2.5 text-right font-bold text-slate-800">{item.count}</td>
+                          </tr>
+                        ))}
+                        {cancelReasonsList.length === 0 && (
+                          <tr>
+                            <td colSpan={2} className="py-12 text-center text-slate-400">
+                              Nenhum pedido cancelado registrado no período.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Tempo de Processamento SLA (1/3 de espaço) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[280px] lg:col-span-1 justify-between">
+                  <h3 className="font-bold text-slate-800 text-sm mb-2">Tempo de Faturamento (SLA)</h3>
+                  <div className="text-center py-4">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aprovação → Faturamento</span>
+                    <h2 className="text-4xl font-extrabold text-indigo-600 mt-2">{avgInvoiceTimeHours}h</h2>
+                    <p className="text-xs text-slate-500 mt-1">Tempo médio de processamento</p>
+                  </div>
+                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Pedidos Faturados analisados:</span>
+                      <span className="font-bold text-slate-700">{approvedCount}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Estágio atual:</span>
+                      <span className="font-bold text-emerald-600">Fluxo Normal</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Linha 3: Gráficos de Meios de Pagamento e Parcelamento */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                {/* Saúde dos Pedidos (Distribuição de Status) */}
+                {/* Meios de Pagamento (Pizza) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[300px]">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Saúde dos Pedidos (Distribuição de Status)</h3>
+                  <h3 className="font-bold text-slate-800 text-sm mb-4">Meios de Pagamento mais Utilizados</h3>
                   <div className="flex-1 flex items-center justify-between">
                     <div className="w-[180px] h-[180px]">
-                      {pieData.length > 0 ? (
+                      {paymentMethodsData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
-                              data={pieData}
+                              data={paymentMethodsData}
                               cx="50%"
                               cy="50%"
                               innerRadius={50}
@@ -1384,9 +1524,10 @@ export default function Dashboard() {
                               paddingAngle={3}
                               dataKey="value"
                             >
-                              {pieData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
+                              {paymentMethodsData.map((entry, index) => {
+                                const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                                return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                              })}
                             </Pie>
                           </PieChart>
                         </ResponsiveContainer>
@@ -1396,44 +1537,134 @@ export default function Dashboard() {
                     </div>
                     
                     <div className="flex flex-col gap-2.5 pr-4 flex-1 pl-6">
-                      {pieData.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span className="text-slate-600 font-medium">{item.name}</span>
+                      {paymentMethodsData.map((item, idx) => {
+                        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                        return (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors[idx % colors.length] }} />
+                              <span className="text-slate-600 font-medium">{item.name}</span>
+                            </div>
+                            <span className="text-slate-800 font-bold">{item.value} ped.</span>
                           </div>
-                          <span className="text-slate-800 font-bold">{item.value} ped.</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
 
-                {/* Comportamento do Carrinho (Itens por Pedido) */}
+                {/* Parcelamento no Cartão (Barras) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[300px]">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Comportamento do Carrinho (Itens por Pedido)</h3>
+                  <h3 className="font-bold text-slate-800 text-sm mb-4">Parcelamento no Cartão de Crédito</h3>
                   <div className="flex-1 w-full min-h-[180px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={itemsDistData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                          formatter={(value: any) => [`${value} pedidos`, 'Volume']}
-                        />
-                        <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {installmentsData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={installmentsData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [`${value} compras`, 'Frequência']}
+                          />
+                          <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={45} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                        Nenhuma venda parcelada identificada no período.
+                      </div>
+                    )}
                   </div>
                 </div>
 
               </div>
 
-              {/* Tabelas de Detalhamento e Rankings */}
+              {/* Linha 4: Cidades (Retirada vs Entrega) e Transportadoras */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Ranking de Clientes (1/3 de espaço) */}
+                {/* Transportadoras (1/3) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1">
+                  <h3 className="font-bold text-slate-800 text-sm mb-4">Desempenho de Transportadoras</h3>
+                  <div className="overflow-y-auto flex-1">
+                    <table className="w-full text-left">
+                      <thead className="text-[10px] text-slate-500 uppercase border-b border-slate-100">
+                        <tr>
+                          <th className="pb-2 font-semibold">Parceiro / Courier</th>
+                          <th className="pb-2 font-semibold text-right">Pedidos</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
+                        {carriersList.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 font-medium">{item.name}</td>
+                            <td className="py-2.5 text-right font-bold text-slate-800">{item.count}</td>
+                          </tr>
+                        ))}
+                        {carriersList.length === 0 && (
+                          <tr>
+                            <td colSpan={2} className="py-12 text-center text-slate-400">
+                              Nenhuma transportadora identificada.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Cidades de Entrega e Retirada (2/3 de espaço) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-2">
+                  <h3 className="font-bold text-slate-800 text-sm mb-4">Destinos de Entrega vs. Cidades com Retirada</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
+                    
+                    {/* Cidades de Entrega */}
+                    <div className="flex flex-col overflow-hidden">
+                      <h4 className="text-xs font-bold text-indigo-600 mb-2 border-b border-slate-100 pb-1 flex items-center justify-between">
+                        <span>Cidades de Entrega</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Soma Encomendas</span>
+                      </h4>
+                      <div className="overflow-y-auto flex-1 pr-1">
+                        {topDeliveryCities.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center py-2 text-xs border-b border-slate-50">
+                            <span className="font-medium text-slate-600">{idx + 1}. {item.city}</span>
+                            <span className="font-bold text-slate-800">{item.count} ped.</span>
+                          </div>
+                        ))}
+                        {topDeliveryCities.length === 0 && (
+                          <p className="text-xs text-slate-400 text-center py-12">Nenhuma cidade de entrega.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Cidades de Retirada */}
+                    <div className="flex flex-col overflow-hidden">
+                      <h4 className="text-xs font-bold text-emerald-600 mb-2 border-b border-slate-100 pb-1 flex items-center justify-between">
+                        <span>Cidades com Retirada</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Retirados em Loja</span>
+                      </h4>
+                      <div className="overflow-y-auto flex-1 pr-1">
+                        {topPickupCities.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center py-2 text-xs border-b border-slate-50">
+                            <span className="font-medium text-slate-600">{idx + 1}. {item.city}</span>
+                            <span className="font-bold text-slate-800">{item.count} ped.</span>
+                          </div>
+                        ))}
+                        {topPickupCities.length === 0 && (
+                          <p className="text-xs text-slate-400 text-center py-12">Nenhuma cidade com retiradas.</p>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Linha 5: Tabelas de Detalhamento e Maiores Clientes */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Ranking de Clientes (1/3) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] lg:col-span-1">
                   <h3 className="font-bold text-slate-800 text-sm mb-4">Maiores Compradores</h3>
                   <div className="flex-1 overflow-y-auto pr-1">
@@ -1459,7 +1690,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Últimos Pedidos Detalhados (2/3 de espaço) */}
+                {/* Últimos Pedidos Detalhados (2/3) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[380px] lg:col-span-2 overflow-hidden">
                   <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50">
                     <div className="flex items-center gap-4">

@@ -486,18 +486,28 @@ app.post('/api/vtex/orders', async (c) => {
         const startMs = new Date(startDate).getTime();
         const endMs = new Date(endDate).getTime();
         const randDate = new Date(startMs + Math.random() * (endMs - startMs));
+        const authDate = new Date(randDate.getTime() + 10 * 60 * 1000); // 10 mins later
+        const invDate = new Date(authDate.getTime() + (Math.random() * 4 + 2) * 60 * 60 * 1000); // 2-6 hours later
+        const status = ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)];
         
         return {
           orderId: `v-${1000000000 + Math.floor(Math.random() * 9000000000)}`,
           creationDate: randDate.toISOString(),
+          authorizedDate: status !== 'payment-pending' ? authDate.toISOString() : null,
+          invoicedDate: status === 'invoiced' ? invDate.toISOString() : null,
           clientName: `Cliente Exemplo ${i + 1}`,
           totalValue: totalValue,
-          status: ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)],
+          status: status,
           items: [
             { name: 'Produto Exemplo', quantity: itemQuantity, price: itemPrice, sellingPrice: itemPrice }
           ],
           shippingValue: deliveryChannel === 'delivery' ? shippingValue : 0,
-          deliveryChannel: deliveryChannel
+          deliveryChannel: deliveryChannel,
+          city: ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba', 'Porto Alegre'][Math.floor(Math.random() * 5)],
+          carrier: deliveryChannel === 'delivery' ? ['Correios', 'Total Express', 'Jadlog'][Math.floor(Math.random() * 3)] : 'Retirada em Loja',
+          paymentMethod: ['Pix', 'Visa', 'MasterCard', 'Boleto'][Math.floor(Math.random() * 4)],
+          installments: Math.floor(Math.random() * 6) + 1,
+          cancelReason: status === 'canceled' ? ['Desistência do cliente', 'Erro na transação de pagamento', 'Prazo de entrega longo'][Math.floor(Math.random() * 3)] : null
         };
       });
 
@@ -511,18 +521,28 @@ app.post('/api/vtex/orders', async (c) => {
         const startMs = new Date(prevStartDate).getTime();
         const endMs = new Date(prevEndDate).getTime();
         const randDate = new Date(startMs + Math.random() * (endMs - startMs));
+        const authDate = new Date(randDate.getTime() + 10 * 60 * 1000);
+        const invDate = new Date(authDate.getTime() + (Math.random() * 4 + 2) * 60 * 60 * 1000);
+        const status = ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)];
         
         return {
           orderId: `v-${1000000000 + Math.floor(Math.random() * 9000000000)}`,
           creationDate: randDate.toISOString(),
+          authorizedDate: status !== 'payment-pending' ? authDate.toISOString() : null,
+          invoicedDate: status === 'invoiced' ? invDate.toISOString() : null,
           clientName: `Cliente Antigo ${i + 1}`,
           totalValue: totalValue,
-          status: ['invoiced', 'handling', 'canceled', 'payment-pending'][Math.floor(Math.random() * 4)],
+          status: status,
           items: [
             { name: 'Produto Exemplo Antigo', quantity: itemQuantity, price: itemPrice, sellingPrice: itemPrice }
           ],
           shippingValue: deliveryChannel === 'delivery' ? shippingValue : 0,
-          deliveryChannel: deliveryChannel
+          deliveryChannel: deliveryChannel,
+          city: ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba', 'Porto Alegre'][Math.floor(Math.random() * 5)],
+          carrier: deliveryChannel === 'delivery' ? ['Correios', 'Total Express', 'Jadlog'][Math.floor(Math.random() * 3)] : 'Retirada em Loja',
+          paymentMethod: ['Pix', 'Visa', 'MasterCard', 'Boleto'][Math.floor(Math.random() * 4)],
+          installments: Math.floor(Math.random() * 6) + 1,
+          cancelReason: status === 'canceled' ? ['Desistência do cliente', 'Erro na transação de pagamento', 'Prazo de entrega longo'][Math.floor(Math.random() * 3)] : null
         };
       }) : [];
       
@@ -591,10 +611,23 @@ app.post('/api/vtex/orders', async (c) => {
           
           const shippingTotal = o.totals?.find((t: any) => t.id === 'Shipping')?.value || 0;
           const deliveryChannel = o.shippingData?.logisticsInfo?.[0]?.deliveryChannel || 'delivery';
+          
+          const city = o.shippingData?.address?.city || 'Não Informado';
+          const carrier = o.shippingData?.logisticsInfo?.[0]?.selectedCourierName || o.shippingData?.logisticsInfo?.[0]?.selectedSla || 'Não Informado';
+          
+          const paymentMethod = o.paymentData?.transactions?.[0]?.payments?.[0]?.paymentSystemName || 'Pix';
+          const installments = o.paymentData?.transactions?.[0]?.payments?.[0]?.installments || 1;
+          
+          const cancelReason = o.cancelReason || null;
+          
+          const authorizedDate = o.authorizedDate || null;
+          const invoicedDate = o.packageAttachment?.packages?.[0]?.issuingDate || o.invoicedDate || null;
 
           return {
             orderId: o.orderId,
             creationDate: o.creationDate,
+            authorizedDate,
+            invoicedDate,
             clientName: o.clientProfileData ? `${o.clientProfileData.firstName} ${o.clientProfileData.lastName || ''}`.trim() : 'Cliente Indefinido',
             totalValue: o.value,
             status: o.status,
@@ -605,7 +638,12 @@ app.post('/api/vtex/orders', async (c) => {
               sellingPrice: item.sellingPrice
             })) || [],
             shippingValue: shippingTotal,
-            deliveryChannel: deliveryChannel
+            deliveryChannel: deliveryChannel,
+            city,
+            carrier,
+            paymentMethod,
+            installments,
+            cancelReason
           };
         } catch (err) {
           console.error(`Failed to fetch details for order ${order.orderId}`, err);
@@ -622,23 +660,37 @@ app.post('/api/vtex/orders', async (c) => {
       .map((o: any) => ({
         orderId: o.orderId,
         creationDate: o.creationDate,
+        authorizedDate: null,
+        invoicedDate: null,
         clientName: o.clientName || 'Cliente Indefinido',
         totalValue: o.totalValue || o.value,
         status: o.status,
         items: [],
         shippingValue: 0,
-        deliveryChannel: 'delivery'
+        deliveryChannel: 'delivery',
+        city: 'Não Informado',
+        carrier: 'Não Informado',
+        paymentMethod: 'Pix',
+        installments: 1,
+        cancelReason: null
       }));
 
     const formattedPrev = prevList.map((o: any) => ({
       orderId: o.orderId,
       creationDate: o.creationDate,
+      authorizedDate: null,
+      invoicedDate: null,
       clientName: o.clientName || 'Cliente Indefinido',
       totalValue: o.totalValue || o.value,
       status: o.status,
       items: [],
       shippingValue: 0,
-      deliveryChannel: 'delivery'
+      deliveryChannel: 'delivery',
+      city: 'Não Informado',
+      carrier: 'Não Informado',
+      paymentMethod: 'Pix',
+      installments: 1,
+      cancelReason: null
     }));
 
     const list = [...activeDetailed, ...remainingCurrent, ...formattedPrev];
