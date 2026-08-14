@@ -591,8 +591,8 @@ app.post('/api/vtex/orders', async (c) => {
     const currentList = currentRes.data.list || [];
     const prevList = prevRes.data.list || [];
 
-    // Only request details for the top 5 orders of the CURRENT period to avoid rate limits
-    const ordersToFetch = currentList.slice(0, 5);
+    // Increase details retrieval threshold to top 20 orders of the current period to identify all carriers and cities for small/medium sets
+    const ordersToFetch = currentList.slice(0, 20);
     
     const detailedOrders = await Promise.all(
       ordersToFetch.map(async (order: any) => {
