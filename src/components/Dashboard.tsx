@@ -714,9 +714,9 @@ export default function Dashboard() {
                   Diário
                 </button>
                 <button 
-                  onClick={() => handlePeriodChange('Últimos 7 dias')}
+                  onClick={() => handlePeriodChange('Esta semana (começa na segunda-feira)')}
                   className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                    periodType === 'Últimos 7 dias' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    periodType === 'Esta semana (começa na segunda-feira)' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   Semanal
