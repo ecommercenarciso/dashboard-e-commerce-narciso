@@ -1612,19 +1612,19 @@ export default function Dashboard() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Faturamento Itens</p>
-                        <p className="text-[20px] font-bold text-slate-900">R$ {totalItemsRevenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">R$ {totalItemsRevenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Quantidade Itens</p>
-                        <p className="text-[20px] font-bold text-slate-900">{totalItemsQuantity.toLocaleString('pt-BR')}</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">{totalItemsQuantity.toLocaleString('pt-BR')}</p>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Valor Médio Item</p>
-                        <p className="text-[20px] font-bold text-slate-900">R$ {avgValuePerItem.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">R$ {avgValuePerItem.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Itens por Pedido</p>
-                        <p className="text-[20px] font-bold text-slate-900">{avgItemsPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">{avgItemsPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.</p>
                       </div>
                     </div>
                   </div>
@@ -1638,19 +1638,19 @@ export default function Dashboard() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Retiradas</p>
-                        <p className="text-[20px] font-bold text-slate-900">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Entregas</p>
-                        <p className="text-[20px] font-bold text-slate-900">{deliveryOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">{deliveryOrdersCount.toLocaleString('pt-BR')} ped.</p>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Total Fretes</p>
-                        <p className="text-[20px] font-bold text-slate-900">R$ {totalShippingValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">R$ {totalShippingValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Média Frete</p>
-                        <p className="text-[20px] font-bold text-slate-900">R$ {avgShippingValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">R$ {avgShippingValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
                       </div>
                     </div>
                   </div>
