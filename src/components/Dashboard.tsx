@@ -2011,13 +2011,15 @@ export default function Dashboard() {
                     <div className="flex flex-col gap-2 pr-2 flex-1 pl-4 overflow-y-auto max-h-[160px]">
                       {paymentMethodsData.map((item, idx) => {
                         const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                        const totalPaymentsCount = paymentMethodsData.reduce((acc, curr) => acc + curr.value, 0);
+                        const percentage = totalPaymentsCount > 0 ? ((item.value / totalPaymentsCount) * 100).toFixed(1) : '0.0';
                         return (
                           <div key={idx} className="flex items-center justify-between text-[11px]">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
                               <span className="text-slate-600 font-medium truncate">{item.name}</span>
                             </div>
-                            <span className="text-slate-800 font-bold shrink-0">{item.value} ped.</span>
+                            <span className="text-slate-800 font-bold shrink-0">{item.value} ped. ({percentage}%)</span>
                           </div>
                         );
                       })}
