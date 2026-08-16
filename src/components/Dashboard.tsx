@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 
@@ -36,6 +36,14 @@ export default function Dashboard() {
   const [isCumulative, setIsCumulative] = useState(false);
   const [salesChartTab, setSalesChartTab] = useState<'revenue' | 'orders' | 'ticket'>('revenue');
   const [citiesTableTab, setCitiesTableTab] = useState<'delivery' | 'pickup'>('delivery');
+
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [tempPeriodType, setTempPeriodType] = useState(periodType);
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
+  const [tempComparisonType, setTempComparisonType] = useState<'days' | 'period' | 'custom'>('period');
+  const [tempCompareStart, setTempCompareStart] = useState('');
+  const [tempCompareEnd, setTempCompareEnd] = useState('');
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -345,6 +353,171 @@ export default function Dashboard() {
         status: [...filters.status, status]
       });
     }
+  };
+
+  const openDatePicker = () => {
+    setTempPeriodType(periodType);
+    setTempStartDate(filters.startDate);
+    setTempEndDate(filters.endDate);
+    setTempComparisonType(comparisonType);
+    setTempCompareStart(filters.customCompareStart || '');
+    setTempCompareEnd(filters.customCompareEnd || '');
+    setIsDatePickerOpen(true);
+  };
+
+  const handleTempPeriodChange = (type: string) => {
+    setTempPeriodType(type);
+    if (type === 'Fixo') return;
+
+    const today = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    switch (type) {
+      case 'Hoje':
+        start = today;
+        end = today;
+        break;
+      case 'Ontem':
+        start = subDays(today, 1);
+        end = subDays(today, 1);
+        break;
+      case 'Esta semana (começa no domingo)':
+        start = startOfWeek(today, { weekStartsOn: 0 });
+        end = today;
+        break;
+      case 'Esta semana (começa na segunda-feira)':
+        start = startOfWeek(today, { weekStartsOn: 1 });
+        end = today;
+        break;
+      case 'Este mês':
+        start = startOfMonth(today);
+        end = endOfMonth(today);
+        break;
+      case 'Este mês, até agora':
+        start = startOfMonth(today);
+        end = today;
+        break;
+      case 'Este trimestre':
+        start = startOfQuarter(today);
+        end = endOfQuarter(today);
+        break;
+      case 'Este trimestre, até agora':
+        start = startOfQuarter(today);
+        end = today;
+        break;
+      case 'Este ano':
+        start = startOfYear(today);
+        end = endOfYear(today);
+        break;
+      case 'Este ano, até agora':
+        start = startOfYear(today);
+        end = today;
+        break;
+      case 'Últimos 7 dias':
+        start = subDays(today, 6);
+        end = today;
+        break;
+      case 'Últimos 14 dias':
+        start = subDays(today, 13);
+        end = today;
+        break;
+      case 'Últimos 28 dias':
+        start = subDays(today, 27);
+        end = today;
+        break;
+      case 'Últimos 30 dias':
+        start = subDays(today, 29);
+        end = today;
+        break;
+      case 'Semana passada (começa no domingo)':
+        start = startOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
+        end = endOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
+        break;
+      case 'Semana passada (começa na segunda-feira)':
+        start = startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
+        end = endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
+        break;
+      case 'Mês passado':
+        start = startOfMonth(subMonths(today, 1));
+        end = endOfMonth(subMonths(today, 1));
+        break;
+      case 'Trimestre passado':
+        start = startOfQuarter(subQuarters(today, 1));
+        end = endOfQuarter(subQuarters(today, 1));
+        break;
+      case 'Ano passado':
+        start = startOfYear(subYears(today, 1));
+        end = endOfYear(subYears(today, 1));
+        break;
+    }
+
+    setTempStartDate(format(start, 'yyyy-MM-dd'));
+    setTempEndDate(format(end, 'yyyy-MM-dd'));
+  };
+
+  const getCompareDates = (startDate: string, endDate: string, compType: 'days' | 'period' | 'custom', pType: string) => {
+    if (compType === 'custom') {
+      return {
+        start: tempCompareStart ? new Date(tempCompareStart + 'T00:00:00') : new Date(),
+        end: tempCompareEnd ? new Date(tempCompareEnd + 'T00:00:00') : new Date()
+      };
+    }
+
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let prevStart = new Date(start);
+    let prevEnd = new Date(end);
+
+    if (compType === 'days') {
+      prevStart.setDate(prevStart.getDate() - diffDays);
+      prevEnd.setDate(prevEnd.getDate() - diffDays);
+    } else {
+      const p = pType;
+      if (p === 'Hoje' || p === 'Ontem') {
+        prevStart = subDays(start, 1);
+        prevEnd = subDays(end, 1);
+      } else if (p.includes('semana') || p === 'Últimos 7 dias') {
+        prevStart = subDays(start, 7);
+        prevEnd = subDays(end, 7);
+      } else if (p === 'Últimos 14 dias') {
+        prevStart = subDays(start, 14);
+        prevEnd = subDays(end, 14);
+      } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado') {
+        prevStart = subMonths(start, 1);
+        prevEnd = subMonths(end, 1);
+      } else if (p.includes('trimestre') || p === 'Trimestre passado') {
+        prevStart = subQuarters(start, 1);
+        prevEnd = subQuarters(end, 1);
+      } else if (p.includes('ano') || p === 'Ano passado') {
+        prevStart = subYears(start, 1);
+        prevEnd = subYears(end, 1);
+      } else {
+        if (diffDays >= 6 && diffDays <= 8) {
+          prevStart = subDays(start, 7);
+          prevEnd = subDays(end, 7);
+        } else if (diffDays >= 13 && diffDays <= 15) {
+          prevStart = subDays(start, 14);
+          prevEnd = subDays(end, 14);
+        } else if (diffDays >= 27 && diffDays <= 32) {
+          prevStart = subMonths(start, 1);
+          prevEnd = subMonths(end, 1);
+        } else if (diffDays >= 80 && diffDays <= 95) {
+          prevStart = subQuarters(start, 1);
+          prevEnd = subQuarters(end, 1);
+        } else if (diffDays >= 350 && diffDays <= 380) {
+          prevStart = subYears(start, 1);
+          prevEnd = subYears(end, 1);
+        } else {
+          prevStart.setDate(prevStart.getDate() - diffDays);
+          prevEnd.setDate(prevEnd.getDate() - diffDays);
+        }
+      }
+    }
+    return { start: prevStart, end: prevEnd };
   };
 
   const handlePeriodChange = (period: string) => {
@@ -1314,113 +1487,170 @@ export default function Dashboard() {
               
               {/* FILTROS DE DADOS */}
               <div className="flex flex-wrap items-start gap-3">
-                {/* Period Type Selector */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Período</span>
-                  <select 
-                    value={periodType}
-                    onChange={(e) => handlePeriodChange(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36"
+                {/* VTEX-style period selector button */}
+                <div className="relative">
+                  <button
+                    onClick={openDatePicker}
+                    className="flex items-center gap-1 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs rounded-lg px-3 h-9 text-slate-700 transition-all font-semibold outline-none cursor-pointer"
                   >
-                    <option value="Fixo">Fixo</option>
-                    <option value="Hoje">Hoje</option>
-                    <option value="Ontem">Ontem</option>
-                    <optgroup label="Esta semana">
-                      <option value="Esta semana (começa no domingo)">Esta semana (D)</option>
-                      <option value="Esta semana (começa na segunda-feira)">Esta semana (S)</option>
-                    </optgroup>
-                    <optgroup label="Este mês">
-                      <option value="Este mês">Este mês</option>
-                      <option value="Este mês, até agora">Este mês, até agora</option>
-                    </optgroup>
-                    <optgroup label="Este trimestre">
-                      <option value="Este trimestre">Este trimestre</option>
-                      <option value="Este trimestre, até agora">Este trimestre, até agora</option>
-                    </optgroup>
-                    <optgroup label="Este ano">
-                      <option value="Este ano">Este ano</option>
-                      <option value="Este ano, até agora">Este ano, até agora</option>
-                    </optgroup>
-                    <optgroup label="Últimos">
-                      <option value="Últimos 7 dias">Últimos 7 dias</option>
-                      <option value="Últimos 14 dias">Últimos 14 dias</option>
-                      <option value="Últimos 28 dias">Últimos 28 dias</option>
-                      <option value="Últimos 30 dias">Últimos 30 dias</option>
-                    </optgroup>
-                    <optgroup label="Passado">
-                      <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
-                      <option value="Semana passada (começa na segunda-feira)">Semana passada (S)</option>
-                      <option value="Mês passado">Mês passado</option>
-                      <option value="Trimestre passado">Trimestre passado</option>
-                      <option value="Ano passado">Ano passado</option>
-                    </optgroup>
-                  </select>
+                    <Calendar className="w-3.5 h-3.5 text-slate-500 mr-1.5 shrink-0" />
+                    <span>Período: <strong className="text-indigo-600">{periodType}</strong></span>
+                    <span className="text-slate-300 mx-1.5">|</span>
+                    <span className="text-slate-500 font-normal">Comparado com: <strong>{comparisonType === 'custom' ? 'Personalizado' : comparisonType === 'days' ? 'Dias anteriores' : 'Equivalente anterior'}</strong> ({format(prevStart, 'dd/MM/yyyy')} - {format(prevEnd, 'dd/MM/yyyy')})</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1.5 shrink-0" />
+                  </button>
+
+                  {isDatePickerOpen && (
+                    <div className="absolute top-[42px] left-0 z-50 w-[420px] bg-white border border-slate-200 rounded-lg shadow-xl p-5 flex flex-col gap-4 text-slate-800">
+                      {/* Periodo principal */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período principal:</span>
+                          <select
+                            value={tempPeriodType}
+                            onChange={(e) => handleTempPeriodChange(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-700 outline-none w-52 font-semibold"
+                          >
+                            <option value="Fixo">Fixo / Personalizado</option>
+                            <option value="Hoje">Hoje</option>
+                            <option value="Ontem">Ontem</option>
+                            <optgroup label="Esta semana">
+                              <option value="Esta semana (começa no domingo)">Esta semana (D)</option>
+                              <option value="Esta semana (começa na segunda-feira)">Esta semana (S)</option>
+                            </optgroup>
+                            <optgroup label="Este mês">
+                              <option value="Este mês">Este mês</option>
+                              <option value="Este mês, até agora">Este mês, até agora</option>
+                            </optgroup>
+                            <optgroup label="Este trimestre">
+                              <option value="Este trimestre">Este trimestre</option>
+                              <option value="Este trimestre, até agora">Este trimestre, até agora</option>
+                            </optgroup>
+                            <optgroup label="Este ano">
+                              <option value="Este ano">Este ano</option>
+                              <option value="Este ano, até agora">Este ano, até agora</option>
+                            </optgroup>
+                            <optgroup label="Últimos">
+                              <option value="Últimos 7 dias">Últimos 7 dias</option>
+                              <option value="Últimos 14 dias">Últimos 14 dias</option>
+                              <option value="Últimos 28 dias">Últimos 28 dias</option>
+                              <option value="Últimos 30 dias">Últimos 30 dias</option>
+                            </optgroup>
+                            <optgroup label="Passado">
+                              <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
+                              <option value="Semana passada (começa na segunda-feira)">Semana passada (S)</option>
+                              <option value="Mês passado">Mês passado</option>
+                              <option value="Trimestre passado">Trimestre passado</option>
+                              <option value="Ano passado">Ano passado</option>
+                            </optgroup>
+                          </select>
+                        </div>
+                        
+                        {/* Start/End Inputs for Main Period */}
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de início</span>
+                            <input
+                              type="date"
+                              value={tempStartDate}
+                              disabled={tempPeriodType !== 'Fixo'}
+                              onChange={(e) => setTempStartDate(e.target.value)}
+                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de término</span>
+                            <input
+                              type="date"
+                              value={tempEndDate}
+                              disabled={tempPeriodType !== 'Fixo'}
+                              onChange={(e) => setTempEndDate(e.target.value)}
+                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Comparar com */}
+                      <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Comparar com:</span>
+                          <select
+                            value={tempComparisonType}
+                            onChange={(e) => setTempComparisonType(e.target.value as 'days' | 'period' | 'custom')}
+                            className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-700 outline-none w-52 font-semibold"
+                          >
+                            <option value="period">Período equivalente anterior</option>
+                            <option value="days">Mesmo nº de dias anteriores</option>
+                            <option value="custom">Personalizar...</option>
+                          </select>
+                        </div>
+
+                        {/* Start/End Inputs for Comparison Period */}
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de início</span>
+                            <input
+                              type="date"
+                              value={tempComparisonType === 'custom' ? tempCompareStart : format(getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType).start, 'yyyy-MM-dd')}
+                              disabled={tempComparisonType !== 'custom'}
+                              onChange={(e) => setTempCompareStart(e.target.value)}
+                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de término</span>
+                            <input
+                              type="date"
+                              value={tempComparisonType === 'custom' ? tempCompareEnd : format(getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType).end, 'yyyy-MM-dd')}
+                              disabled={tempComparisonType !== 'custom'}
+                              onChange={(e) => setTempCompareEnd(e.target.value)}
+                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cancelar / Aplicar buttons */}
+                      <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsDatePickerOpen(false)}
+                          className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPeriodType(tempPeriodType);
+                            setComparisonType(tempComparisonType);
+                            
+                            let finalCompStart = tempCompareStart;
+                            let finalCompEnd = tempCompareEnd;
+                            if (tempComparisonType !== 'custom') {
+                              const calc = getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType);
+                              finalCompStart = format(calc.start, 'yyyy-MM-dd');
+                              finalCompEnd = format(calc.end, 'yyyy-MM-dd');
+                            }
+
+                            setFilters({
+                              ...filters,
+                              startDate: tempStartDate,
+                              endDate: tempEndDate,
+                              customCompareStart: finalCompStart,
+                              customCompareEnd: finalCompEnd
+                            });
+                            setIsDatePickerOpen(false);
+                          }}
+                          className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm cursor-pointer"
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Start Date (Fixo only) */}
-                {periodType === 'Fixo' && (
-                  <>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Início</span>
-                      <input 
-                        type="date" 
-                        value={filters.startDate}
-                        onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Fim</span>
-                      <input 
-                        type="date" 
-                        value={filters.endDate}
-                        onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Comparison Type */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Comparar com</span>
-                  <select 
-                    value={comparisonType}
-                    onChange={(e) => setComparisonType(e.target.value as 'days' | 'period' | 'custom')}
-                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-44"
-                  >
-                    <option value="period">Período equivalente anterior</option>
-                    <option value="days">Mesmo nº de dias anteriores</option>
-                    <option value="custom">Período personalizado</option>
-                  </select>
-                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5 whitespace-nowrap bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded">
-                    vs {format(prevStart, 'dd/MM/yyyy')} a {format(prevEnd, 'dd/MM/yyyy')}
-                  </span>
-                </div>
-
-                {/* Custom Comparison Dates */}
-                {comparisonType === 'custom' && (
-                  <>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Início (Comp.)</span>
-                      <input 
-                        type="date" 
-                        value={filters.customCompareStart}
-                        onChange={(e) => setFilters({...filters, customCompareStart: e.target.value})}
-                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Fim (Comp.)</span>
-                      <input 
-                        type="date" 
-                        value={filters.customCompareEnd}
-                        onChange={(e) => setFilters({...filters, customCompareEnd: e.target.value})}
-                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
-                      />
-                    </div>
-                  </>
-                )}
 
                 {/* Status Selector Dropdown */}
                 <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
@@ -1428,7 +1658,7 @@ export default function Dashboard() {
                   <button 
                     type="button"
                     onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36 flex items-center justify-between gap-1 text-left"
+                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36 flex items-center justify-between gap-1 text-left cursor-pointer"
                   >
                     <span className="truncate">
                       {filters.status.length === 0 || filters.status.length === 5
@@ -1927,66 +2157,75 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              {/* CAMADA 2: EVOLUÇÃO TEMPORAL (Unificação de Gráficos) */}
-              <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] w-full">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider">Evolução de Vendas (VTEX)</h3>
-                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
-                    {(['revenue', 'orders', 'ticket'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setSalesChartTab(tab)}
-                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                          salesChartTab === tab ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        {tab === 'revenue' ? 'Faturamento' : tab === 'orders' ? 'Pedidos' : 'Ticket Médio'}
-                      </button>
-                    ))}
+              {/* CAMADA 2: EVOLUÇÃO TEMPORAL (3 Gráficos Separados Lado a Lado) */}
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
+                {/* Gráfico 1: Faturamento */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[300px] w-full">
+                  <h3 className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Evolução do Faturamento</h3>
+                  <div className="flex-1 w-full min-h-0">
+                    {finalChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={finalChartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
+                          />
+                          <Line type="linear" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex-1 w-full min-h-0">
-                  {finalChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={finalChartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
-                        {salesChartTab === 'revenue' && (
-                          <>
-                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
-                            />
-                            <Line type="linear" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                          </>
-                        )}
-                        {salesChartTab === 'orders' && (
-                          <>
-                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value: any) => [value, 'Pedidos']}
-                            />
-                            <Line type="linear" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                          </>
-                        )}
-                        {salesChartTab === 'ticket' && (
-                          <>
-                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Ticket Médio']}
-                            />
-                            <Line type="linear" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                          </>
-                        )}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados de tendência</div>
-                  )}
+                {/* Gráfico 2: Pedidos */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[300px] w-full">
+                  <h3 className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Evolução de Pedidos</h3>
+                  <div className="flex-1 w-full min-h-0">
+                    {finalChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={finalChartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [value, 'Pedidos']}
+                          />
+                          <Line type="linear" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Gráfico 3: Ticket Médio */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[300px] w-full">
+                  <h3 className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Evolução do Ticket Médio</h3>
+                  <div className="flex-1 w-full min-h-0">
+                    {finalChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={finalChartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Ticket Médio']}
+                          />
+                          <Line type="linear" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
+                    )}
+                  </div>
                 </div>
               </section>
 
