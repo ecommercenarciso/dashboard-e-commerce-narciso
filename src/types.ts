@@ -26,6 +26,8 @@ export interface DashboardFilter {
   category: string;
   minConversionRate: number;
   status: string[];
+  customCompareStart?: string;
+  customCompareEnd?: string;
 }
 
 export interface FunnelData {

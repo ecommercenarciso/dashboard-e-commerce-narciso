@@ -17,7 +17,7 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals'>('executive');
   const [periodType, setPeriodType] = useState('Este mês, até agora');
-  const [comparisonType, setComparisonType] = useState<'days' | 'period'>('period');
+  const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
   const [chartInterval, setChartInterval] = useState<'hour' | 'day' | 'week' | 'month'>('day');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
@@ -114,6 +114,8 @@ export default function Dashboard() {
     category: 'All',
     minConversionRate: 0,
     status: ['invoiced', 'handling', 'payment-pending', 'payment-approved'],
+    customCompareStart: format(subMonths(startOfMonth(new Date()), 1), 'yyyy-MM-dd'),
+    customCompareEnd: format(subMonths(new Date(), 1), 'yyyy-MM-dd'),
   });
 
   const fetchData = async () => {
@@ -128,7 +130,10 @@ export default function Dashboard() {
       let prevStart = new Date(start);
       let prevEnd = new Date(end);
 
-      if (comparisonType === 'days') {
+      if (comparisonType === 'custom' && filters.customCompareStart && filters.customCompareEnd) {
+        prevStart = new Date(filters.customCompareStart);
+        prevEnd = new Date(filters.customCompareEnd);
+      } else if (comparisonType === 'days') {
         prevStart.setDate(prevStart.getDate() - diffDays);
         prevEnd.setDate(prevEnd.getDate() - diffDays);
       } else {
@@ -455,7 +460,10 @@ export default function Dashboard() {
   let prevStart = new Date(start);
   let prevEnd = new Date(end);
 
-  if (comparisonType === 'days') {
+  if (comparisonType === 'custom' && filters.customCompareStart && filters.customCompareEnd) {
+    prevStart = new Date(filters.customCompareStart);
+    prevEnd = new Date(filters.customCompareEnd);
+  } else if (comparisonType === 'days') {
     prevStart.setDate(prevStart.getDate() - diffDays);
     prevEnd.setDate(prevEnd.getDate() - diffDays);
   } else {
@@ -1378,16 +1386,41 @@ export default function Dashboard() {
                   <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Comparar com</span>
                   <select 
                     value={comparisonType}
-                    onChange={(e) => setComparisonType(e.target.value as 'days' | 'period')}
+                    onChange={(e) => setComparisonType(e.target.value as 'days' | 'period' | 'custom')}
                     className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-44"
                   >
                     <option value="period">Período equivalente anterior</option>
                     <option value="days">Mesmo nº de dias anteriores</option>
+                    <option value="custom">Período personalizado</option>
                   </select>
                   <span className="text-[9px] text-slate-400 font-semibold mt-0.5 whitespace-nowrap bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded">
                     vs {format(prevStart, 'dd/MM/yyyy')} a {format(prevEnd, 'dd/MM/yyyy')}
                   </span>
                 </div>
+
+                {/* Custom Comparison Dates */}
+                {comparisonType === 'custom' && (
+                  <>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Início (Comp.)</span>
+                      <input 
+                        type="date" 
+                        value={filters.customCompareStart}
+                        onChange={(e) => setFilters({...filters, customCompareStart: e.target.value})}
+                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Fim (Comp.)</span>
+                      <input 
+                        type="date" 
+                        value={filters.customCompareEnd}
+                        onChange={(e) => setFilters({...filters, customCompareEnd: e.target.value})}
+                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Status Selector Dropdown */}
                 <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
