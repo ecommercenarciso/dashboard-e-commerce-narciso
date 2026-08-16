@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [stateSortDirection, setStateSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isCumulative, setIsCumulative] = useState(false);
   const [salesChartTab, setSalesChartTab] = useState<'revenue' | 'orders' | 'ticket'>('revenue');
+  const [citiesTableTab, setCitiesTableTab] = useState<'delivery' | 'pickup'>('delivery');
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -2016,14 +2017,14 @@ export default function Dashboard() {
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] justify-between">
                   <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-indigo-500" />
-                    Fidelidade e Retenção
+                    Fidelidade e Operações
                   </h3>
-                  <div className="flex-1 flex flex-col gap-4 justify-center">
+                  <div className="flex-1 flex flex-col gap-2.5 justify-center">
                     {/* Recorrência */}
-                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex items-center justify-between">
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between">
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase font-semibold">Taxa de Recorrência</p>
-                        <p className="text-[20px] font-bold text-slate-900 mt-0.5">{recurrentRate.toFixed(1)}%</p>
+                        <p className="text-[18px] font-bold text-slate-900 mt-0.5">{recurrentRate.toFixed(1)}%</p>
                       </div>
                       <div className="text-right text-[10px] text-slate-400">
                         <p>Únicos: <span className="font-semibold text-slate-600">{totalUniqueClients}</span></p>
@@ -2032,21 +2033,32 @@ export default function Dashboard() {
                     </div>
                     
                     {/* LTV */}
-                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex items-center justify-between">
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between">
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase font-semibold">Ticket por Comprador (LTV)</p>
-                        <p className="text-[20px] font-bold text-emerald-600 mt-0.5">R$ {avgRevenuePerClient.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                        <p className="text-[18px] font-bold text-emerald-600 mt-0.5">R$ {avgRevenuePerClient.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                       </div>
                       <div className="text-right text-[10px] text-slate-400">
                         <p>Total: <span className="font-semibold text-slate-600">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></p>
+                      </div>
+                    </div>
+
+                    {/* SLA Faturamento */}
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold">Tempo de Faturamento (SLA)</p>
+                        <p className="text-[18px] font-bold text-indigo-600 mt-0.5">{avgInvoiceTimeHours}h</p>
+                      </div>
+                      <div className="text-right text-[10px] text-slate-400">
+                        <p>Faturados: <span className="font-semibold text-slate-600">{approvedCount}</span></p>
                       </div>
                     </div>
                   </div>
                 </div>
               </section>
 
-              {/* CAMADA 3: LOGÍSTICA E GEOGRAFIA (Grid 50% / 50%) */}
-              <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+              {/* CAMADA 3: LOGÍSTICA E GEOGRAFIA (Grid 33% / 33% / 33%) */}
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
                 {/* Desempenho de Transportadoras */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
                   <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Desempenho de Transportadoras</h3>
@@ -2120,6 +2132,99 @@ export default function Dashboard() {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+
+                {/* Cidades (Entrega vs Retirada) */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider">Cidades (Destinos)</h3>
+                    <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                      <button
+                        onClick={() => setCitiesTableTab('delivery')}
+                        className={`px-2.5 py-0.5 text-[10px] font-bold rounded transition-colors ${
+                          citiesTableTab === 'delivery' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Entrega
+                      </button>
+                      <button
+                        onClick={() => setCitiesTableTab('pickup')}
+                        className={`px-2.5 py-0.5 text-[10px] font-bold rounded transition-colors ${
+                          citiesTableTab === 'pickup' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Retirada
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-y-auto flex-1 pr-1">
+                    {citiesTableTab === 'delivery' ? (
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                            <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('city')}>
+                              Cidade {deliverySortField === 'city' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('count')}>
+                              Pedidos {deliverySortField === 'count' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('revenue')}>
+                              Valor {deliverySortField === 'revenue' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          {topDeliveryCities.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-3 font-medium text-left truncate max-w-[100px]" title={item.city}>{item.city}</td>
+                              <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
+                              <td className="py-3 text-right font-semibold text-emerald-600">
+                                R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                              </td>
+                            </tr>
+                          ))}
+                          {topDeliveryCities.length === 0 && (
+                            <tr>
+                              <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Sem cidades de entrega.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                            <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('city')}>
+                              Cidade {pickupSortField === 'city' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('count')}>
+                              Pedidos {pickupSortField === 'count' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('revenue')}>
+                              Valor {pickupSortField === 'revenue' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          {topPickupCities.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-3 font-medium text-left truncate max-w-[100px]" title={item.city}>{item.city}</td>
+                              <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
+                              <td className="py-3 text-right font-semibold text-emerald-600">
+                                R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                              </td>
+                            </tr>
+                          ))}
+                          {topPickupCities.length === 0 && (
+                            <tr>
+                              <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Sem cidades de retirada.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </div>
               </section>
