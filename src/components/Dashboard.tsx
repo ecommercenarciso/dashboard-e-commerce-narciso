@@ -1554,118 +1554,57 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Status dos Pedidos VTEX */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] shrink-0">
-                <h3 className="font-bold text-slate-800 text-sm mb-4 border-b border-slate-100 pb-2">Status dos Pedidos (VTEX)</h3>
+              {/* Resumo de Desempenho VTEX */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] shrink-0 justify-between">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm mb-1 border-b border-slate-100 pb-2 flex items-center justify-between">
+                    <span>Desempenho VTEX</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Período: {daysCount} {daysCount === 1 ? 'dia' : 'dias'}</span>
+                  </h3>
+                </div>
                 
-                {pieData.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
-                    {loading ? 'Carregando status...' : 'Nenhum pedido no período'}
-                  </div>
-                ) : (
-                  <div className="flex-1 flex items-center justify-between gap-2">
-                    <div className="w-[140px] h-[140px] relative">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={35}
-                            outerRadius={55}
-                            paddingAngle={3}
-                            dataKey="value"
-                          >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value: number) => [value, 'Pedidos']} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-lg font-bold text-slate-800">{totalVtexOrders}</span>
-                        <span className="text-[9px] text-slate-400 uppercase font-semibold">Total</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto max-h-[160px] pr-1">
-                      {pieData.map((item, idx) => {
-                        const pct = totalVtexOrders > 0 ? ((item.value / totalVtexOrders) * 100).toFixed(0) : 0;
-                        return (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></div>
-                              <span className="text-slate-600 truncate">{item.name}</span>
-                            </div>
-                            <span className="font-semibold text-slate-800 pl-2">{item.value} ({pct}%)</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <div className="flex-1 flex items-center">
+                  <table className="w-full text-left text-xs text-slate-600">
+                    <thead>
+                      <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
+                        <th className="py-2 font-semibold">Métrica</th>
+                        <th className="py-2 font-semibold text-right">Soma (Total)</th>
+                        <th className="py-2 font-semibold text-right">Média/Dia</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      <tr className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 font-semibold text-slate-800">Faturamento</td>
+                        <td className="py-3 text-right font-bold text-slate-800">
+                          R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 text-right font-semibold text-slate-500">
+                          R$ {(totalVtexRevenue / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 font-semibold text-slate-800">Pedidos</td>
+                        <td className="py-3 text-right font-bold text-slate-800">
+                          {totalVtexOrders.toLocaleString('pt-BR')}
+                        </td>
+                        <td className="py-3 text-right font-semibold text-slate-500">
+                          {(totalVtexOrders / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 font-semibold text-slate-800">Ticket Médio</td>
+                        <td className="py-3 text-right font-bold text-indigo-600">
+                          R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 text-right font-semibold text-indigo-500">
+                          R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </section>
-
-          {/* Tabela de Status dos Pedidos VTEX */}
-          <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm">Detalhamento por Status dos Pedidos (VTEX)</h3>
-              <p className="text-xs text-slate-400">Resumo acumulado, médias diárias e ticket médio por status de pedido no período de {daysCount} {daysCount === 1 ? 'dia' : 'dias'}</p>
-            </div>
-            
-            {pieData.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-xs">
-                {loading ? 'Carregando status...' : 'Nenhum pedido no período'}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-600">
-                  <thead className="text-[10px] text-slate-500 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Status</th>
-                      <th className="px-4 py-3 font-semibold text-right">Soma Pedidos</th>
-                      <th className="px-4 py-3 font-semibold text-right">Soma Faturamento</th>
-                      <th className="px-4 py-3 font-semibold text-right">Média Pedidos/Dia</th>
-                      <th className="px-4 py-3 font-semibold text-right">Média Faturamento/Dia</th>
-                      <th className="px-4 py-3 font-semibold text-right">Ticket Médio</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {pieData.map((item, idx) => {
-                      const avgOrders = item.value / daysCount;
-                      const avgRev = item.revenue / daysCount;
-                      const tktMed = item.value > 0 ? (item.revenue / item.value) : 0;
-                      
-                      return (
-                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-3 font-medium text-slate-800 flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                            {item.name}
-                          </td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-700">{item.value.toLocaleString('pt-BR')}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-700">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-500">{avgOrders.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-500">R$ {avgRev.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="px-4 py-3 text-right font-bold text-indigo-600">R$ {tktMed.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        </tr>
-                      );
-                    })}
-                    {/* Linha de Total */}
-                    <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
-                      <td className="px-4 py-3 text-slate-800">Total</td>
-                      <td className="px-4 py-3 text-right text-slate-800">{totalVtexOrders.toLocaleString('pt-BR')}</td>
-                      <td className="px-4 py-3 text-right text-slate-800">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td className="px-4 py-3 text-right text-slate-600">{(totalVtexOrders / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
-                      <td className="px-4 py-3 text-right text-slate-600">R$ {(totalVtexRevenue / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td className="px-4 py-3 text-right text-indigo-700">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
           </section>
         </>
       )}
