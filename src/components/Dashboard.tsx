@@ -31,6 +31,8 @@ export default function Dashboard() {
   const [pickupSortDirection, setPickupSortDirection] = useState<'asc' | 'desc'>('desc');
   const [carrierSortField, setCarrierSortField] = useState<'name' | 'count' | 'revenue'>('count');
   const [carrierSortDirection, setCarrierSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [stateSortField, setStateSortField] = useState<'state' | 'count' | 'revenue'>('count');
+  const [stateSortDirection, setStateSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const handleBuyerSort = (field: 'name' | 'count' | 'total' | 'avg') => {
     if (buyerSortField === field) {
@@ -65,6 +67,15 @@ export default function Dashboard() {
     } else {
       setCarrierSortField(field);
       setCarrierSortDirection('desc');
+    }
+  };
+
+  const handleStateSort = (field: 'state' | 'count' | 'revenue') => {
+    if (stateSortField === field) {
+      setStateSortDirection(stateSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setStateSortField(field);
+      setStateSortDirection('desc');
     }
   };
 
@@ -691,6 +702,7 @@ export default function Dashboard() {
   
   let topDeliveryCities: { city: string, count: number, revenue: number }[] = [];
   let topPickupCities: { city: string, count: number, revenue: number }[] = [];
+  let statesList: { state: string, count: number, revenue: number }[] = [];
   let carriersList: { name: string, count: number, revenue: number }[] = [];
   let cancelReasonsList: { reason: string, count: number }[] = [];
   let paymentMethodsData: { name: string, value: number }[] = [];
@@ -852,6 +864,28 @@ export default function Dashboard() {
           revenue: 0
         });
       }
+
+      // States calculation in active mode
+      const rawStates: Record<string, { count: number, revenue: number }> = {};
+      detailedOrdersList.forEach(o => {
+        const stateName = o.state || 'Não Informado';
+        if (!rawStates[stateName]) {
+          rawStates[stateName] = { count: 0, revenue: 0 };
+        }
+        rawStates[stateName].count += 1;
+        rawStates[stateName].revenue += (o.totalValue || 0) / 100;
+      });
+      if (unmappedCount > 0) {
+        rawStates['Aguardando Sincronização...'] = {
+          count: unmappedCount,
+          revenue: 0
+        };
+      }
+      statesList = Object.entries(rawStates).map(([state, data]) => ({
+        state,
+        count: data.count,
+        revenue: data.revenue
+      }));
     }
   } else {
     // Graceful fallback for empty detailedOrdersList
@@ -887,6 +921,14 @@ export default function Dashboard() {
         }
         return pickupSortDirection === 'desc' ? -comparison : comparison;
      });
+
+    // States calculation in fallback mode
+    statesList = [
+      { state: 'SP', count: Math.round(totalVtexOrders * 0.5), revenue: totalVtexRevenue * 0.5 },
+      { state: 'RJ', count: Math.round(totalVtexOrders * 0.25), revenue: totalVtexRevenue * 0.25 },
+      { state: 'MG', count: Math.round(totalVtexOrders * 0.15), revenue: totalVtexRevenue * 0.15 },
+      { state: 'PR', count: Math.round(totalVtexOrders * 0.1), revenue: totalVtexRevenue * 0.1 }
+    ].filter(s => s.count > 0);
 
     carriersList = [
       { name: 'Total Express', count: Math.round(totalVtexOrders * 0.5), revenue: totalVtexRevenue * 0.5 },
@@ -924,6 +966,19 @@ export default function Dashboard() {
     
     avgInvoiceTimeHours = '3.5';
   }
+
+  // Sort statesList
+  statesList.sort((a, b) => {
+    let comparison = 0;
+    if (stateSortField === 'state') {
+      comparison = a.state.localeCompare(b.state);
+    } else if (stateSortField === 'count') {
+      comparison = a.count - b.count;
+    } else if (stateSortField === 'revenue') {
+      comparison = a.revenue - b.revenue;
+    }
+    return stateSortDirection === 'desc' ? -comparison : comparison;
+  });
 
 
   // Group VTEX orders by date and hour for chart integration - based on current period only
@@ -2029,6 +2084,71 @@ export default function Dashboard() {
                       </div>
                     </div>
 
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Linha 4.5: Pedidos & Faturamento por Estado e Recorrência */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Pedidos & Faturamento por Estado (2/3 de espaço) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-2">
+                  <h3 className="font-bold text-slate-800 text-sm mb-4">Pedidos & Faturamento por Estado</h3>
+                  <div className="overflow-y-auto flex-1">
+                    <table className="w-full text-left text-xs">
+                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
+                        <tr>
+                          <th className="pb-2 font-semibold cursor-pointer hover:text-slate-800" onClick={() => handleStateSort('state')}>
+                            Estado {stateSortField === 'state' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleStateSort('count')}>
+                            Pedidos {stateSortField === 'count' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleStateSort('revenue')}>
+                            Faturamento {stateSortField === 'revenue' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
+                        {statesList.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 font-medium">{item.state}</td>
+                            <td className="py-2.5 text-right font-bold text-slate-800">{item.count} ped.</td>
+                            <td className="py-2.5 text-right font-semibold text-emerald-600">
+                              R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                        {statesList.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="py-12 text-center text-slate-400">
+                              Nenhum dado por estado disponível.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Card de Recorrência (1/3) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1 justify-between">
+                  <h3 className="font-bold text-slate-800 text-sm mb-2">Recorrência de Clientes</h3>
+                  <div className="text-center py-4">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Taxa de Recorrência</span>
+                    <h2 className="text-4xl font-extrabold text-indigo-600 mt-2">{recurrentRate.toFixed(1)}%</h2>
+                    <p className="text-xs text-slate-500 mt-1">Clientes que compraram mais de uma vez</p>
+                  </div>
+                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Total de Clientes Únicos:</span>
+                      <span className="font-bold text-slate-700">{totalUniqueClients}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Clientes Recorrentes:</span>
+                      <span className="font-bold text-slate-700">{recurrentClientsCount}</span>
+                    </div>
                   </div>
                 </div>
 
