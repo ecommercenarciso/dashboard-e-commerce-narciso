@@ -23,6 +23,17 @@ export default function Dashboard() {
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
+  const [buyerSortField, setBuyerSortField] = useState<'name' | 'count' | 'total' | 'avg'>('total');
+  const [buyerSortDirection, setBuyerSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleBuyerSort = (field: 'name' | 'count' | 'total' | 'avg') => {
+    if (buyerSortField === field) {
+      setBuyerSortDirection(buyerSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setBuyerSortField(field);
+      setBuyerSortDirection('desc');
+    }
+  };
 
   const [filters, setFilters] = useState<DashboardFilter>({
     startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -578,8 +589,23 @@ export default function Dashboard() {
   const recurrentRate = totalUniqueClients > 0 ? (recurrentClientsCount / totalUniqueClients) * 100 : 0;
 
   const topClients = Object.entries(clientOrdersMap)
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.total - a.total);
+    .map(([name, data]) => {
+      const avg = data.count > 0 ? (data.total / data.count) : 0;
+      return { name, ...data, avg };
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      if (buyerSortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (buyerSortField === 'count') {
+        comparison = a.count - b.count;
+      } else if (buyerSortField === 'total') {
+        comparison = a.total - b.total;
+      } else if (buyerSortField === 'avg') {
+        comparison = a.avg - b.avg;
+      }
+      return buyerSortDirection === 'desc' ? -comparison : comparison;
+    });
 
   let items1Count = 0;
   let items2Count = 0;
@@ -1887,12 +1913,20 @@ export default function Dashboard() {
                   <h3 className="font-bold text-slate-800 text-sm mb-4">Maiores Compradores</h3>
                   <div className="flex-1 overflow-y-auto pr-1">
                     <table className="w-full text-left text-xs">
-                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white">
+                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
                         <tr>
-                          <th className="pb-2 font-semibold">Cliente</th>
-                          <th className="pb-2 font-semibold text-right">Ped.</th>
-                          <th className="pb-2 font-semibold text-right">Total</th>
-                          <th className="pb-2 font-semibold text-right text-indigo-600">Média/Ped.</th>
+                          <th className="pb-2 font-semibold cursor-pointer hover:text-slate-800" onClick={() => handleBuyerSort('name')}>
+                            Cliente {buyerSortField === 'name' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleBuyerSort('count')}>
+                            Ped. {buyerSortField === 'count' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleBuyerSort('total')}>
+                            Total {buyerSortField === 'total' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-2 font-semibold text-right text-indigo-600 cursor-pointer hover:text-indigo-800" onClick={() => handleBuyerSort('avg')}>
+                            Média/Ped. {buyerSortField === 'avg' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-slate-700">
