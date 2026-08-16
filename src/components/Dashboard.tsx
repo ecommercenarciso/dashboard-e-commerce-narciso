@@ -232,6 +232,10 @@ export default function Dashboard() {
           if (parsed.failed && Date.now() - parsed.timestamp < 120000) {
             return false;
           }
+          // Force refetch if the cache is old and doesn't contain 'state' UF field
+          if (parsed.state === undefined && !parsed.failed) {
+            return !fetchingIds.has(order.orderId);
+          }
         } catch (e) {
           // ignore
         }
