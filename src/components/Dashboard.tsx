@@ -261,11 +261,7 @@ export default function Dashboard() {
         const cached = localStorage.getItem(`order_detail_${order.orderId}`);
         if (cached) {
           try {
-            const parsed = JSON.parse(cached);
-            const hasMissingCategories = parsed.items && parsed.items.some((item: any) => !item.category || item.category === 'Não Informado');
-            if (!hasMissingCategories && !parsed.failed) {
-              return { ...order, ...parsed };
-            }
+            return { ...order, ...JSON.parse(cached) };
           } catch (e) {
             // ignore
           }
