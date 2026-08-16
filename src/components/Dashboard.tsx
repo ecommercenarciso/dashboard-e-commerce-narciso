@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [carrierSortDirection, setCarrierSortDirection] = useState<'asc' | 'desc'>('desc');
   const [stateSortField, setStateSortField] = useState<'state' | 'count' | 'revenue'>('count');
   const [stateSortDirection, setStateSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [isCumulative, setIsCumulative] = useState(false);
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -1128,6 +1129,26 @@ export default function Dashboard() {
       .sort((a: any, b: any) => a.key.localeCompare(b.key));
   })();
 
+  // Memoized Chart Data for Sales tab supporting Cumulative Toggle
+  const finalChartData = React.useMemo(() => {
+    if (!isCumulative) return aggregatedChartData;
+    
+    let runningRevenue = 0;
+    let runningOrders = 0;
+    
+    return aggregatedChartData.map(item => {
+      runningRevenue += item.vtexRevenue || 0;
+      runningOrders += item.vtexOrders || 0;
+      const vtexTicket = runningOrders > 0 ? (runningRevenue / runningOrders) : 0;
+      return {
+        ...item,
+        vtexRevenue: runningRevenue,
+        vtexOrders: runningOrders,
+        vtexTicket
+      };
+    });
+  }, [aggregatedChartData, isCumulative]);
+
   const filteredOrders = currentVtexOrders.filter(order => {
     const matchesSearch = orderSearch === '' || 
       order.orderId.toLowerCase().includes(orderSearch.toLowerCase()) || 
@@ -1899,18 +1920,28 @@ export default function Dashboard() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="font-bold text-slate-800 text-sm">Evolução de Vendas (VTEX)</h3>
-                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
-                    {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
-                      <button
-                        key={interval}
-                        onClick={() => setChartInterval(interval)}
-                        className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
-                          chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsCumulative(!isCumulative)}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all ${
+                        isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {isCumulative ? '✓ Acumulado' : 'Acumulado'}
+                    </button>
+                    <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
+                      {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
+                        <button
+                          key={interval}
+                          onClick={() => setChartInterval(interval)}
+                          className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                            chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -1921,7 +1952,7 @@ export default function Dashboard() {
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Faturamento</span>
                     <div className="flex-1 w-full min-h-0">
                       <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={aggregatedChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                        <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                           <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
                           <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
@@ -1929,8 +1960,10 @@ export default function Dashboard() {
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
                           />
-                          <Line type="monotone" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-                        </ComposedChart>
+                          <Line type="linear" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
+                            <LabelList dataKey="vtexRevenue" position="top" style={{ fontSize: '8px', fill: '#6366f1', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val).toLocaleString('pt-BR')}` : ''} />
+                          </Line>
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
@@ -1940,7 +1973,7 @@ export default function Dashboard() {
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Pedidos</span>
                     <div className="flex-1 w-full min-h-0">
                       <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={aggregatedChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                        <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                           <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
                           <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
@@ -1948,8 +1981,10 @@ export default function Dashboard() {
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             formatter={(value: any) => [value, 'Pedidos']}
                           />
-                          <Bar dataKey="vtexOrders" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={30} />
-                        </ComposedChart>
+                          <Line type="linear" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
+                            <LabelList dataKey="vtexOrders" position="top" style={{ fontSize: '8px', fill: '#10b981', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
+                          </Line>
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
@@ -1959,7 +1994,7 @@ export default function Dashboard() {
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Ticket Médio</span>
                     <div className="flex-1 w-full min-h-0">
                       <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={aggregatedChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                        <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                           <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
                           <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
@@ -1967,8 +2002,10 @@ export default function Dashboard() {
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Ticket Médio']}
                           />
-                          <Line type="monotone" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
-                        </ComposedChart>
+                          <Line type="linear" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
+                            <LabelList dataKey="vtexTicket" position="top" style={{ fontSize: '8px', fill: '#f59e0b', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val).toLocaleString('pt-BR')}` : ''} />
+                          </Line>
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
