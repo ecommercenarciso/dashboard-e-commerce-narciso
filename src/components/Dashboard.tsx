@@ -1286,617 +1286,538 @@ export default function Dashboard() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white border-b border-slate-200 flex flex-col px-6 md:px-8 shrink-0 py-3 lg:py-0">
-          <div className="min-h-[4rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
+        <header className="bg-white border-b border-slate-200 px-8 py-4 shrink-0">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center gap-3">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
                 className="lg:hidden text-slate-600 hover:text-slate-900 p-1.5 rounded-lg hover:bg-slate-100 shrink-0 border border-slate-200"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-800 truncate">
+              <h1 className="text-xl font-semibold text-slate-900 truncate">
                 {activeTab === 'executive' ? 'Dashboard de Operações' : activeTab === 'sales' ? 'Análise de Vendas' : 'Acompanhamento de Metas'}
               </h1>
             </div>
-            
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto justify-end">
-              <button 
-                onClick={() => setShowFiltersMobile(!showFiltersMobile)}
-                className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold shadow-sm transition-all border border-slate-200 h-9"
-              >
-                <Filter className="w-3.5 h-3.5" />
-                <span>Filtros</span>
-              </button>
 
-              <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold shadow-sm transition-all border border-slate-200 h-9">
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                <span>Atualizar</span>
-              </button>
-              
-              <button 
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold shadow-sm transition-all border border-slate-200 h-9"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Exportar PDF</span>
-              </button>
-              
-              <div className="h-6 w-[1px] bg-slate-200 hidden lg:block"></div>
-              
-              <div className="hidden lg:flex bg-slate-100 rounded-lg p-1 border border-slate-200 h-9 items-center">
-                <button 
-                  onClick={() => handlePeriodChange('Ontem')}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                    periodType === 'Ontem' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
+            <div className="flex flex-wrap items-center gap-3 justify-start lg:justify-end text-slate-700">
+              {/* Period Type Selector */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Período</span>
+                <select 
+                  value={periodType}
+                  onChange={(e) => handlePeriodChange(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36"
                 >
-                  Diário
-                </button>
-                <button 
-                  onClick={() => handlePeriodChange('Esta semana (começa na segunda-feira)')}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                    periodType === 'Esta semana (começa na segunda-feira)' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  Semanal
-                </button>
-                <button 
-                  onClick={() => handlePeriodChange('Este mês')}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                    periodType === 'Este mês' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  Mensal
-                </button>
+                  <option value="Fixo">Fixo</option>
+                  <option value="Hoje">Hoje</option>
+                  <option value="Ontem">Ontem</option>
+                  <optgroup label="Esta semana">
+                    <option value="Esta semana (começa no domingo)">Esta semana (D)</option>
+                    <option value="Esta semana (começa na segunda-feira)">Esta semana (S)</option>
+                  </optgroup>
+                  <optgroup label="Este mês">
+                    <option value="Este mês">Este mês</option>
+                    <option value="Este mês, até agora">Este mês, até agora</option>
+                  </optgroup>
+                  <optgroup label="Este trimestre">
+                    <option value="Este trimestre">Este trimestre</option>
+                    <option value="Este trimestre, até agora">Este trimestre, até agora</option>
+                  </optgroup>
+                  <optgroup label="Este ano">
+                    <option value="Este ano">Este ano</option>
+                    <option value="Este ano, até agora">Este ano, até agora</option>
+                  </optgroup>
+                  <optgroup label="Últimos">
+                    <option value="Últimos 7 dias">Últimos 7 dias</option>
+                    <option value="Últimos 14 dias">Últimos 14 dias</option>
+                    <option value="Últimos 28 dias">Últimos 28 dias</option>
+                    <option value="Últimos 30 dias">Últimos 30 dias</option>
+                  </optgroup>
+                  <optgroup label="Passado">
+                    <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
+                    <option value="Semana passada (começa na segunda-feira)">Semana passada (S)</option>
+                    <option value="Mês passado">Mês passado</option>
+                    <option value="Trimestre passado">Trimestre passado</option>
+                    <option value="Ano passado">Ano passado</option>
+                  </optgroup>
+                </select>
               </div>
-              
-              <div className="h-6 w-[1px] bg-slate-200 hidden xl:block"></div>
-              
-              <div className="text-xs text-slate-500 hidden xl:block">
-                Sincronização: <span className="text-emerald-600 font-medium italic">
-                  {loading ? 'Sincronizando...' : (
-                    detailedCount < currentVtexOrders.length 
-                      ? `Mapeando cidades (${detailedCount}/${currentVtexOrders.length})` 
-                      : 'Agora mesmo'
-                  )}
-                </span>
-              </div>
-            </div>
-          </div>
 
-          {/* Horizontal Filter Bar */}
-          <div className={`border-t border-slate-100 py-4 w-full grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center gap-4 text-slate-700 ${showFiltersMobile ? 'grid' : 'hidden lg:flex'}`}>
-            {/* Filtro Período */}
-            <div className="flex flex-col gap-1 w-full lg:w-auto">
-              <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Período</label>
-              <select 
-                value={periodType}
-                onChange={(e) => handlePeriodChange(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-48"
-              >
-                <option value="Fixo">Fixo</option>
-                <option value="Hoje">Hoje</option>
-                <option value="Ontem">Ontem</option>
-                <optgroup label="Esta semana">
-                  <option value="Esta semana (começa no domingo)">Esta semana (começa no domingo)</option>
-                  <option value="Esta semana (começa na segunda-feira)">Esta semana (começa na segunda-feira)</option>
-                </optgroup>
-                <optgroup label="Este mês">
-                  <option value="Este mês">Este mês</option>
-                  <option value="Este mês, até agora">Este mês, até agora</option>
-                </optgroup>
-                <optgroup label="Este trimestre">
-                  <option value="Este trimestre">Este trimestre</option>
-                  <option value="Este trimestre, até agora">Este trimestre, até agora</option>
-                </optgroup>
-                <optgroup label="Este ano">
-                  <option value="Este ano">Este ano</option>
-                  <option value="Este ano, até agora">Este ano, até agora</option>
-                </optgroup>
-                <optgroup label="Últimos">
-                  <option value="Últimos 7 dias">Últimos 7 dias</option>
-                  <option value="Últimos 14 dias">Últimos 14 dias</option>
-                  <option value="Últimos 28 dias">Últimos 28 dias</option>
-                  <option value="Últimos 30 dias">Últimos 30 dias</option>
-                </optgroup>
-                <optgroup label="Passado">
-                  <option value="Semana passada (começa no domingo)">Semana passada (começa no domingo)</option>
-                  <option value="Semana passada (começa na segunda-feira)">Semana passada (começa na segunda-feira)</option>
-                  <option value="Mês passado">Mês passado</option>
-                  <option value="Trimestre passado">Trimestre passado</option>
-                  <option value="Ano passado">Ano passado</option>
-                </optgroup>
-              </select>
-            </div>
-            
-            {periodType === 'Fixo' && (
-              <>
-                <div className="flex flex-col gap-1 w-full lg:w-auto">
-                  <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Início</label>
-                  <input 
-                    type="date" 
-                    value={filters.startDate}
-                    onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-auto"
-                  />
-                </div>
-                <div className="flex flex-col gap-1 w-full lg:w-auto">
-                  <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Fim</label>
-                  <input 
-                    type="date" 
-                    value={filters.endDate}
-                    onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-auto"
-                  />
-                </div>
-              </>
-            )}
-            
-            {/* Comparar com */}
-            <div className="flex flex-col gap-1 w-full lg:w-auto">
-              <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Comparar com</label>
-              <select 
-                value={comparisonType}
-                onChange={(e) => setComparisonType(e.target.value as 'days' | 'period')}
-                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-48"
-              >
-                <option value="period">Período equivalente anterior</option>
-                <option value="days">Mesmo nº de dias anteriores</option>
-              </select>
-            </div>
-             {/* Filtro Status do Pedido (Checkbox Multi-select) */}
-            <div className="flex flex-col gap-1 w-full lg:w-auto relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
-              <label className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status</label>
-              <button 
-                type="button"
-                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-full lg:w-44 flex items-center justify-between gap-1 text-left"
-              >
-                <span className="truncate">
-                  {filters.status.length === 0 || filters.status.length === 5
-                    ? 'Todos os Status' 
-                    : filters.status.map(s => statusLabelMap[s] || s).join(', ')}
-                </span>
-                <span className="text-[9px] text-slate-400">▼</span>
-              </button>
-              
-              {isStatusDropdownOpen && (
-                <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-0.5 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFilters({ ...filters, status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'] })}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer select-none"
-                    >
-                      Marcar todos
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFilters({ ...filters, status: [] })}
-                      className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
-                    >
-                      Limpar todos
-                    </button>
+              {/* Start Date (Fixo only) */}
+              {periodType === 'Fixo' && (
+                <>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Início</span>
+                    <input 
+                      type="date" 
+                      value={filters.startDate}
+                      onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                      className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
+                    />
                   </div>
-                  
-                  {[
-                    { value: 'invoiced', label: 'Faturado' },
-                    { value: 'handling', label: 'Em Preparação' },
-                    { value: 'payment-pending', label: 'Pagamento Pendente' },
-                    { value: 'canceled', label: 'Cancelado' },
-                    { value: 'payment-approved', label: 'Aprovado' }
-                  ].map((opt) => {
-                    const isChecked = filters.status.includes(opt.value);
-                    return (
-                      <label key={opt.value} className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none py-0.5">
-                        <input 
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleStatusCheckboxChange(opt.value)}
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span>{opt.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Fim</span>
+                    <input 
+                      type="date" 
+                      value={filters.endDate}
+                      onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                      className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
+                    />
+                  </div>
+                </>
               )}
-            </div>
-          </div>
-        </header>
 
-        {/* Content Dashboard */}
-        <div className="p-8 flex-1 flex flex-col gap-6 overflow-y-auto">
-          
-          {/* Relatório Print Header (Visível apenas na impressão/PDF) */}
-          <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-6">
-            <div className="flex justify-between items-end">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Insight Hub - Relatório de Desempenho</h1>
-                <p className="text-xs text-slate-500 mt-1">Integração Analítica VTEX + Google Analytics 4</p>
+              {/* Comparison Type */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Comparar com</span>
+                <select 
+                  value={comparisonType}
+                  onChange={(e) => setComparisonType(e.target.value as 'days' | 'period')}
+                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-44"
+                >
+                  <option value="period">Período equivalente anterior</option>
+                  <option value="days">Mesmo nº de dias anteriores</option>
+                </select>
               </div>
-              <div className="text-right text-xs text-slate-600">
-                <p className="font-semibold">Filtros Aplicados:</p>
-                <p>Período: {filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType} | Status: {filters.status.length === 0 ? 'Todos' : filters.status.map(s => statusLabelMap[s] || s).join(', ')}</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Error State */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-4 shrink-0">
-              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-red-800 font-medium">Configuração de Autenticação Necessária</h3>
-                <p className="text-red-700 text-sm mt-1 mb-4 leading-relaxed">
-                  Para conectar e visualizar dados reais da sua loja, você deve configurar as seguintes variáveis de ambiente nas Configurações do AI Studio:
-                </p>
-                <code className="block bg-red-100 text-red-800 p-3 rounded-lg text-xs font-mono mb-2">
-                  GA4_PROPERTY_ID="seu-id-da-propriedade"<br/>
-                  GOOGLE_APPLICATION_CREDENTIALS_JSON="..."<br/>
-                  VTEX_ACCOUNT_NAME="sua-conta"<br/>
-                  VTEX_APP_KEY="..."<br/>
-                  VTEX_APP_TOKEN="..."
-                </code>
-                <p className="text-red-600 text-xs">Detalhes do erro: {error}</p>
-              </div>
-            </div>
-          )}
 
-          {activeTab === 'executive' && (
-            <>
-              <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 shrink-0">
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Receita Total (VTEX)</p>
-                <div className="flex items-end gap-2">
-                  <h2 className="text-2xl font-bold text-slate-900">R${totalVtexRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
-                  <span className={`text-[10px] font-bold pb-1 ${revenueDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {revenueDiffPct >= 0 ? '+' : ''}{revenueDiffPct.toFixed(1)}%
+              {/* Status Selector Dropdown */}
+              <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status</span>
+                <button 
+                  type="button"
+                  onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36 flex items-center justify-between gap-1 text-left"
+                >
+                  <span className="truncate">
+                    {filters.status.length === 0 || filters.status.length === 5
+                      ? 'Todos os Status' 
+                      : filters.status.length === 1
+                        ? (statusLabelMap[filters.status[0]] || filters.status[0])
+                        : `${filters.status.length} selecionados`}
                   </span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">Vs período anterior (R$ {prevVtexRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
-              </div>
-              
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Total de Pedidos (VTEX)</p>
-                <div className="flex items-end gap-2">
-                  <h2 className="text-2xl font-bold text-slate-900">{totalVtexOrders.toLocaleString('pt-BR')}</h2>
-                  <span className={`text-[10px] font-bold pb-1 ${ordersDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {ordersDiffPct >= 0 ? '+' : ''}{ordersDiffPct.toFixed(1)}%
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">Vs período anterior ({prevVtexOrders} ped.) | GA4: {totalSessions.toLocaleString('pt-BR')} sessões</p>
-              </div>
-              
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight mb-1">Taxa de Conversão Média</p>
-                <div className="flex items-end gap-2">
-                  <h2 className="text-2xl font-bold text-slate-900">{avgConversionRate}%</h2>
-                  <span className={`text-[10px] font-bold pb-1 ${conversionDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {conversionDiffPct >= 0 ? '+' : ''}{conversionDiffPct.toFixed(2)}%
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">Vs período anterior ({prevAvgConversionRate}%)</p>
-              </div>
-              
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm bg-gradient-to-br from-indigo-50 to-white">
-                <p className="text-xs font-semibold text-indigo-800 uppercase tracking-tight mb-1">Ticket Médio (VTEX)</p>
-                <div className="flex items-end gap-2">
-                  <h2 className="text-2xl font-bold text-indigo-900">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(avgOrderValue)}
-                  </h2>
-                  <span className={`text-[10px] font-bold pb-1 ${avgOrderValueDiffPct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {avgOrderValueDiffPct >= 0 ? '+' : ''}{avgOrderValueDiffPct.toFixed(1)}%
-                  </span>
-                </div>
-                <p className="text-[10px] text-indigo-400 mt-2">Vs anterior (R$ {prevAvgOrderValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
-              </div>
-            </section>
-
-          {/* Métricas Detalhadas (VTEX) */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
-            {/* Bloco 1: Itens */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-indigo-500" />
-                Métricas de Itens Vendidos
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Faturamento Itens</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {totalItemsRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Quantidade Itens</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{totalItemsQuantity.toLocaleString('pt-BR')}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Valor Médio Item</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {avgValuePerItem.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Itens por Pedido</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{avgItemsPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Bloco 2: Logística e Fretes */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                Logística e Fretes
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Retiradas</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Entregas</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">{deliveryOrdersCount.toLocaleString('pt-BR')} ped.</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Total Fretes</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {totalShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <p className="text-[9px] text-slate-500 uppercase font-semibold leading-tight">Média Frete</p>
-                  <p className="text-base font-bold text-slate-800 mt-1">R$ {avgShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Main Visual Row */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Charts */}
-            <div className="col-span-1 lg:col-span-2 flex flex-col gap-6">
-              
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-slate-800 text-sm">Tendência do Funil de Vendas (GA4)</h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIsCumulative(!isCumulative)}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all ${
-                        isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {isCumulative ? '✓ Acumulado' : 'Acumulado'}
-                    </button>
-                    <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
-                      {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
-                        <button
-                          key={interval}
-                          onClick={() => setChartInterval(interval)}
-                          className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
-                            chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1 w-full min-h-[200px]">
-                  {finalChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={finalChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                        <Line type="linear" dataKey="visitors" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="1. Visitantes Únicos">
-                           <LabelList dataKey="visitors" position="top" style={{ fontSize: '8.5px', fill: '#3b82f6', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
-                         </Line>
-                         <Line type="linear" dataKey="viewItem" stroke="#a855f7" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto">
-                           <LabelList dataKey="viewItem" position="top" style={{ fontSize: '8px', fill: '#a855f7', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
-                         </Line>
-                         <Line type="linear" dataKey="cart" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho">
-                           <LabelList dataKey="cart" position="bottom" style={{ fontSize: '8px', fill: '#f97316', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
-                         </Line>
-                         <Line type="linear" dataKey="shipping" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega">
-                           <LabelList dataKey="shipping" position="top" style={{ fontSize: '8px', fill: '#0ea5e9', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
-                         </Line>
-                         <Line type="linear" dataKey="payment" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento">
-                           <LabelList dataKey="payment" position="bottom" style={{ fontSize: '8.5px', fill: '#10b981', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
-                         </Line>
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                      {loading ? 'Carregando dados...' : 'Sem dados disponíveis para os filtros selecionados.'}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-slate-800 text-sm">Faturamento & Pedidos (VTEX)</h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIsCumulative(!isCumulative)}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all ${
-                        isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {isCumulative ? '✓ Acumulado' : 'Acumulado'}
-                    </button>
-                    <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
-                      {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
-                        <button
-                          key={interval}
-                          onClick={() => setChartInterval(interval)}
-                          className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
-                            chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1 w-full min-h-[200px]">
-                   {finalChartData.length > 0 ? (
-                     <ResponsiveContainer width="100%" height="100%">
-                       <LineChart data={finalChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                         <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                         <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} />
-                         <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `${val} ped.`} />
-                         <Tooltip 
-                           contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
-                           formatter={(value: any, name: any) => {
-                             if (name === "Faturamento" || name === "Ticket Médio") return [`R$ ${parseFloat(value).toFixed(2)}`, name];
-                             return [value, name];
-                           }}
-                         />
-                         <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                         <Line type="linear" yAxisId="left" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Faturamento">
-                            <LabelList dataKey="vtexRevenue" position="top" style={{ fontSize: '8px', fill: '#6366f1', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val)}` : ''} />
-                          </Line>
-                          <Line type="linear" yAxisId="left" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Ticket Médio">
-                            <LabelList dataKey="vtexTicket" position="top" style={{ fontSize: '8px', fill: '#f59e0b', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val)}` : ''} />
-                          </Line>
-                          <Line type="linear" yAxisId="right" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Pedidos">
-                            <LabelList dataKey="vtexOrders" position="bottom" style={{ fontSize: '8px', fill: '#10b981', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
-                          </Line>
-                       </LineChart>
-                     </ResponsiveContainer>
-                   ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                       {loading ? 'Carregando dados...' : 'Sem dados disponíveis para os filtros selecionados.'}
-                     </div>
-                   )}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right column: Funnel & Order Status */}
-            <div className="col-span-1 flex flex-col gap-6">
-              {/* Funnel de Conversão */}
-              <div className="bg-slate-900 rounded-xl p-6 text-white flex flex-col h-[320px] shrink-0">
-                <h3 className="font-bold text-sm mb-4 border-b border-slate-700 pb-2">Funil de Conversão (GA4)</h3>
+                  <span className="text-[9px] text-slate-400">▼</span>
+                </button>
                 
-                {!funnelData ? (
-                  <div className="flex-1 flex items-center justify-center text-slate-500 text-xs">
-                    {loading ? 'Carregando funil...' : 'Sem dados de funil'}
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col justify-between py-1 w-full gap-2">
+                {isStatusDropdownOpen && (
+                  <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-0.5 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFilters({ ...filters, status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'] })}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer select-none"
+                      >
+                        Marcar todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilters({ ...filters, status: [] })}
+                        className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
+                      >
+                        Limpar todos
+                      </button>
+                    </div>
+                    
                     {[
-                      { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
-                      { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
-                      { label: 'Carrinho', value: funnelData.cart, max: funnelData.visitors },
-                      { label: 'Entrega', value: funnelData.shipping, max: funnelData.visitors },
-                      { label: 'Pagamento', value: funnelData.payment, max: funnelData.visitors },
-                    ].map((step, idx, arr) => {
-                      const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
-                      const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
-                      const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
-                      
+                      { value: 'invoiced', label: 'Faturado' },
+                      { value: 'handling', label: 'Em Preparação' },
+                      { value: 'payment-pending', label: 'Pagamento Pendente' },
+                      { value: 'canceled', label: 'Cancelado' },
+                      { value: 'payment-approved', label: 'Aprovado' }
+                    ].map((opt) => {
+                      const isChecked = filters.status.includes(opt.value);
                       return (
-                        <div key={idx} className="flex items-center w-full gap-3">
-                          {/* Label do Passo */}
-                          <div className="w-20 text-right text-xs font-semibold text-slate-400 truncate shrink-0">
-                            {step.label}
-                          </div>
-                          
-                          {/* Barra do Funil */}
-                          <div className="flex-1 h-7 bg-slate-950/40 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-800/80 min-w-0">
-                            <div 
-                              className={`h-full rounded-md transition-all duration-500 flex items-center justify-end px-2 ${
-                                idx === 0 ? 'bg-blue-600' : idx === arr.length - 1 ? 'bg-emerald-500' : 'bg-slate-600'
-                              }`} 
-                              style={{ 
-                                width: `${Math.max(percentageOverall, 12)}%`,
-                              }}
-                            >
-                              {percentageOverall > 20 && (
-                                <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Valores e Taxas */}
-                          <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
-                            <span className="text-xs font-bold text-white truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
-                            {idx > 0 ? (
-                              <span className="text-[10px] font-semibold text-emerald-400 leading-tight">
-                                {stepConversion.toFixed(1)}% <span className="text-slate-500 font-normal">conv.</span>
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-slate-500 font-medium leading-tight">100% total</span>
-                            )}
-                          </div>
-                        </div>
+                        <label key={opt.value} className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none py-0.5">
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleStatusCheckboxChange(opt.value)}
+                            className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span>{opt.label}</span>
+                        </label>
                       );
                     })}
                   </div>
                 )}
               </div>
 
-              {/* Resumo de Desempenho VTEX */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] shrink-0 justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-800 text-sm mb-1 border-b border-slate-100 pb-2 flex items-center justify-between">
-                    <span>Desempenho VTEX</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Período: {daysCount} {daysCount === 1 ? 'dia' : 'dias'}</span>
-                  </h3>
+              {/* Action: Acumulado / Interval (Hour/Day/Week/Month) */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Agrupamento</span>
+                <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 h-9 items-center">
+                  {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
+                    <button
+                      key={interval}
+                      onClick={() => setChartInterval(interval)}
+                      className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+                        chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                    </button>
+                  ))}
                 </div>
-                
-                <div className="flex-1 flex items-center">
-                  <table className="w-full text-left text-xs text-slate-600">
-                    <thead>
-                      <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
-                        <th className="py-2 font-semibold">Métrica</th>
-                        <th className="py-2 font-semibold text-right">Soma (Total)</th>
-                        <th className="py-2 font-semibold text-right">Média/Dia</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      <tr className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 font-semibold text-slate-800">Faturamento</td>
-                        <td className="py-3 text-right font-bold text-slate-800">
-                          R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-3 text-right font-semibold text-slate-500">
-                          R$ {(totalVtexRevenue / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 font-semibold text-slate-800">Pedidos</td>
-                        <td className="py-3 text-right font-bold text-slate-800">
-                          {totalVtexOrders.toLocaleString('pt-BR')}
-                        </td>
-                        <td className="py-3 text-right font-semibold text-slate-500">
-                          {(totalVtexOrders / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 font-semibold text-slate-800">Ticket Médio</td>
-                        <td className="py-3 text-right font-bold text-indigo-600">
-                          R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-3 text-right font-semibold text-indigo-500">
-                          R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Modo</span>
+                <button
+                  onClick={() => setIsCumulative(!isCumulative)}
+                  className={`px-3 h-9 text-xs font-bold rounded-lg border transition-all ${
+                    isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {isCumulative ? '✓ Acumulado' : 'Acumulado'}
+                </button>
+              </div>
+
+              <div className="h-6 w-[1px] bg-slate-200 self-end mb-1"></div>
+
+              {/* Refresh Button */}
+              <button onClick={fetchData} className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 h-9 w-9 self-end mb-1 shrink-0" title="Atualizar dados">
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+
+              {/* Export PDF Button */}
+              <button 
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 h-9 self-end mb-1 shrink-0"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden xl:inline">PDF</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Dashboard */}
+        <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+          <div className="max-w-7xl mx-auto w-full px-8 py-8 flex flex-col gap-4">
+          
+            {/* Relatório Print Header (Visível apenas na impressão/PDF) */}
+            <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-6">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h1 className="text-xl font-bold text-slate-900">Insight Hub - Relatório de Desempenho</h1>
+                  <p className="text-xs text-slate-500 mt-1">Integração Analítica VTEX + Google Analytics 4</p>
+                </div>
+                <div className="text-right text-xs text-slate-600">
+                  <p className="font-semibold">Filtros Aplicados:</p>
+                  <p>Período: {filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType} | Status: {filters.status.length === 0 ? 'Todos' : filters.status.map(s => statusLabelMap[s] || s).join(', ')}</p>
                 </div>
               </div>
             </div>
-          </section>
-        </>
-      )}
+            
+            {/* Error State */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-4 shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-red-800 font-medium">Configuração de Autenticação Necessária</h3>
+                  <p className="text-red-700 text-sm mt-1 mb-4 leading-relaxed">
+                    Para conectar e visualizar dados reais da sua loja, você deve configurar as seguintes variáveis de ambiente nas Configurações do AI Studio:
+                  </p>
+                  <code className="block bg-red-100 text-red-800 p-3 rounded-lg text-xs font-mono mb-2">
+                    GA4_PROPERTY_ID="seu-id-da-propriedade"<br/>
+                    GOOGLE_APPLICATION_CREDENTIALS_JSON="..."<br/>
+                    VTEX_ACCOUNT_NAME="sua-conta"<br/>
+                    VTEX_APP_KEY="..."<br/>
+                    VTEX_APP_TOKEN="..."
+                  </code>
+                  <p className="text-red-600 text-xs">Detalhes do erro: {error}</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'executive' && (
+              <>
+                {/* Linha 1: Cards de KPI */}
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                  {/* Receita Total */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <p className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Receita Total (VTEX)</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <h2 className="text-[24px] font-bold text-slate-900 leading-none">
+                          R$ {totalVtexRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </h2>
+                        <span className={`text-[12px] font-medium px-2 py-0.5 rounded ${revenueDiffPct >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                          {revenueDiffPct >= 0 ? '+' : ''}{revenueDiffPct.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-2">Vs período anterior (R$ {prevVtexRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
+                  </div>
+                  
+                  {/* Total de Pedidos */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <p className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Total de Pedidos (VTEX)</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <h2 className="text-[24px] font-bold text-slate-900 leading-none">
+                          {totalVtexOrders.toLocaleString('pt-BR')}
+                        </h2>
+                        <span className={`text-[12px] font-medium px-2 py-0.5 rounded ${ordersDiffPct >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                          {ordersDiffPct >= 0 ? '+' : ''}{ordersDiffPct.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-2">Vs anterior ({prevVtexOrders} ped.) | GA4: {totalSessions.toLocaleString('pt-BR')} sessões</p>
+                  </div>
+                  
+                  {/* Taxa de Conversão */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <p className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Taxa de Conversão Média</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <h2 className="text-[24px] font-bold text-slate-900 leading-none">
+                          {avgConversionRate}%
+                        </h2>
+                        <span className={`text-[12px] font-medium px-2 py-0.5 rounded ${conversionDiffPct >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                          {conversionDiffPct >= 0 ? '+' : ''}{conversionDiffPct.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-2">Vs período anterior ({prevAvgConversionRate}%)</p>
+                  </div>
+                  
+                  {/* Ticket Médio */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <p className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Ticket Médio (VTEX)</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <h2 className="text-[24px] font-bold text-slate-900 leading-none">
+                          R$ {avgOrderValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </h2>
+                        <span className={`text-[12px] font-medium px-2 py-0.5 rounded ${avgOrderValueDiffPct >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                          {avgOrderValueDiffPct >= 0 ? '+' : ''}{avgOrderValueDiffPct.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-2">Vs anterior (R$ {prevAvgOrderValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
+                  </div>
+                </section>
+
+                {/* Linha 2: Métricas Secundárias */}
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+                  {/* Bloco 1: Itens Vendidos */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4 text-indigo-500" />
+                      Métricas de Itens Vendidos
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Faturamento Itens</p>
+                        <p className="text-[20px] font-bold text-slate-900">R$ {totalItemsRevenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Quantidade Itens</p>
+                        <p className="text-[20px] font-bold text-slate-900">{totalItemsQuantity.toLocaleString('pt-BR')}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Valor Médio Item</p>
+                        <p className="text-[20px] font-bold text-slate-900">R$ {avgValuePerItem.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Itens por Pedido</p>
+                        <p className="text-[20px] font-bold text-slate-900">{avgItemsPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bloco 2: Logística e Fretes */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      Logística e Fretes
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Retiradas</p>
+                        <p className="text-[20px] font-bold text-slate-900">{pickupOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Entregas</p>
+                        <p className="text-[20px] font-bold text-slate-900">{deliveryOrdersCount.toLocaleString('pt-BR')} ped.</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Total Fretes</p>
+                        <p className="text-[20px] font-bold text-slate-900">R$ {totalShippingValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Média Frete</p>
+                        <p className="text-[20px] font-bold text-slate-900">R$ {avgShippingValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Linha 3: Funil GA4 */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
+                  {/* Tendência do Funil - Linhas */}
+                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Tendência do Funil de Vendas (GA4)</h3>
+                    <div className="flex-1 w-full min-h-0">
+                      {finalChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                            <Line type="linear" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="1. Visitantes Únicos" />
+                            <Line type="linear" dataKey="viewItem" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
+                            <Line type="linear" dataKey="cart" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
+                            <Line type="linear" dataKey="shipping" stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega" />
+                            <Line type="linear" dataKey="payment" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis para os filtros selecionados.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Funil de Conversão - Barras horizontais */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Funil de Conversão (GA4)</h3>
+                    
+                    {!funnelData ? (
+                      <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
+                        {loading ? 'Carregando funil...' : 'Sem dados de funil'}
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col justify-between py-1 w-full gap-2 min-h-0">
+                        {[
+                          { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
+                          { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
+                          { label: 'Carrinho', value: funnelData.cart, max: funnelData.visitors },
+                          { label: 'Entrega', value: funnelData.shipping, max: funnelData.visitors },
+                          { label: 'Pagamento', value: funnelData.payment, max: funnelData.visitors },
+                        ].map((step, idx, arr) => {
+                          const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
+                          const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
+                          const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
+                          const stepColors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
+                          
+                          return (
+                            <div key={idx} className="flex items-center w-full gap-3">
+                              <div className="w-20 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
+                                {step.label}
+                              </div>
+                              
+                              <div className="flex-1 h-7 bg-slate-100 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-200 min-w-0">
+                                <div 
+                                  className="h-full rounded-md transition-all duration-500 flex items-center justify-end px-2"
+                                  style={{ 
+                                    width: `${Math.max(percentageOverall, 12)}%`,
+                                    backgroundColor: stepColors[idx]
+                                  }}
+                                >
+                                  {percentageOverall > 20 && (
+                                    <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
+                                <span className="text-xs font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
+                                {idx > 0 ? (
+                                  <span className="text-[10px] font-semibold text-emerald-600 leading-tight">
+                                    {stepConversion.toFixed(1)}% <span className="text-slate-400 font-normal">conv.</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 font-medium leading-tight">100% total</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Linha 4: Desempenho VTEX */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
+                  {/* Gráfico Combinado Faturamento e Pedidos */}
+                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Faturamento & Pedidos (VTEX)</h3>
+                    <div className="flex-1 w-full min-h-0">
+                      {finalChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} />
+                            <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `${val} ped.`} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                              formatter={(value: any, name: any) => {
+                                if (name === "Faturamento" || name === "Ticket Médio") return [`R$ ${parseFloat(value).toFixed(2)}`, name];
+                                return [value, name];
+                              }}
+                            />
+                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                            <Line type="linear" yAxisId="left" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Faturamento" />
+                            <Line type="linear" yAxisId="left" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Ticket Médio" />
+                            <Line type="linear" yAxisId="right" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Pedidos" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis para os filtros selecionados.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tabela de Desempenho VTEX */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px] justify-between">
+                    <div>
+                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2 flex items-center justify-between">
+                        <span>Desempenho VTEX</span>
+                        <span className="text-[10px] text-slate-400 font-normal normal-case">Período: {daysCount} {daysCount === 1 ? 'dia' : 'dias'}</span>
+                      </h3>
+                    </div>
+                    
+                    <div className="flex-1 flex items-center min-h-0">
+                      <table className="w-full text-left text-xs text-slate-600">
+                        <thead>
+                          <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                            <th className="pb-3 font-bold text-left">Métrica</th>
+                            <th className="pb-3 font-bold text-right">Soma (Total)</th>
+                            <th className="pb-3 font-bold text-right">Média/Dia</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          <tr>
+                            <td className="py-4 font-medium text-slate-800 text-left">Faturamento</td>
+                            <td className="py-4 font-bold text-slate-900 text-right">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="py-4 text-slate-600 text-right">R$ {(totalVtexRevenue / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-4 font-medium text-slate-800 text-left">Pedidos</td>
+                            <td className="py-4 font-bold text-slate-900 text-right">{totalVtexOrders.toLocaleString('pt-BR')}</td>
+                            <td className="py-4 text-slate-600 text-right">{(totalVtexOrders / daysCount).toFixed(1)}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-4 font-medium text-slate-800 text-left">Ticket Médio</td>
+                            <td className="py-4 font-bold text-indigo-600 text-right">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="py-4 font-bold text-indigo-600 text-right">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
 
           {/* Sales Tab (Indicadores Detalhados de Pedidos) */}
           {activeTab === 'sales' && (
@@ -2673,6 +2594,7 @@ export default function Dashboard() {
              </div>
           )}
 
+          </div>
         </div>
       </main>
 
