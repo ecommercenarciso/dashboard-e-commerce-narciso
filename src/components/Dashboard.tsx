@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [stateSortField, setStateSortField] = useState<'state' | 'count' | 'revenue'>('count');
   const [stateSortDirection, setStateSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isCumulative, setIsCumulative] = useState(false);
+  const [salesChartTab, setSalesChartTab] = useState<'revenue' | 'orders' | 'ticket'>('revenue');
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -1819,169 +1820,132 @@ export default function Dashboard() {
               </>
             )}
 
-          {/* Sales Tab (Indicadores Detalhados de Pedidos) */}
           {activeTab === 'sales' && (
-            <div className="flex flex-col gap-6 w-full">
+            <div className="flex flex-col gap-4 w-full">
               
-              {/* Linha 1: KPIs Superiores (Repetindo KPIs principais e adicionando Cancelados) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                {/* KPI 1: Faturamento */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
+              {/* CAMADA 1: HEADER E TOPO (KPIs MÁXIMOS) */}
+              <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                {/* KPI 1: Faturamento Aprovado */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Faturamento Aprovado</span>
-                    <h3 className="text-xl font-bold text-slate-800 mt-1">R$ {approvedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Total Geral: R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    <span className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Faturamento Aprovado</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-[24px] font-bold text-slate-900 leading-none">R$ {approvedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                      <span className="text-[12px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                        {totalVtexOrders > 0 ? ((approvedCount / totalVtexOrders) * 100).toFixed(0) : 0}% aprov.
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 border-t border-slate-100 pt-2.5">
-                    <span>Taxa de Aprovação: {totalVtexOrders > 0 ? ((approvedCount / totalVtexOrders) * 100).toFixed(1) : 0}%</span>
-                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">Total Geral: R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                 </div>
 
                 {/* KPI 2: Ticket Médio */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ticket Médio (VTEX)</span>
-                    <h3 className="text-xl font-bold text-slate-800 mt-1">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Média por pedido aprovado</p>
+                    <span className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Ticket Médio (VTEX)</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-[24px] font-bold text-slate-900 leading-none">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-slate-500 font-semibold border-t border-slate-100 pt-2.5">
-                    Valor médio por item: R$ {avgValuePerItem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">Média por pedido aprovado</p>
                 </div>
 
                 {/* KPI 3: Total de Pedidos */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total de Pedidos</span>
-                    <h3 className="text-xl font-bold text-slate-800 mt-1">{totalVtexOrders}</h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Pedidos criados no período</p>
+                    <span className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Total de Pedidos</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-[24px] font-bold text-slate-900 leading-none">{totalVtexOrders}</h3>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-slate-500 font-semibold border-t border-slate-100 pt-2.5">
-                    Itens por pedido: {avgItemsPerOrder.toFixed(1)}
-                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">Pedidos criados no período</p>
                 </div>
 
                 {/* KPI 4: Pedidos Cancelados */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-32">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pedidos Cancelados</span>
-                    <h3 className="text-xl font-bold text-rose-600 mt-1">{canceledCount}</h3>
-                    <p className="text-[10px] text-rose-500 mt-1">Taxa de Cancelamento: {canceledRate.toFixed(1)}%</p>
+                    <span className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Pedidos Cancelados</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-[24px] font-bold text-rose-600 leading-none">{canceledCount}</h3>
+                      <span className="text-[12px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                        {canceledRate.toFixed(1)}% taxa
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-rose-600 font-semibold border-t border-slate-100 pt-2.5 flex items-center justify-between">
-                    <span>Faturamento Perdido:</span>
-                    <span>R$ {canceledRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+                  <p className="text-[11px] text-rose-500 mt-2 font-medium">Perda estimada: R$ {canceledRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                </div>
+              </section>
+
+              {/* CAMADA 2: EVOLUÇÃO TEMPORAL (Unificação de Gráficos) */}
+              <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] w-full">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider">Evolução de Vendas (VTEX)</h3>
+                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                    {(['revenue', 'orders', 'ticket'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setSalesChartTab(tab)}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          salesChartTab === tab ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        {tab === 'revenue' ? 'Faturamento' : tab === 'orders' ? 'Pedidos' : 'Ticket Médio'}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-              </div>
-
-              {/* Linha 1.5: Três Gráficos de Tendência VTEX (Faturamento, Pedidos, Ticket Médio) */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="font-bold text-slate-800 text-sm">Evolução de Vendas (VTEX)</h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIsCumulative(!isCumulative)}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all ${
-                        isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {isCumulative ? '✓ Acumulado' : 'Acumulado'}
-                    </button>
-                    <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
-                      {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
-                        <button
-                          key={interval}
-                          onClick={() => setChartInterval(interval)}
-                          className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
-                            chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex-1 w-full min-h-0">
+                  {finalChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={finalChartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                        {salesChartTab === 'revenue' && (
+                          <>
+                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                              formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
+                            />
+                            <Line type="linear" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                          </>
+                        )}
+                        {salesChartTab === 'orders' && (
+                          <>
+                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                              formatter={(value: any) => [value, 'Pedidos']}
+                            />
+                            <Line type="linear" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                          </>
+                        )}
+                        {salesChartTab === 'ticket' && (
+                          <>
+                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                              formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Ticket Médio']}
+                            />
+                            <Line type="linear" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                          </>
+                        )}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados de tendência</div>
+                  )}
                 </div>
+              </section>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  
-                  {/* Gráfico 1: Faturamento */}
-                  <div className="flex flex-col h-[220px]">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Faturamento</span>
-                    <div className="flex-1 w-full min-h-0">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-                          <Tooltip 
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
-                          />
-                          <Line type="linear" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
-                            <LabelList dataKey="vtexRevenue" position="top" style={{ fontSize: '8px', fill: '#6366f1', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val).toLocaleString('pt-BR')}` : ''} />
-                          </Line>
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Gráfico 2: Pedidos */}
-                  <div className="flex flex-col h-[220px]">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Pedidos</span>
-                    <div className="flex-1 w-full min-h-0">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
-                          <Tooltip 
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: any) => [value, 'Pedidos']}
-                          />
-                          <Line type="linear" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
-                            <LabelList dataKey="vtexOrders" position="top" style={{ fontSize: '8px', fill: '#10b981', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `${val}` : ''} />
-                          </Line>
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Gráfico 3: Ticket Médio */}
-                  <div className="flex flex-col h-[220px]">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Ticket Médio</span>
-                    <div className="flex-1 w-full min-h-0">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-                          <Tooltip 
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Ticket Médio']}
-                          />
-                          <Line type="linear" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
-                            <LabelList dataKey="vtexTicket" position="top" style={{ fontSize: '8px', fill: '#f59e0b', fontWeight: 'bold' }} formatter={(val: number) => val > 0 ? `R$ ${Math.round(val).toLocaleString('pt-BR')}` : ''} />
-                          </Line>
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Linha 2: Meios de Pagamento, Parcelamento & SLA */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Meios de Pagamento (Pizza) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[300px]">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Meios de Pagamento mais Utilizados</h3>
-                  <div className="flex-1 flex items-center justify-between">
-                    <div className="w-[140px] h-[140px]">
+              {/* CAMADA 4: COMPORTAMENTO FINANCEIRO E CLIENTE (Grid 33% / 33% / 33%) */}
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
+                {/* Meios de Pagamento */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Meios de Pagamento mais Utilizados</h3>
+                  <div className="flex-1 flex items-center justify-between min-h-0">
+                    <div className="w-[120px] h-[120px] shrink-0">
                       {paymentMethodsData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
@@ -1989,13 +1953,13 @@ export default function Dashboard() {
                               data={paymentMethodsData}
                               cx="50%"
                               cy="50%"
-                              innerRadius={40}
-                              outerRadius={60}
+                              innerRadius={35}
+                              outerRadius={55}
                               paddingAngle={3}
                               dataKey="value"
                             >
                               {paymentMethodsData.map((entry, index) => {
-                                const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                                const colors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
                                 return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
                               })}
                             </Pie>
@@ -2006,11 +1970,11 @@ export default function Dashboard() {
                       )}
                     </div>
                     
-                    <div className="flex flex-col gap-2 pr-2 flex-1 pl-4 overflow-y-auto max-h-[160px]">
+                    <div className="flex flex-col gap-2 pr-1 flex-1 pl-4 overflow-y-auto max-h-[160px]">
                       {paymentMethodsData.map((item, idx) => {
-                        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                        const colors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
                         const totalPaymentsCount = paymentMethodsData.reduce((acc, curr) => acc + curr.value, 0);
-                        const percentage = totalPaymentsCount > 0 ? ((item.value / totalPaymentsCount) * 100).toFixed(1) : '0.0';
+                        const percentage = totalPaymentsCount > 0 ? ((item.value / totalPaymentsCount) * 100).toFixed(0) : '0';
                         return (
                           <div key={idx} className="flex items-center justify-between text-[11px]">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -2025,10 +1989,10 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Parcelamento no Cartão (Barras) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[300px]">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Parcelamento no Cartão de Crédito</h3>
-                  <div className="flex-1 w-full min-h-[180px]">
+                {/* Parcelamento no Cartão */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Parcelamento no Cartão de Crédito</h3>
+                  <div className="flex-1 w-full min-h-0">
                     {installmentsData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={installmentsData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
@@ -2039,75 +2003,81 @@ export default function Dashboard() {
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             formatter={(value: any) => [`${value} compras`, 'Frequência']}
                           />
-                          <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={35} />
+                          <Bar dataKey="value" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={15} />
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                        Nenhuma venda parcelada identificada no período.
-                      </div>
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem compras parceladas</div>
                     )}
                   </div>
                 </div>
 
-                {/* Tempo de Processamento SLA */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[300px] justify-between">
-                  <h3 className="font-bold text-slate-800 text-sm mb-2">Tempo de Faturamento (SLA)</h3>
-                  <div className="text-center py-4">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aprovação → Faturamento</span>
-                    <h2 className="text-4xl font-extrabold text-indigo-600 mt-2">{avgInvoiceTimeHours}h</h2>
-                    <p className="text-xs text-slate-500 mt-1">Tempo médio de processamento</p>
-                  </div>
-                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Pedidos Faturados analisados:</span>
-                      <span className="font-bold text-slate-700">{approvedCount}</span>
+                {/* Bloco de Fidelidade */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] justify-between">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-indigo-500" />
+                    Fidelidade e Retenção
+                  </h3>
+                  <div className="flex-1 flex flex-col gap-4 justify-center">
+                    {/* Recorrência */}
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold">Taxa de Recorrência</p>
+                        <p className="text-[20px] font-bold text-slate-900 mt-0.5">{recurrentRate.toFixed(1)}%</p>
+                      </div>
+                      <div className="text-right text-[10px] text-slate-400">
+                        <p>Únicos: <span className="font-semibold text-slate-600">{totalUniqueClients}</span></p>
+                        <p>Recorrentes: <span className="font-semibold text-slate-600">{recurrentClientsCount}</span></p>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Estágio atual:</span>
-                      <span className="font-bold text-emerald-600">Fluxo Normal</span>
+                    
+                    {/* LTV */}
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase font-semibold">Ticket por Comprador (LTV)</p>
+                        <p className="text-[20px] font-bold text-emerald-600 mt-0.5">R$ {avgRevenuePerClient.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                      </div>
+                      <div className="text-right text-[10px] text-slate-400">
+                        <p>Total: <span className="font-semibold text-slate-600">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></p>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </section>
 
-              </div>
-
-              {/* Linha 4: Cidades (Retirada vs Entrega) e Transportadoras */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Transportadoras (1/3) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Desempenho de Transportadoras</h3>
-                  <div className="overflow-y-auto flex-1">
+              {/* CAMADA 3: LOGÍSTICA E GEOGRAFIA (Grid 50% / 50%) */}
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+                {/* Desempenho de Transportadoras */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Desempenho de Transportadoras</h3>
+                  <div className="overflow-y-auto flex-1 pr-1">
                     <table className="w-full text-left text-xs">
-                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
-                        <tr>
-                          <th className="pb-2 font-semibold cursor-pointer hover:text-slate-800" onClick={() => handleCarrierSort('name')}>
-                            Courier {carrierSortField === 'name' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                      <thead>
+                        <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                          <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleCarrierSort('name')}>
+                            Transportadora {carrierSortField === 'name' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
-                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleCarrierSort('count')}>
-                            Ped. {carrierSortField === 'count' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleCarrierSort('count')}>
+                            Pedidos {carrierSortField === 'count' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
-                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleCarrierSort('revenue')}>
-                            Valor {carrierSortField === 'revenue' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleCarrierSort('revenue')}>
+                            Faturamento {carrierSortField === 'revenue' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
                         {carriersList.map((item, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-2.5 font-medium truncate max-w-[100px]" title={item.name}>{item.name}</td>
-                            <td className="py-2.5 text-right font-bold text-slate-800">{item.count}</td>
-                            <td className="py-2.5 text-right font-semibold text-emerald-600">
-                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                            <td className="py-3 font-medium text-left truncate max-w-[150px]" title={item.name}>{item.name}</td>
+                            <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
+                            <td className="py-3 text-right font-semibold text-emerald-600">
+                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                             </td>
                           </tr>
                         ))}
                         {carriersList.length === 0 && (
                           <tr>
-                            <td colSpan={2} className="py-12 text-center text-slate-400">
-                              Nenhuma transportadora identificada.
-                            </td>
+                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Nenhuma transportadora identificada.</td>
                           </tr>
                         )}
                       </tbody>
@@ -2115,235 +2085,80 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Cidades de Entrega e Retirada (2/3 de espaço) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-2">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Destinos de Entrega vs. Cidades com Retirada</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
-                    
-                    {/* Cidades de Entrega */}
-                    <div className="flex flex-col overflow-hidden">
-                      <h4 className="text-xs font-bold text-indigo-600 mb-2 border-b border-slate-100 pb-1 flex items-center justify-between">
-                        <span>Cidades de Entrega</span>
-                        <span className="text-[10px] text-slate-400 font-normal">Encomendas</span>
-                      </h4>
-                      <div className="overflow-y-auto flex-1 pr-1">
-                        <table className="w-full text-left text-xs">
-                          <thead className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
-                            <tr>
-                              <th className="pb-1.5 font-semibold cursor-pointer hover:text-slate-700" onClick={() => handleDeliverySort('city')}>
-                                Cidade {deliverySortField === 'city' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
-                              </th>
-                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handleDeliverySort('count')}>
-                                Ped. {deliverySortField === 'count' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
-                              </th>
-                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handleDeliverySort('revenue')}>
-                                Valor {deliverySortField === 'revenue' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50 text-slate-700">
-                            {topDeliveryCities.map((item, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                <td className="py-2 font-medium text-slate-600 truncate max-w-[100px]" title={item.city}>
-                                  {idx + 1}. {item.city}
-                                </td>
-                                <td className="py-2 text-right font-bold text-slate-800">
-                                  {item.count} ped.
-                                </td>
-                                <td className="py-2 text-right font-semibold text-emerald-600">
-                                  R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {topDeliveryCities.length === 0 && (
-                          <p className="text-xs text-slate-400 text-center py-12">Nenhuma cidade de entrega.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Cidades de Retirada */}
-                    <div className="flex flex-col overflow-hidden">
-                      <h4 className="text-xs font-bold text-emerald-600 mb-2 border-b border-slate-100 pb-1 flex items-center justify-between">
-                        <span>Cidades com Retirada</span>
-                        <span className="text-[10px] text-slate-400 font-normal">Retirados em Loja</span>
-                      </h4>
-                      <div className="overflow-y-auto flex-1 pr-1">
-                        <table className="w-full text-left text-xs">
-                          <thead className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
-                            <tr>
-                              <th className="pb-1.5 font-semibold cursor-pointer hover:text-slate-700" onClick={() => handlePickupSort('city')}>
-                                Cidade {pickupSortField === 'city' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
-                              </th>
-                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handlePickupSort('count')}>
-                                Ped. {pickupSortField === 'count' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
-                              </th>
-                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handlePickupSort('revenue')}>
-                                Valor {pickupSortField === 'revenue' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50 text-slate-700">
-                            {topPickupCities.map((item, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                <td className="py-2 font-medium text-slate-600 truncate max-w-[100px]" title={item.city}>
-                                  {idx + 1}. {item.city}
-                                </td>
-                                <td className="py-2 text-right font-bold text-slate-800">
-                                  {item.count} ped.
-                                </td>
-                                <td className="py-2 text-right font-semibold text-emerald-600">
-                                  R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {topPickupCities.length === 0 && (
-                          <p className="text-xs text-slate-400 text-center py-12">Nenhuma cidade com retiradas.</p>
-                        )}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Linha 4.5: Pedidos & Faturamento por Estado, Recorrência e LTV */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                
-                {/* Pedidos & Faturamento por Estado (2/4 de espaço) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-2">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Pedidos & Faturamento por Estado</h3>
-                  <div className="overflow-y-auto flex-1">
+                {/* Pedidos & Faturamento por Estado */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Pedidos & Faturamento por Estado</h3>
+                  <div className="overflow-y-auto flex-1 pr-1">
                     <table className="w-full text-left text-xs">
-                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
-                        <tr>
-                          <th className="pb-2 font-semibold cursor-pointer hover:text-slate-800" onClick={() => handleStateSort('state')}>
+                      <thead>
+                        <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                          <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleStateSort('state')}>
                             Estado {stateSortField === 'state' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
-                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleStateSort('count')}>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleStateSort('count')}>
                             Pedidos {stateSortField === 'count' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
-                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleStateSort('revenue')}>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleStateSort('revenue')}>
                             Faturamento {stateSortField === 'revenue' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
                         {statesList.map((item, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-2.5 font-medium">{item.state}</td>
-                            <td className="py-2.5 text-right font-bold text-slate-800">{item.count} ped.</td>
-                            <td className="py-2.5 text-right font-semibold text-emerald-600">
+                            <td className="py-3 font-medium text-left">{item.state}</td>
+                            <td className="py-3 text-right font-bold text-slate-800">{item.count} ped.</td>
+                            <td className="py-3 text-right font-semibold text-emerald-600">
                               R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </td>
                           </tr>
                         ))}
                         {statesList.length === 0 && (
                           <tr>
-                            <td colSpan={3} className="py-12 text-center text-slate-400">
-                              Nenhum dado por estado disponível.
-                            </td>
+                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Nenhum dado por estado disponível.</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
                   </div>
                 </div>
+              </section>
 
-                {/* Card de Recorrência (1/4) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1 justify-between">
-                  <h3 className="font-bold text-slate-800 text-sm mb-2">Recorrência de Clientes</h3>
-                  <div className="text-center py-4">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Taxa de Recorrência</span>
-                    <h2 className="text-4xl font-extrabold text-indigo-600 mt-2">{recurrentRate.toFixed(1)}%</h2>
-                    <p className="text-xs text-slate-500 mt-1">Clientes que compraram mais de uma vez</p>
-                  </div>
-                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Total de Clientes Únicos:</span>
-                      <span className="font-bold text-slate-700">{totalUniqueClients}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Clientes Recorrentes:</span>
-                      <span className="font-bold text-slate-700">{recurrentClientsCount}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card de Receita Média por Cliente (1/4) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1 justify-between">
-                  <h3 className="font-bold text-slate-800 text-sm mb-2">Ticket por Comprador</h3>
-                  <div className="text-center py-4">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Receita Média / Cliente</span>
-                    <h2 className="text-3xl font-extrabold text-emerald-600 mt-2">R$ {avgRevenuePerClient.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h2>
-                    <p className="text-xs text-slate-500 mt-1">LTV médio gerado por comprador</p>
-                  </div>
-                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Faturamento Total:</span>
-                      <span className="font-bold text-slate-700">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Total de Compradores:</span>
-                      <span className="font-bold text-slate-700">{totalUniqueClients}</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Linha 5: Tabelas de Detalhamento e Maiores Clientes */}
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                
-                {/* Ranking de Clientes (2/5) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] lg:col-span-2">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Maiores Compradores</h3>
+              {/* CAMADA 5: DETALHAMENTO OPERACIONAL (Grid 40% / 60% no Rodapé) */}
+              <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 w-full">
+                {/* Maiores Compradores (40% de espaço) */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] lg:col-span-2">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Maiores Compradores</h3>
                   <div className="flex-1 overflow-y-auto pr-1">
                     <table className="w-full text-left text-xs">
-                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
-                        <tr>
-                          <th className="pb-2 font-semibold cursor-pointer hover:text-slate-800" onClick={() => handleBuyerSort('name')}>
+                      <thead>
+                        <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                          <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleBuyerSort('name')}>
                             Cliente {buyerSortField === 'name' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
-                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleBuyerSort('count')}>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleBuyerSort('count')}>
                             Ped. {buyerSortField === 'count' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
-                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleBuyerSort('total')}>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleBuyerSort('total')}>
                             Total {buyerSortField === 'total' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
-                          </th>
-                          <th className="pb-2 font-semibold text-right text-indigo-600 cursor-pointer hover:text-indigo-800" onClick={() => handleBuyerSort('avg')}>
-                            Média/Ped. {buyerSortField === 'avg' ? (buyerSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-slate-700">
-                        {topClients.map((client, idx) => {
-                          const avgPerOrder = client.count > 0 ? (client.total / client.count) : 0;
-                          return (
-                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-2.5 font-medium flex items-center gap-1.5 min-w-0">
-                                <span className="text-[10px] font-bold text-slate-400">#{idx + 1}</span>
-                                <span className="truncate max-w-[155px] text-slate-800" title={client.name}>{client.name}</span>
-                              </td>
-                              <td className="py-2.5 text-right font-bold text-slate-600">{client.count}</td>
-                              <td className="py-2.5 text-right font-bold text-slate-800">
-                                R$ {client.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </td>
-                              <td className="py-2.5 text-right font-semibold text-indigo-600">
-                                R$ {avgPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </td>
-                            </tr>
-                          );
-                        })}
+                        {topClients.map((client, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 font-medium text-left truncate max-w-[140px]" title={client.name}>
+                              #{idx + 1} {client.name}
+                            </td>
+                            <td className="py-3 text-right font-bold text-slate-800">{client.count}</td>
+                            <td className="py-3 text-right font-bold text-slate-900">
+                              R$ {client.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
                         {topClients.length === 0 && (
                           <tr>
-                            <td colSpan={4} className="py-12 text-center text-slate-400 text-xs">
-                              Nenhum comprador registrado no período.
-                            </td>
+                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Nenhum comprador registrado.</td>
                           </tr>
                         )}
                       </tbody>
@@ -2351,18 +2166,18 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Últimos Pedidos Detalhados (3/5) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[380px] lg:col-span-3 overflow-hidden">
-                  <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50">
-                    <div className="flex items-center gap-4">
+                {/* Últimos Pedidos Operacionais (60% de espaço) */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px] lg:col-span-3 overflow-hidden">
+                  <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-4 bg-slate-50">
+                    <div className="flex items-center gap-2">
                       <div className="relative">
                         <Filter className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <input 
                           type="text" 
-                          placeholder="Buscar pedido ou cliente..." 
+                          placeholder="Buscar..." 
                           value={orderSearch}
                           onChange={(e) => setOrderSearch(e.target.value)}
-                          className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 w-52 bg-white"
+                          className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 w-44 bg-white"
                         />
                       </div>
                       <select
@@ -2370,76 +2185,57 @@ export default function Dashboard() {
                         onChange={(e) => setOrderStatusFilter(e.target.value)}
                         className="py-1.5 px-3 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       >
-                        <option value="All">Todos os Status</option>
+                        <option value="All">Status</option>
                         <option value="invoiced">Faturado</option>
-                        <option value="handling">Em Preparação</option>
-                        <option value="payment-pending">Pagamento Pendente</option>
+                        <option value="handling">Preparação</option>
+                        <option value="payment-pending">Aguardando Pagamento</option>
                         <option value="canceled">Cancelado</option>
                       </select>
                     </div>
-                    <div className="text-xs text-slate-500 font-medium">
-                      {filteredOrders.length} pedidos
+                    <div className="text-xs text-slate-500 font-semibold shrink-0">
+                      {filteredOrders.length} ped.
                     </div>
                   </div>
+                  
                   <div className="overflow-y-auto flex-1">
-                    <table className="w-full text-left min-w-[500px]">
-                      <thead className="text-[10px] text-slate-500 uppercase bg-white sticky top-0 shadow-sm border-b border-slate-200">
-                        <tr>
-                          <th className="px-4 py-2 font-semibold">ID</th>
-                          <th className="px-4 py-2 font-semibold">Data</th>
-                          <th className="px-4 py-2 font-semibold">Cliente</th>
-                          <th className="px-4 py-2 font-semibold">Cidade</th>
-                          <th className="px-4 py-2 font-semibold">Pagamento</th>
-                          <th className="px-4 py-2 font-semibold">Status</th>
-                          <th className="px-4 py-2 font-semibold text-right">Total</th>
+                    <table className="w-full text-left min-w-[500px] text-xs">
+                      <thead>
+                        <tr className="text-[10px] text-slate-400 uppercase bg-white sticky top-0 shadow-sm border-b border-slate-200">
+                          <th className="px-4 py-3 font-bold text-left">ID</th>
+                          <th className="px-4 py-3 font-bold text-left">Data</th>
+                          <th className="px-4 py-3 font-bold text-left">Cliente</th>
+                          <th className="px-4 py-3 font-bold text-left">Status</th>
+                          <th className="px-4 py-3 font-bold text-right">Total</th>
                         </tr>
                       </thead>
-                      <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
                         {filteredOrders.map((order, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-4 py-3 font-semibold text-blue-600">{order.orderId}</td>
-                            <td className="px-4 py-3 text-slate-500">{new Date(order.creationDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                            <td className="px-4 py-3 truncate max-w-[120px]">{order.clientName || 'Cliente Indefinido'}</td>
-                            <td className="px-4 py-3 truncate max-w-[100px] font-medium text-slate-600">
-                              {order.city === 'Não Informado' ? (
-                                <span className="text-slate-400 italic text-[10px]">Sincronizando...</span>
-                              ) : (
-                                order.city
-                              )}
+                            <td className="px-4 py-3 font-semibold text-blue-600 text-left">{order.orderId}</td>
+                            <td className="px-4 py-3 text-slate-500 text-left">
+                              {new Date(order.creationDate).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </td>
-                            <td className="px-4 py-3 text-slate-600 font-medium truncate max-w-[120px]">
-                              {order.city === 'Não Informado' ? (
-                                <span className="text-slate-400 italic text-[10px]">Sincronizando...</span>
-                              ) : (
-                                `${order.paymentMethod}${order.installments > 1 ? ` (${order.installments}x)` : ''}`
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                order.status === 'invoiced' ? 'bg-emerald-100 text-emerald-800' :
-                                order.status === 'canceled' ? 'bg-rose-100 text-rose-800' :
-                                order.status === 'handling' ? 'bg-blue-100 text-blue-800' :
-                                'bg-amber-100 text-amber-800'
-                              }`}>
-                                {order.status === 'payment-pending' ? 'pgto pend' : order.status}
+                            <td className="px-4 py-3 font-medium truncate max-w-[120px] text-slate-800 text-left" title={order.clientName}>{order.clientName}</td>
+                            <td className="px-4 py-3 text-left">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: `${statusColorMap[order.status]}20`, color: statusColorMap[order.status] }}>
+                                {statusLabelMap[order.status] || order.status}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-right font-semibold">R$ {(order.totalValue / 100)?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-right font-bold text-slate-900">
+                              R$ {((order.totalValue || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
                           </tr>
                         ))}
                         {filteredOrders.length === 0 && (
                           <tr>
-                            <td colSpan={5} className="px-4 py-12 text-center text-slate-500 bg-slate-50/50">
-                              Nenhum pedido encontrado.
-                            </td>
+                            <td colSpan={5} className="py-12 text-center text-slate-400">Nenhum pedido encontrado.</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
                   </div>
                 </div>
-
-              </div>
+              </section>
 
             </div>
           )}
