@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products'>('executive');
   const [periodType, setPeriodType] = useState('Este mês, até agora');
@@ -1418,14 +1418,14 @@ export default function Dashboard() {
           {!isSidebarCollapsed && (
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xl">V</div>
-                <span className="text-xl font-bold text-white tracking-tight">Insight Hub</span>
+                <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-indigo-600/30">N</div>
+                <span className="text-lg font-bold text-white tracking-tight">Narciso <span className="text-indigo-400">Dashboard</span></span>
               </div>
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">VTEX + GA4 Intelligence</p>
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold opacity-80">E-commerce Narciso</p>
             </div>
           )}
           {isSidebarCollapsed && (
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xl">V</div>
+            <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-indigo-600/30">N</div>
           )}
           <button 
             onClick={() => setIsSidebarOpen(false)} 
@@ -1523,8 +1523,9 @@ export default function Dashboard() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white border-b border-slate-200 px-8 py-4 shrink-0">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <header className="bg-white border-b border-slate-200 px-8 py-4 shrink-0 flex flex-col gap-3">
+          {/* Row 1: Title and Date Range */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
@@ -1532,7 +1533,7 @@ export default function Dashboard() {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-semibold text-slate-900 truncate">
+              <h1 className="text-lg font-bold text-slate-950 tracking-tight">
                 {activeTab === 'executive' 
                   ? 'Dashboard de Operações' 
                   : activeTab === 'sales' 
@@ -1545,291 +1546,288 @@ export default function Dashboard() {
               </h1>
             </div>
 
-            <div className="flex flex-wrap items-start gap-4 justify-start lg:justify-end text-slate-700">
-              
-              {/* FILTROS DE DADOS */}
-              <div className="flex flex-wrap items-start gap-3">
-                {/* VTEX-style period selector button */}
-                <div className="relative">
-                  <button
-                    onClick={openDatePicker}
-                    className="flex items-center gap-1 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs rounded-lg px-3 h-9 text-slate-700 transition-all font-semibold outline-none cursor-pointer"
-                  >
-                    <Calendar className="w-3.5 h-3.5 text-slate-500 mr-1.5 shrink-0" />
-                    <span>Período: <strong className="text-indigo-600">{periodType}</strong></span>
-                    <span className="text-slate-300 mx-1.5">|</span>
-                    <span className="text-slate-500 font-normal">Comparado com: <strong>{comparisonType === 'custom' ? 'Personalizado' : comparisonType === 'days' ? 'Dias anteriores' : 'Equivalente anterior'}</strong> ({format(prevStart, 'dd/MM/yyyy')} - {format(prevEnd, 'dd/MM/yyyy')})</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1.5 shrink-0" />
-                  </button>
+            {/* VTEX-style period selector button */}
+            <div className="relative">
+              <button
+                onClick={openDatePicker}
+                className="flex items-center gap-1 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs rounded-lg px-3 h-9 text-slate-700 transition-all font-semibold outline-none cursor-pointer shadow-xs"
+              >
+                <Calendar className="w-3.5 h-3.5 text-slate-500 mr-1.5 shrink-0" />
+                <span>Período: <strong className="text-indigo-600">{periodType}</strong></span>
+                <span className="text-slate-300 mx-1.5">|</span>
+                <span className="text-slate-500 font-normal">Comparado com: <strong>{comparisonType === 'custom' ? 'Personalizado' : comparisonType === 'days' ? 'Dias anteriores' : 'Equivalente anterior'}</strong> ({format(prevStart, 'dd/MM/yyyy')} - {format(prevEnd, 'dd/MM/yyyy')})</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1.5 shrink-0" />
+              </button>
 
-                  {isDatePickerOpen && (
-                    <div className="absolute top-[42px] left-0 z-50 w-[420px] bg-white border border-slate-200 rounded-lg shadow-xl p-5 flex flex-col gap-4 text-slate-800">
-                      {/* Periodo principal */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período principal:</span>
-                          <select
-                            value={tempPeriodType}
-                            onChange={(e) => handleTempPeriodChange(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-700 outline-none w-52 font-semibold"
-                          >
-                            <option value="Fixo">Fixo / Personalizado</option>
-                            <option value="Hoje">Hoje</option>
-                            <option value="Ontem">Ontem</option>
-                            <optgroup label="Esta semana">
-                              <option value="Esta semana (começa no domingo)">Esta semana (D)</option>
-                              <option value="Esta semana (começa na segunda-feira)">Esta semana (S)</option>
-                            </optgroup>
-                            <optgroup label="Este mês">
-                              <option value="Este mês">Este mês</option>
-                              <option value="Este mês, até agora">Este mês, até agora</option>
-                            </optgroup>
-                            <optgroup label="Este trimestre">
-                              <option value="Este trimestre">Este trimestre</option>
-                              <option value="Este trimestre, até agora">Este trimestre, até agora</option>
-                            </optgroup>
-                            <optgroup label="Este ano">
-                              <option value="Este ano">Este ano</option>
-                              <option value="Este ano, até agora">Este ano, até agora</option>
-                            </optgroup>
-                            <optgroup label="Últimos">
-                              <option value="Últimos 7 dias">Últimos 7 dias</option>
-                              <option value="Últimos 14 dias">Últimos 14 dias</option>
-                              <option value="Últimos 28 dias">Últimos 28 dias</option>
-                              <option value="Últimos 30 dias">Últimos 30 dias</option>
-                            </optgroup>
-                            <optgroup label="Passado">
-                              <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
-                              <option value="Semana passada (começa na segunda-feira)">Semana passada (S)</option>
-                              <option value="Mês passado">Mês passado</option>
-                              <option value="Trimestre passado">Trimestre passado</option>
-                              <option value="Ano passado">Ano passado</option>
-                            </optgroup>
-                          </select>
-                        </div>
+              {isDatePickerOpen && (
+                <div className="absolute top-[42px] right-0 z-50 w-[420px] bg-white border border-slate-200 rounded-lg shadow-xl p-5 flex flex-col gap-4 text-slate-800">
+                  {/* Periodo principal */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período principal:</span>
+                      <select
+                        value={tempPeriodType}
+                        onChange={(e) => handleTempPeriodChange(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-700 outline-none w-52 font-semibold"
+                      >
+                        <option value="Fixo">Fixo / Personalizado</option>
+                        <option value="Hoje">Hoje</option>
+                        <option value="Ontem">Ontem</option>
+                        <optgroup label="Esta semana">
+                          <option value="Esta semana (começa no domingo)">Esta semana (D)</option>
+                          <option value="Esta semana (começa na segunda-feira)">Esta semana (S)</option>
+                        </optgroup>
+                        <optgroup label="Este mês">
+                          <option value="Este mês">Este mês</option>
+                          <option value="Este mês, até agora">Este mês, até agora</option>
+                        </optgroup>
+                        <optgroup label="Este trimestre">
+                          <option value="Este trimestre">Este trimestre</option>
+                          <option value="Este trimestre, até agora">Este trimestre, até agora</option>
+                        </optgroup>
+                        <optgroup label="Este ano">
+                          <option value="Este ano">Este ano</option>
+                          <option value="Este ano, até agora">Este ano, até agora</option>
+                        </optgroup>
+                        <optgroup label="Últimos">
+                          <option value="Últimos 7 dias">Últimos 7 dias</option>
+                          <option value="Últimos 14 dias">Últimos 14 dias</option>
+                          <option value="Últimos 28 dias">Últimos 28 dias</option>
+                          <option value="Últimos 30 dias">Últimos 30 dias</option>
+                        </optgroup>
+                        <optgroup label="Passado">
+                          <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
+                          <option value="Semana passada (começa na segunda-feira)">Semana passada (S)</option>
+                          <option value="Mês passado">Mês passado</option>
+                          <option value="Trimestre passado">Trimestre passado</option>
+                          <option value="Ano passado">Ano passado</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    
+                    {/* Start/End Inputs for Main Period */}
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold">Data de início</span>
+                        <input
+                          type="date"
+                          value={tempStartDate}
+                          disabled={tempPeriodType !== 'Fixo'}
+                          onChange={(e) => setTempStartDate(e.target.value)}
+                          className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold">Data de término</span>
+                        <input
+                          type="date"
+                          value={tempEndDate}
+                          disabled={tempPeriodType !== 'Fixo'}
+                          onChange={(e) => setTempEndDate(e.target.value)}
+                          className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comparar com */}
+                  <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Comparar com:</span>
+                      <select
+                        value={tempComparisonType}
+                        onChange={(e) => setTempComparisonType(e.target.value as 'days' | 'period' | 'custom')}
+                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-700 outline-none w-52 font-semibold"
+                      >
+                        <option value="period">Período equivalente anterior</option>
+                        <option value="days">Mesmo nº de dias anteriores</option>
+                        <option value="custom">Personalizar...</option>
+                      </select>
+                    </div>
+
+                    {/* Start/End Inputs for Comparison Period */}
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold">Data de início</span>
+                        <input
+                          type="date"
+                          value={tempComparisonType === 'custom' ? tempCompareStart : format(getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType).start, 'yyyy-MM-dd')}
+                          disabled={tempComparisonType !== 'custom'}
+                          onChange={(e) => setTempCompareStart(e.target.value)}
+                          className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold">Data de término</span>
+                        <input
+                          type="date"
+                          value={tempComparisonType === 'custom' ? tempCompareEnd : format(getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType).end, 'yyyy-MM-dd')}
+                          disabled={tempComparisonType !== 'custom'}
+                          onChange={(e) => setTempCompareEnd(e.target.value)}
+                          className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cancelar / Aplicar buttons */}
+                  <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDatePickerOpen(false)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPeriodType(tempPeriodType);
+                        setComparisonType(tempComparisonType);
                         
-                        {/* Start/End Inputs for Main Period */}
-                        <div className="grid grid-cols-2 gap-2 mt-1">
-                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
-                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de início</span>
-                            <input
-                              type="date"
-                              value={tempStartDate}
-                              disabled={tempPeriodType !== 'Fixo'}
-                              onChange={(e) => setTempStartDate(e.target.value)}
-                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
-                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de término</span>
-                            <input
-                              type="date"
-                              value={tempEndDate}
-                              disabled={tempPeriodType !== 'Fixo'}
-                              onChange={(e) => setTempEndDate(e.target.value)}
-                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                        let finalCompStart = tempCompareStart;
+                        let finalCompEnd = tempCompareEnd;
+                        if (tempComparisonType !== 'custom') {
+                          const calc = getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType);
+                          finalCompStart = format(calc.start, 'yyyy-MM-dd');
+                          finalCompEnd = format(calc.end, 'yyyy-MM-dd');
+                        }
 
-                      {/* Comparar com */}
-                      <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Comparar com:</span>
-                          <select
-                            value={tempComparisonType}
-                            onChange={(e) => setTempComparisonType(e.target.value as 'days' | 'period' | 'custom')}
-                            className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-700 outline-none w-52 font-semibold"
-                          >
-                            <option value="period">Período equivalente anterior</option>
-                            <option value="days">Mesmo nº de dias anteriores</option>
-                            <option value="custom">Personalizar...</option>
-                          </select>
-                        </div>
-
-                        {/* Start/End Inputs for Comparison Period */}
-                        <div className="grid grid-cols-2 gap-2 mt-1">
-                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
-                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de início</span>
-                            <input
-                              type="date"
-                              value={tempComparisonType === 'custom' ? tempCompareStart : format(getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType).start, 'yyyy-MM-dd')}
-                              disabled={tempComparisonType !== 'custom'}
-                              onChange={(e) => setTempCompareStart(e.target.value)}
-                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-0.5 border border-slate-200 rounded-lg p-2 bg-white">
-                            <span className="text-[9px] text-slate-400 uppercase font-bold">Data de término</span>
-                            <input
-                              type="date"
-                              value={tempComparisonType === 'custom' ? tempCompareEnd : format(getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType).end, 'yyyy-MM-dd')}
-                              disabled={tempComparisonType !== 'custom'}
-                              onChange={(e) => setTempCompareEnd(e.target.value)}
-                              className="text-xs text-slate-700 outline-none w-full bg-transparent font-medium disabled:opacity-60"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Cancelar / Aplicar buttons */}
-                      <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsDatePickerOpen(false)}
-                          className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPeriodType(tempPeriodType);
-                            setComparisonType(tempComparisonType);
-                            
-                            let finalCompStart = tempCompareStart;
-                            let finalCompEnd = tempCompareEnd;
-                            if (tempComparisonType !== 'custom') {
-                              const calc = getCompareDates(tempStartDate, tempEndDate, tempComparisonType, tempPeriodType);
-                              finalCompStart = format(calc.start, 'yyyy-MM-dd');
-                              finalCompEnd = format(calc.end, 'yyyy-MM-dd');
-                            }
-
-                            setFilters({
-                              ...filters,
-                              startDate: tempStartDate,
-                              endDate: tempEndDate,
-                              customCompareStart: finalCompStart,
-                              customCompareEnd: finalCompEnd
-                            });
-                            setIsDatePickerOpen(false);
-                          }}
-                          className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm cursor-pointer"
-                        >
-                          Aplicar
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                        setFilters({
+                          ...filters,
+                          startDate: tempStartDate,
+                          endDate: tempEndDate,
+                          customCompareStart: finalCompStart,
+                          customCompareEnd: finalCompEnd
+                        });
+                        setIsDatePickerOpen(false);
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm cursor-pointer"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
                 </div>
+              )}
+            </div>
+          </div>
 
-                {/* Status Selector Dropdown */}
-                <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status</span>
-                  <button 
-                    type="button"
-                    onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36 flex items-center justify-between gap-1 text-left cursor-pointer"
-                  >
-                    <span className="truncate">
-                      {filters.status.length === 0 || filters.status.length === 5
-                        ? 'Todos os Status' 
-                        : filters.status.length === 1
-                          ? (statusLabelMap[filters.status[0]] || filters.status[0])
-                          : `${filters.status.length} selecionados`}
-                    </span>
-                    <span className="text-[9px] text-slate-400">▼</span>
-                  </button>
-                  
-                  {isStatusDropdownOpen && (
-                    <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-0.5 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setFilters({ ...filters, status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'] })}
-                          className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer select-none"
-                        >
-                          Marcar todos
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFilters({ ...filters, status: [] })}
-                          className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
-                        >
-                          Limpar todos
-                        </button>
-                      </div>
-                      
-                      {[
-                        { value: 'invoiced', label: 'Faturado' },
-                        { value: 'handling', label: 'Em Preparação' },
-                        { value: 'payment-pending', label: 'Pagamento Pendente' },
-                        { value: 'canceled', label: 'Cancelado' },
-                        { value: 'payment-approved', label: 'Aprovado' }
-                      ].map((opt) => {
-                        const isChecked = filters.status.includes(opt.value);
-                        return (
-                          <label key={opt.value} className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none py-0.5">
-                            <input 
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleStatusCheckboxChange(opt.value)}
-                              className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span>{opt.label}</span>
-                          </label>
-                        );
-                      })}
+          {/* Row 2: Secondary Filters (Status, Grouping, Mode, Actions) */}
+          <div className="border-t border-slate-100 pt-3 flex flex-wrap items-center justify-between gap-3 text-slate-700">
+            {/* Status Dropdown */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status do Pedido</span>
+                <button 
+                  type="button"
+                  onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-indigo-500 focus:bg-white transition-all outline-none w-44 flex items-center justify-between gap-1 text-left cursor-pointer"
+                >
+                  <span className="truncate">
+                    {filters.status.length === 0 || filters.status.length === 5
+                      ? 'Todos os Status' 
+                      : filters.status.length === 1
+                        ? (statusLabelMap[filters.status[0]] || filters.status[0])
+                        : `${filters.status.length} selecionados`}
+                  </span>
+                  <span className="text-[9px] text-slate-400">▼</span>
+                </button>
+                
+                {isStatusDropdownOpen && (
+                  <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-0.5 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFilters({ ...filters, status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'] })}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer select-none"
+                      >
+                        Marcar todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilters({ ...filters, status: [] })}
+                        className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
+                      >
+                        Limpar todos
+                      </button>
                     </div>
-                  )}
+                    
+                    {[
+                      { value: 'invoiced', label: 'Faturado' },
+                      { value: 'handling', label: 'Em Preparação' },
+                      { value: 'payment-pending', label: 'Pagamento Pendente' },
+                      { value: 'canceled', label: 'Cancelado' },
+                      { value: 'payment-approved', label: 'Aprovado' }
+                    ].map((opt) => {
+                      const isChecked = filters.status.includes(opt.value);
+                      return (
+                        <label key={opt.value} className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none py-0.5">
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleStatusCheckboxChange(opt.value)}
+                            className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Agrupamento, Modo & Actions */}
+            <div className="flex items-center gap-4">
+              {/* Agrupamento */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Agrupamento</span>
+                <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 h-9 items-center">
+                  {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
+                    <button
+                      key={interval}
+                      onClick={() => setChartInterval(interval)}
+                      className={`px-2.5 py-1 text-[10px] font-medium rounded transition-colors ${
+                        chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* DIVIDER */}
-              <div className="hidden xl:block h-9 w-[1px] bg-slate-200 self-start"></div>
+              {/* Modo */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Modo</span>
+                <button
+                  onClick={() => setIsCumulative(!isCumulative)}
+                  className={`px-3 h-9 text-[10px] font-bold rounded-lg border transition-all ${
+                    isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {isCumulative ? '✓ Acumulado' : 'Acumulado'}
+                </button>
+              </div>
 
-              {/* CONTROLES DE VISUALIZAÇÃO E AÇÕES */}
-              <div className="flex flex-wrap items-start gap-3">
-                {/* Action: Acumulado / Interval (Hour/Day/Week/Month) */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Agrupamento</span>
-                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 h-9 items-center">
-                    {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
-                      <button
-                        key={interval}
-                        onClick={() => setChartInterval(interval)}
-                        className={`px-2.5 py-1 text-[10px] font-medium rounded transition-colors ${
-                          chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {/* Refresh Button */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
+                <button onClick={fetchData} className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 h-9 w-9 shrink-0 cursor-pointer" title="Atualizar dados">
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
 
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Modo</span>
-                  <button
-                    onClick={() => setIsCumulative(!isCumulative)}
-                    className={`px-3 h-9 text-xs font-bold rounded-lg border transition-all ${
-                      isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    {isCumulative ? '✓ Acumulado' : 'Acumulado'}
-                  </button>
-                </div>
-
-                {/* Refresh Button */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
-                  <button onClick={fetchData} className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 h-9 w-9 shrink-0" title="Atualizar dados">
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Export PDF Button */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
-                  <button 
-                    onClick={() => window.print()}
-                    className="flex items-center gap-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 h-9 shrink-0"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>PDF</span>
-                  </button>
-                </div>
+              {/* Export PDF Button */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
+                <button 
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 h-9 shrink-0 cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>PDF</span>
+                </button>
               </div>
             </div>
           </div>
