@@ -257,12 +257,15 @@ export default function Dashboard() {
         throw new Error(errMsg || 'Failed to fetch VTEX data');
       }
       
-      // Enrich orders with local cached details first
       const enrichedList = (vtexJson.list || []).map((order: any) => {
         const cached = localStorage.getItem(`order_detail_${order.orderId}`);
         if (cached) {
           try {
-            return { ...order, ...JSON.parse(cached) };
+            const parsed = JSON.parse(cached);
+            const hasMissingCategories = parsed.items && parsed.items.some((item: any) => !item.category || item.category === 'Não Informado');
+            if (!hasMissingCategories && !parsed.failed) {
+              return { ...order, ...parsed };
+            }
           } catch (e) {
             // ignore
           }
@@ -288,12 +291,11 @@ export default function Dashboard() {
       if (cachedStr) {
         try {
           const parsed = JSON.parse(cachedStr);
-          // If it failed recently (less than 2 minutes ago), skip it to prevent loops
           if (parsed.failed && Date.now() - parsed.timestamp < 120000) {
             return false;
           }
-          // Force refetch if the cache is old and doesn't contain 'state' UF field
-          if (parsed.state === undefined && !parsed.failed) {
+          const hasMissingCategories = parsed.items && parsed.items.some((item: any) => !item.category || item.category === 'Não Informado');
+          if ((parsed.state === undefined || hasMissingCategories) && !parsed.failed) {
             return !fetchingIds.has(order.orderId);
           }
         } catch (e) {
