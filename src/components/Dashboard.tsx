@@ -3263,7 +3263,7 @@ export default function Dashboard() {
               if (order.items) {
                 order.items.forEach((item: any) => {
                   const pName = item.name || 'Produto Sem Nome';
-                  const pPrice = (item.price || 0) / 100;
+                  const pPrice = (item.sellingPrice || item.price || 0) / 100;
                   const pQty = item.quantity || 1;
                   const pRev = pPrice * pQty;
 
