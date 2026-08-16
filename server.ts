@@ -580,59 +580,61 @@ app.post('/api/vtex/orders', async (c) => {
       'Accept': 'application/json'
     };
 
-    // Query up to 5 pages (500 orders) in parallel to get full history for large date ranges
-    const pages = [1, 2, 3, 4, 5];
-
-    const currentPromises = pages.map(page =>
-      axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
-        params: {
-          f_creationDate: currentFq,
-          per_page: 100,
-          page
-        },
-        headers
-      }).catch(err => {
-        console.error(`Failed to fetch current page ${page}:`, err.message);
-        return { data: { list: [] } };
-      })
-    );
-
-    const prevPromises = prevStartDate && prevEndDate
-      ? (() => {
-          const prevRange = getUtcRange(prevStartDate, prevEndDate);
-          const prevFq = `creationDate:[${prevRange.startUtc} TO ${prevRange.endUtc}]`;
-          return pages.map(page =>
-            axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
-              params: {
-                f_creationDate: prevFq,
-                per_page: 100,
-                page
-              },
-              headers
-            }).catch(err => {
-              console.error(`Failed to fetch prev page ${page}:`, err.message);
-              return { data: { list: [] } };
-            })
-          );
-        })()
-      : [];
-
-    const currentResponses = await Promise.all(currentPromises);
-    const prevResponses = prevPromises.length > 0 ? await Promise.all(prevPromises) : [];
-
-    let currentList: any[] = [];
-    currentResponses.forEach(res => {
-      if (res.data && res.data.list) {
-        currentList = [...currentList, ...res.data.list];
+    const fetchAllOrdersForRange = async (fq: string) => {
+      try {
+        const firstRes = await axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
+          params: {
+            f_creationDate: fq,
+            per_page: 100,
+            page: 1
+          },
+          headers
+        });
+        
+        const firstData = firstRes.data || {};
+        const list = firstData.list || [];
+        const paging = firstData.paging || { pages: 1 };
+        
+        const totalPages = Math.min(paging.pages, 30);
+        if (totalPages > 1) {
+          const promises = [];
+          for (let p = 2; p <= totalPages; p++) {
+            promises.push(
+              axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
+                params: {
+                  f_creationDate: fq,
+                  per_page: 100,
+                  page: p
+                },
+                headers
+              }).catch(err => {
+                console.error(`Failed to fetch page ${p} for ${fq}:`, err.message);
+                return { data: { list: [] } };
+              })
+            );
+          }
+          const responses = await Promise.all(promises);
+          responses.forEach(res => {
+            if (res.data && res.data.list) {
+              list.push(...res.data.list);
+            }
+          });
+        }
+        return list;
+      } catch (err: any) {
+        console.error(`Failed to fetch first page for ${fq}:`, err.message);
+        return [];
       }
-    });
+    };
 
+    let currentList = await fetchAllOrdersForRange(currentFq);
+    
     let prevList: any[] = [];
-    prevResponses.forEach(res => {
-      if (res.data && res.data.list) {
-        prevList = [...prevList, ...res.data.list];
-      }
-    });
+    if (prevStartDate && prevEndDate) {
+      const prevRange = getUtcRange(prevStartDate, prevEndDate);
+      const prevFq = `creationDate:[${prevRange.startUtc} TO ${prevRange.endUtc}]`;
+      prevList = await fetchAllOrdersForRange(prevFq);
+    }
 
     // Remove duplicates
     const seenCurrent = new Set();
