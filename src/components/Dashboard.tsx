@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
   const [periodType, setPeriodType] = useState('Este mês, até agora');
@@ -62,7 +62,7 @@ export default function Dashboard() {
     endDate: format(new Date(), 'yyyy-MM-dd'),
     category: 'All',
     minConversionRate: 0,
-    status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'],
+    status: ['invoiced', 'handling', 'payment-pending', 'payment-approved'],
   });
 
   const fetchData = async () => {
