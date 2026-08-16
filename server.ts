@@ -552,7 +552,28 @@ app.post('/api/vtex/orders', async (c) => {
     const accountName = cleanEnvString(getEnv(c, 'VTEX_ACCOUNT_NAME'));
     const environment = cleanEnvString(getEnv(c, 'VTEX_ENVIRONMENT')) || 'vtexcommercestable';
 
-    const currentFq = `creationDate:[${startDate}T00:00:00.000Z TO ${endDate}T23:59:59.999Z]`;
+    const getUtcRange = (start: string, end: string) => {
+      const startUtc = `${start}T03:00:00.000Z`;
+      
+      const parts = end.split('-');
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      
+      const endDateObj = new Date(Date.UTC(year, month, day));
+      endDateObj.setUTCDate(endDateObj.getUTCDate() + 1);
+      
+      const nextYear = endDateObj.getUTCFullYear();
+      const nextMonth = String(endDateObj.getUTCMonth() + 1).padStart(2, '0');
+      const nextDay = String(endDateObj.getUTCDate()).padStart(2, '0');
+      const nextDayStr = `${nextYear}-${nextMonth}-${nextDay}`;
+      
+      const endUtc = `${nextDayStr}T02:59:59.999Z`;
+      return { startUtc, endUtc };
+    };
+
+    const currentRange = getUtcRange(startDate, endDate);
+    const currentFq = `creationDate:[${currentRange.startUtc} TO ${currentRange.endUtc}]`;
     const headers = {
       'X-VTEX-API-AppKey': cleanEnvString(getEnv(c, 'VTEX_APP_KEY')),
       'X-VTEX-API-AppToken': cleanEnvString(getEnv(c, 'VTEX_APP_TOKEN')),
@@ -577,19 +598,23 @@ app.post('/api/vtex/orders', async (c) => {
     );
 
     const prevPromises = prevStartDate && prevEndDate
-      ? pages.map(page =>
-          axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
-            params: {
-              f_creationDate: `creationDate:[${prevStartDate}T00:00:00.000Z TO ${prevEndDate}T23:59:59.999Z]`,
-              per_page: 100,
-              page
-            },
-            headers
-          }).catch(err => {
-            console.error(`Failed to fetch prev page ${page}:`, err.message);
-            return { data: { list: [] } };
-          })
-        )
+      ? (() => {
+          const prevRange = getUtcRange(prevStartDate, prevEndDate);
+          const prevFq = `creationDate:[${prevRange.startUtc} TO ${prevRange.endUtc}]`;
+          return pages.map(page =>
+            axios.get(`https://${accountName}.${environment}.com.br/api/oms/pvt/orders`, {
+              params: {
+                f_creationDate: prevFq,
+                per_page: 100,
+                page
+              },
+              headers
+            }).catch(err => {
+              console.error(`Failed to fetch prev page ${page}:`, err.message);
+              return { data: { list: [] } };
+            })
+          );
+        })()
       : [];
 
     const currentResponses = await Promise.all(currentPromises);
