@@ -661,6 +661,7 @@ export default function Dashboard() {
   const totalUniqueClients = Object.keys(clientOrdersMap).length;
   const recurrentClientsCount = Object.values(clientOrdersMap).filter(data => data.count > 1).length;
   const recurrentRate = totalUniqueClients > 0 ? (recurrentClientsCount / totalUniqueClients) * 100 : 0;
+  const avgRevenuePerClient = totalUniqueClients > 0 ? (totalVtexRevenue / totalUniqueClients) : 0;
 
   const topClients = Object.entries(clientOrdersMap)
     .map(([name, data]) => {
@@ -2210,10 +2211,10 @@ export default function Dashboard() {
 
               </div>
 
-              {/* Linha 4.5: Pedidos & Faturamento por Estado e Recorrência */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Linha 4.5: Pedidos & Faturamento por Estado, Recorrência e LTV */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
-                {/* Pedidos & Faturamento por Estado (2/3 de espaço) */}
+                {/* Pedidos & Faturamento por Estado (2/4 de espaço) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-2">
                   <h3 className="font-bold text-slate-800 text-sm mb-4">Pedidos & Faturamento por Estado</h3>
                   <div className="overflow-y-auto flex-1">
@@ -2253,7 +2254,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Card de Recorrência (1/3) */}
+                {/* Card de Recorrência (1/4) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1 justify-between">
                   <h3 className="font-bold text-slate-800 text-sm mb-2">Recorrência de Clientes</h3>
                   <div className="text-center py-4">
@@ -2269,6 +2270,26 @@ export default function Dashboard() {
                     <div className="flex justify-between text-[11px] text-slate-500">
                       <span>Clientes Recorrentes:</span>
                       <span className="font-bold text-slate-700">{recurrentClientsCount}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card de Receita Média por Cliente (1/4) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1 justify-between">
+                  <h3 className="font-bold text-slate-800 text-sm mb-2">Ticket por Comprador</h3>
+                  <div className="text-center py-4">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Receita Média / Cliente</span>
+                    <h2 className="text-3xl font-extrabold text-emerald-600 mt-2">R$ {avgRevenuePerClient.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h2>
+                    <p className="text-xs text-slate-500 mt-1">LTV médio gerado por comprador</p>
+                  </div>
+                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Faturamento Total:</span>
+                      <span className="font-bold text-slate-700">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Total de Compradores:</span>
+                      <span className="font-bold text-slate-700">{totalUniqueClients}</span>
                     </div>
                   </div>
                 </div>
