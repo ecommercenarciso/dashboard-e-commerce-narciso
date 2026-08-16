@@ -25,6 +25,10 @@ export default function Dashboard() {
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [buyerSortField, setBuyerSortField] = useState<'name' | 'count' | 'total' | 'avg'>('total');
   const [buyerSortDirection, setBuyerSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [deliverySortField, setDeliverySortField] = useState<'city' | 'count' | 'revenue'>('count');
+  const [deliverySortDirection, setDeliverySortDirection] = useState<'asc' | 'desc'>('desc');
+  const [pickupSortField, setPickupSortField] = useState<'city' | 'count' | 'revenue'>('count');
+  const [pickupSortDirection, setPickupSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const handleBuyerSort = (field: 'name' | 'count' | 'total' | 'avg') => {
     if (buyerSortField === field) {
@@ -32,6 +36,24 @@ export default function Dashboard() {
     } else {
       setBuyerSortField(field);
       setBuyerSortDirection('desc');
+    }
+  };
+
+  const handleDeliverySort = (field: 'city' | 'count' | 'revenue') => {
+    if (deliverySortField === field) {
+      setDeliverySortDirection(deliverySortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setDeliverySortField(field);
+      setDeliverySortDirection('desc');
+    }
+  };
+
+  const handlePickupSort = (field: 'city' | 'count' | 'revenue') => {
+    if (pickupSortField === field) {
+      setPickupSortDirection(pickupSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPickupSortField(field);
+      setPickupSortDirection('desc');
     }
   };
 
@@ -679,7 +701,17 @@ export default function Dashboard() {
     });
     topDeliveryCities = Object.entries(rawDeliveryCities)
       .map(([city, data]) => ({ city, count: data.count, revenue: data.revenue }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => {
+        let comparison = 0;
+        if (deliverySortField === 'city') {
+          comparison = a.city.localeCompare(b.city);
+        } else if (deliverySortField === 'count') {
+          comparison = a.count - b.count;
+        } else if (deliverySortField === 'revenue') {
+          comparison = a.revenue - b.revenue;
+        }
+        return deliverySortDirection === 'desc' ? -comparison : comparison;
+      });
 
     // 2. Pickup Cities - full list of exact counts and revenue
     const rawPickupCities: Record<string, { count: number, revenue: number }> = {};
@@ -692,7 +724,17 @@ export default function Dashboard() {
     });
     topPickupCities = Object.entries(rawPickupCities)
       .map(([city, data]) => ({ city, count: data.count, revenue: data.revenue }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => {
+        let comparison = 0;
+        if (pickupSortField === 'city') {
+          comparison = a.city.localeCompare(b.city);
+        } else if (pickupSortField === 'count') {
+          comparison = a.count - b.count;
+        } else if (pickupSortField === 'revenue') {
+          comparison = a.revenue - b.revenue;
+        }
+        return pickupSortDirection === 'desc' ? -comparison : comparison;
+      });
 
     // 3. Carriers - full list of exact counts
     const sampleCarriers = detailedOrdersList.filter(o => o.carrier && o.carrier !== 'Não Informado');
@@ -796,12 +838,34 @@ export default function Dashboard() {
       { city: 'São Paulo', count: Math.round(deliveryOrdersCount * 0.4), revenue: totalVtexRevenue * 0.4 },
       { city: 'Rio de Janeiro', count: Math.round(deliveryOrdersCount * 0.3), revenue: totalVtexRevenue * 0.3 },
       { city: 'Belo Horizonte', count: Math.round(deliveryOrdersCount * 0.2), revenue: totalVtexRevenue * 0.2 }
-    ].filter(c => c.count > 0);
+    ].filter(c => c.count > 0)
+     .sort((a, b) => {
+        let comparison = 0;
+        if (deliverySortField === 'city') {
+          comparison = a.city.localeCompare(b.city);
+        } else if (deliverySortField === 'count') {
+          comparison = a.count - b.count;
+        } else if (deliverySortField === 'revenue') {
+          comparison = a.revenue - b.revenue;
+        }
+        return deliverySortDirection === 'desc' ? -comparison : comparison;
+     });
     
     topPickupCities = [
       { city: 'Recife', count: Math.round(pickupOrdersCount * 0.6), revenue: totalVtexRevenue * 0.05 },
       { city: 'Olinda', count: Math.round(pickupOrdersCount * 0.4), revenue: totalVtexRevenue * 0.03 }
-    ].filter(c => c.count > 0);
+    ].filter(c => c.count > 0)
+     .sort((a, b) => {
+        let comparison = 0;
+        if (pickupSortField === 'city') {
+          comparison = a.city.localeCompare(b.city);
+        } else if (pickupSortField === 'count') {
+          comparison = a.count - b.count;
+        } else if (pickupSortField === 'revenue') {
+          comparison = a.revenue - b.revenue;
+        }
+        return pickupSortDirection === 'desc' ? -comparison : comparison;
+     });
 
     carriersList = [
       { name: 'Total Express', count: Math.round(totalVtexOrders * 0.5), revenue: totalVtexRevenue * 0.5 },
@@ -1880,6 +1944,19 @@ export default function Dashboard() {
                       </h4>
                       <div className="overflow-y-auto flex-1 pr-1">
                         <table className="w-full text-left text-xs">
+                          <thead className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
+                            <tr>
+                              <th className="pb-1.5 font-semibold cursor-pointer hover:text-slate-700" onClick={() => handleDeliverySort('city')}>
+                                Cidade {deliverySortField === 'city' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                              </th>
+                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handleDeliverySort('count')}>
+                                Ped. {deliverySortField === 'count' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                              </th>
+                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handleDeliverySort('revenue')}>
+                                Valor {deliverySortField === 'revenue' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                              </th>
+                            </tr>
+                          </thead>
                           <tbody className="divide-y divide-slate-50 text-slate-700">
                             {topDeliveryCities.map((item, idx) => (
                               <tr key={idx} className="hover:bg-slate-50 transition-colors">
@@ -1910,6 +1987,19 @@ export default function Dashboard() {
                       </h4>
                       <div className="overflow-y-auto flex-1 pr-1">
                         <table className="w-full text-left text-xs">
+                          <thead className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
+                            <tr>
+                              <th className="pb-1.5 font-semibold cursor-pointer hover:text-slate-700" onClick={() => handlePickupSort('city')}>
+                                Cidade {pickupSortField === 'city' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                              </th>
+                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handlePickupSort('count')}>
+                                Ped. {pickupSortField === 'count' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                              </th>
+                              <th className="pb-1.5 font-semibold text-right cursor-pointer hover:text-slate-700" onClick={() => handlePickupSort('revenue')}>
+                                Valor {pickupSortField === 'revenue' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                              </th>
+                            </tr>
+                          </thead>
                           <tbody className="divide-y divide-slate-50 text-slate-700">
                             {topPickupCities.map((item, idx) => (
                               <tr key={idx} className="hover:bg-slate-50 transition-colors">
