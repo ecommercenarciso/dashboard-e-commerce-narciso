@@ -61,7 +61,7 @@ export default function Dashboard() {
 
   const [productSortField, setProductSortField] = useState<'name' | 'category' | 'brand' | 'quantity' | 'revenue'>('revenue');
   const [productSortDirection, setProductSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [subcategorySortField, setSubcategorySortField] = useState<'name' | 'revenue' | 'orders'>('revenue');
+  const [subcategorySortField, setSubcategorySortField] = useState<'name' | 'revenue' | 'orders' | 'quantity'>('revenue');
   const [subcategorySortDirection, setSubcategorySortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
@@ -3430,6 +3430,8 @@ export default function Dashboard() {
                 comparison = a.revenue - b.revenue;
               } else if (subcategorySortField === 'orders') {
                 comparison = a.orders - b.orders;
+              } else if (subcategorySortField === 'quantity') {
+                comparison = a.quantity - b.quantity;
               }
               return subcategorySortDirection === 'desc' ? -comparison : comparison;
             });
@@ -3564,6 +3566,9 @@ export default function Dashboard() {
                           <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('revenue')}>
                             Faturamento {subcategorySortField === 'revenue' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
                           </th>
+                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('quantity')}>
+                            Qtd Itens {subcategorySortField === 'quantity' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                          </th>
                           <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('orders')}>
                             Pedidos {subcategorySortField === 'orders' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
                           </th>
@@ -3577,12 +3582,13 @@ export default function Dashboard() {
                               <td className="text-right font-medium text-slate-900">
                                 R$ {cat.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
+                              <td className="text-right text-slate-500 font-semibold">{cat.quantity} un.</td>
                               <td className="text-right text-slate-500 font-semibold">{cat.orders} ped.</td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={3} className="text-center py-4 text-slate-400">Nenhuma subcategoria faturada no período</td>
+                            <td colSpan={4} className="text-center py-4 text-slate-400">Nenhuma subcategoria faturada no período</td>
                           </tr>
                         )}
                       </tbody>
