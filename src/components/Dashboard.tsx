@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 
@@ -15,7 +15,7 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals'>('executive');
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period'>('period');
   const [chartInterval, setChartInterval] = useState<'hour' | 'day' | 'week' | 'month'>('day');
@@ -33,6 +33,32 @@ export default function Dashboard() {
   const [carrierSortDirection, setCarrierSortDirection] = useState<'asc' | 'desc'>('desc');
   const [stateSortField, setStateSortField] = useState<'state' | 'count' | 'revenue'>('count');
   const [stateSortDirection, setStateSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Goals (Metas) Persisted State
+  const [goals, setGoals] = useState({
+    revenue: 50000,
+    orders: 200,
+    ticket: 250,
+    conversion: 1.5,
+    sessions: 15000
+  });
+
+  useEffect(() => {
+    const savedGoals = localStorage.getItem('dashboard_goals');
+    if (savedGoals) {
+      try {
+        setGoals(JSON.parse(savedGoals));
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  const handleGoalChange = (key: keyof typeof goals, value: number) => {
+    const newGoals = { ...goals, [key]: value };
+    setGoals(newGoals);
+    localStorage.setItem('dashboard_goals', JSON.stringify(newGoals));
+  };
 
   const handleBuyerSort = (field: 'name' | 'count' | 'total' | 'avg') => {
     if (buyerSortField === field) {
@@ -1164,6 +1190,14 @@ export default function Dashboard() {
               {!isSidebarCollapsed && <span className="text-sm font-medium">Análise de Vendas</span>}
             </div>
             <div 
+              onClick={() => setActiveTab('goals')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'goals' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Acompanhamento de Metas"
+            >
+              <Target className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Metas e Resultados</span>}
+            </div>
+            <div 
               className={`flex items-center gap-3 py-2 transition-colors cursor-pointer text-slate-500 hover:text-slate-400 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
               title="Insights de Audiência"
             >
@@ -1217,7 +1251,9 @@ export default function Dashboard() {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-800 truncate">{activeTab === 'executive' ? 'Dashboard de Operações' : 'Análise de Vendas'}</h1>
+              <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-800 truncate">
+                {activeTab === 'executive' ? 'Dashboard de Operações' : activeTab === 'sales' ? 'Análise de Vendas' : 'Acompanhamento de Metas'}
+              </h1>
             </div>
             
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto justify-end">
@@ -2385,6 +2421,156 @@ export default function Dashboard() {
               </div>
 
             </div>
+          )}
+
+          {/* Metas Tab */}
+          {activeTab === 'goals' && (
+             <div className="flex flex-col gap-6 w-full">
+                
+                {/* Definição de Metas */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                   <div className="flex items-center gap-2 mb-4">
+                     <Target className="w-5 h-5 text-indigo-600" />
+                     <h3 className="font-bold text-slate-800 text-sm">Definição de Metas para o Período</h3>
+                   </div>
+                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Faturamento Meta (R$)</label>
+                        <input 
+                          type="number"
+                          value={goals.revenue}
+                          onChange={(e) => handleGoalChange('revenue', Math.max(0, parseFloat(e.target.value) || 0))}
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Pedidos Meta</label>
+                        <input 
+                          type="number"
+                          value={goals.orders}
+                          onChange={(e) => handleGoalChange('orders', Math.max(0, parseInt(e.target.value) || 0))}
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Ticket Médio Meta (R$)</label>
+                        <input 
+                          type="number"
+                          value={goals.ticket}
+                          onChange={(e) => handleGoalChange('ticket', Math.max(0, parseFloat(e.target.value) || 0))}
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Conversão Meta (%)</label>
+                        <input 
+                          type="number"
+                          step="0.1"
+                          value={goals.conversion}
+                          onChange={(e) => handleGoalChange('conversion', Math.max(0, parseFloat(e.target.value) || 0))}
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Tráfego Meta (Sessões)</label>
+                        <input 
+                          type="number"
+                          value={goals.sessions}
+                          onChange={(e) => handleGoalChange('sessions', Math.max(0, parseInt(e.target.value) || 0))}
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                   </div>
+                </div>
+
+                {/* Grid de Acompanhamento */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   {[
+                      {
+                         title: "Faturamento VTEX",
+                         real: totalVtexRevenue,
+                         meta: goals.revenue,
+                         formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                         type: "currency"
+                      },
+                      {
+                         title: "Quantidade de Pedidos",
+                         real: totalVtexOrders,
+                         meta: goals.orders,
+                         formatter: (v: number) => v.toLocaleString('pt-BR'),
+                         type: "count"
+                      },
+                      {
+                         title: "Ticket Médio",
+                         real: avgOrderValue,
+                         meta: goals.ticket,
+                         formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                         type: "currency"
+                      },
+                      {
+                         title: "Taxa de Conversão",
+                         real: parseFloat(avgConversionRate),
+                         meta: goals.conversion,
+                         formatter: (v: number) => `${v.toFixed(2)}%`,
+                         type: "percentage"
+                      },
+                      {
+                         title: "Sessões (Tráfego)",
+                         real: totalSessions,
+                         meta: goals.sessions,
+                         formatter: (v: number) => v.toLocaleString('pt-BR'),
+                         type: "count"
+                      }
+                   ].map((item, idx) => {
+                      const pct = item.meta > 0 ? (item.real / item.meta) * 100 : 0;
+                      const diff = item.real - item.meta;
+                      const isReached = diff >= 0;
+                      
+                      let progressColor = 'bg-rose-500';
+                      let textColor = 'text-rose-600';
+                      if (pct >= 100) {
+                         progressColor = 'bg-emerald-500';
+                         textColor = 'text-emerald-600';
+                      } else if (pct >= 70) {
+                         progressColor = 'bg-amber-500';
+                         textColor = 'text-amber-600';
+                      }
+
+                      return (
+                         <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-48">
+                            <div>
+                               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.title}</span>
+                               <div className="flex justify-between items-baseline mt-2">
+                                  <h3 className="text-2xl font-black text-slate-800">{item.formatter(item.real)}</h3>
+                                  <span className={`text-xs font-extrabold ${textColor}`}>{pct.toFixed(1)}%</span>
+                               </div>
+                               <p className="text-[10px] text-slate-400 mt-1">Meta definida: {item.formatter(item.meta)}</p>
+                            </div>
+
+                            <div className="w-full mt-4">
+                               <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                  <div className={`h-full ${progressColor} rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                                </div>
+                            </div>
+
+                            <div className="text-[10px] font-semibold border-t border-slate-100 pt-3 flex justify-between">
+                               {isReached ? (
+                                  <>
+                                     <span className="text-emerald-600">Meta Superada!</span>
+                                     <span className="text-emerald-600">+{item.formatter(diff)}</span>
+                                  </>
+                               ) : (
+                                  <>
+                                     <span className="text-rose-500">Falta para a Meta:</span>
+                                     <span className="text-rose-500">{item.formatter(Math.abs(diff))}</span>
+                                  </>
+                               )}
+                            </div>
+                         </div>
+                      );
+                   })}
+                </div>
+             </div>
           )}
 
         </div>
