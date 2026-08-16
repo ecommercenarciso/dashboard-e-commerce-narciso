@@ -57,6 +57,7 @@ export default function Dashboard() {
   const [dreShipping, setDreShipping] = useState(4);
   const [dreMarketing, setDreMarketing] = useState(15);
   const [dreFixedCosts, setDreFixedCosts] = useState(20000);
+  const [dreTicket, setDreTicket] = useState(250);
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -2836,6 +2837,7 @@ export default function Dashboard() {
 
             const marketingSpend = varMarketing;
             const roas = marketingSpend > 0 ? grossRevenue / marketingSpend : 0;
+            const requiredOrders = dreTicket > 0 ? grossRevenue / dreTicket : 0;
 
             const getScenarioData = (multiplier: number) => {
               const g = grossRevenue * multiplier;
@@ -3037,14 +3039,39 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Configuração de Vendas</span>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-baseline">
+                          <label className="text-xs font-bold text-slate-600">Ticket Médio Estimado (R$ {dreTicket})</label>
+                          <span className="text-[10px] text-slate-400 font-semibold">Simula volume de pedidos</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="50" 
+                          max="1500" 
+                          step="10" 
+                          value={dreTicket} 
+                          onChange={(e) => setDreTicket(Number(e.target.value))} 
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="lg:col-span-7 flex flex-col gap-6 w-full">
-                    <div className="grid grid-cols-3 gap-3 w-full">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
                       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex flex-col justify-between">
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Faturamento Necessário</span>
                         <h4 className="text-lg font-black text-slate-900 mt-1">R$ {grossRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h4>
                         <span className="text-[9px] text-slate-400 mt-1">ROAS de mídia: {roas.toFixed(1)}x</span>
+                      </div>
+
+                      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex flex-col justify-between">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Meta de Pedidos</span>
+                        <h4 className="text-lg font-black text-slate-900 mt-1">{Math.ceil(requiredOrders).toLocaleString('pt-BR')} ped.</h4>
+                        <span className="text-[9px] text-slate-400 mt-1">Ticket Médio: R$ {dreTicket}</span>
                       </div>
                       
                       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex flex-col justify-between">
