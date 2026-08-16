@@ -774,21 +774,8 @@ app.get('/api/vtex/order-detail/:orderId', async (c) => {
             brand = item.additionalInfo.brandName || 'Não Informado';
             
             const categories = item.additionalInfo.categories;
-            if (categories && typeof categories === 'object') {
-              if (Array.isArray(categories)) {
-                if (categories.length > 0) {
-                  const sorted = [...categories].sort((a, b) => b.length - a.length);
-                  const deepest = sorted[0] || '';
-                  const parts = deepest.split('/').filter(Boolean);
-                  category = parts[parts.length - 1] || 'Não Informado';
-                }
-              } else {
-                const entries = Object.entries(categories);
-                if (entries.length > 0) {
-                  const sorted = entries.sort((a, b) => String(b[1]).length - String(a[1]).length);
-                  category = sorted[0][0] || 'Não Informado';
-                }
-              }
+            if (Array.isArray(categories) && categories.length > 0) {
+              category = categories[0]?.name || 'Não Informado';
             }
           }
         } catch (e) {

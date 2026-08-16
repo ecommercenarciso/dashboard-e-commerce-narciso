@@ -85,7 +85,7 @@ export default function Dashboard() {
 
   // One-time cache migration: clear order detail cache if it doesn't have the updated category logic
   useEffect(() => {
-    const migrated = localStorage.getItem('vtex_cache_migrated_v3');
+    const migrated = localStorage.getItem('vtex_cache_migrated_v4');
     if (!migrated) {
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
@@ -93,8 +93,8 @@ export default function Dashboard() {
           localStorage.removeItem(key);
         }
       }
-      localStorage.setItem('vtex_cache_migrated_v3', 'true');
-      console.log('Cleared old VTEX order detail cache for migration v3.');
+      localStorage.setItem('vtex_cache_migrated_v4', 'true');
+      console.log('Cleared old VTEX order detail cache for migration v4.');
     }
   }, []);
 
