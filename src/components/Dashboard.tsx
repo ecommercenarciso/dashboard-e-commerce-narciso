@@ -2057,39 +2057,39 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              {/* CAMADA 3: LOGÍSTICA E GEOGRAFIA (Grid 33% / 33% / 33%) */}
-              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
+              {/* CAMADA 3: LOGÍSTICA E GEOGRAFIA (Grid 25% / 25% / 25% / 25%) */}
+              <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                 {/* Desempenho de Transportadoras */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
-                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Desempenho de Transportadoras</h3>
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Transportadoras</h3>
                   <div className="overflow-y-auto flex-1 pr-1">
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-200">
                           <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleCarrierSort('name')}>
-                            Transportadora {carrierSortField === 'name' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            Courier {carrierSortField === 'name' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                           <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleCarrierSort('count')}>
-                            Pedidos {carrierSortField === 'count' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            Ped. {carrierSortField === 'count' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                           <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleCarrierSort('revenue')}>
-                            Faturamento {carrierSortField === 'revenue' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            Valor {carrierSortField === 'revenue' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-slate-700">
                         {carriersList.map((item, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 font-medium text-left truncate max-w-[150px]" title={item.name}>{item.name}</td>
+                            <td className="py-3 font-medium text-left truncate max-w-[90px]" title={item.name}>{item.name}</td>
                             <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
                             <td className="py-3 text-right font-semibold text-emerald-600">
-                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
                             </td>
                           </tr>
                         ))}
                         {carriersList.length === 0 && (
                           <tr>
-                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Nenhuma transportadora identificada.</td>
+                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Nenhuma transportadora.</td>
                           </tr>
                         )}
                       </tbody>
@@ -2099,19 +2099,19 @@ export default function Dashboard() {
 
                 {/* Pedidos & Faturamento por Estado */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
-                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Pedidos & Faturamento por Estado</h3>
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Pedidos por Estado</h3>
                   <div className="overflow-y-auto flex-1 pr-1">
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-200">
                           <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleStateSort('state')}>
-                            Estado {stateSortField === 'state' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            UF {stateSortField === 'state' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                           <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleStateSort('count')}>
-                            Pedidos {stateSortField === 'count' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            Ped. {stateSortField === 'count' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                           <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleStateSort('revenue')}>
-                            Faturamento {stateSortField === 'revenue' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
+                            Valor {stateSortField === 'revenue' ? (stateSortDirection === 'asc' ? '▲' : '▼') : ''}
                           </th>
                         </tr>
                       </thead>
@@ -2119,15 +2119,15 @@ export default function Dashboard() {
                         {statesList.map((item, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
                             <td className="py-3 font-medium text-left">{item.state}</td>
-                            <td className="py-3 text-right font-bold text-slate-800">{item.count} ped.</td>
+                            <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
                             <td className="py-3 text-right font-semibold text-emerald-600">
-                              R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
                             </td>
                           </tr>
                         ))}
                         {statesList.length === 0 && (
                           <tr>
-                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Nenhum dado por estado disponível.</td>
+                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Sem dados.</td>
                           </tr>
                         )}
                       </tbody>
@@ -2135,96 +2135,79 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Cidades (Entrega vs Retirada) */}
+                {/* Cidades de Entrega */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider">Cidades (Destinos)</h3>
-                    <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
-                      <button
-                        onClick={() => setCitiesTableTab('delivery')}
-                        className={`px-2.5 py-0.5 text-[10px] font-bold rounded transition-colors ${
-                          citiesTableTab === 'delivery' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        Entrega
-                      </button>
-                      <button
-                        onClick={() => setCitiesTableTab('pickup')}
-                        className={`px-2.5 py-0.5 text-[10px] font-bold rounded transition-colors ${
-                          citiesTableTab === 'pickup' ? 'text-slate-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        Retirada
-                      </button>
-                    </div>
-                  </div>
-                  
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 text-indigo-600">Cidades de Entrega</h3>
                   <div className="overflow-y-auto flex-1 pr-1">
-                    {citiesTableTab === 'delivery' ? (
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
-                            <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('city')}>
-                              Cidade {deliverySortField === 'city' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('count')}>
-                              Pedidos {deliverySortField === 'count' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('revenue')}>
-                              Valor {deliverySortField === 'revenue' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
-                            </th>
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                          <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('city')}>
+                            Cidade {deliverySortField === 'city' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('count')}>
+                            Ped. {deliverySortField === 'count' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handleDeliverySort('revenue')}>
+                            Valor {deliverySortField === 'revenue' ? (deliverySortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {topDeliveryCities.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 font-medium text-left truncate max-w-[90px]" title={item.city}>{item.city}</td>
+                            <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
+                            <td className="py-3 text-right font-semibold text-emerald-600">
+                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-slate-700">
-                          {topDeliveryCities.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-3 font-medium text-left truncate max-w-[100px]" title={item.city}>{item.city}</td>
-                              <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
-                              <td className="py-3 text-right font-semibold text-emerald-600">
-                                R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
-                              </td>
-                            </tr>
-                          ))}
-                          {topDeliveryCities.length === 0 && (
-                            <tr>
-                              <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Sem cidades de entrega.</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
-                            <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('city')}>
-                              Cidade {pickupSortField === 'city' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('count')}>
-                              Pedidos {pickupSortField === 'count' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('revenue')}>
-                              Valor {pickupSortField === 'revenue' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
-                            </th>
+                        ))}
+                        {topDeliveryCities.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Sem entregas.</td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-slate-700">
-                          {topPickupCities.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-3 font-medium text-left truncate max-w-[100px]" title={item.city}>{item.city}</td>
-                              <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
-                              <td className="py-3 text-right font-semibold text-emerald-600">
-                                R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
-                              </td>
-                            </tr>
-                          ))}
-                          {topPickupCities.length === 0 && (
-                            <tr>
-                              <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Sem cidades de retirada.</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    )}
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Cidades com Retirada */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
+                  <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 text-emerald-600">Cidades com Retirada</h3>
+                  <div className="overflow-y-auto flex-1 pr-1">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                          <th className="pb-3 font-semibold text-left cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('city')}>
+                            Cidade {pickupSortField === 'city' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('count')}>
+                            Ped. {pickupSortField === 'count' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-3 font-semibold text-right cursor-pointer hover:text-slate-700 font-bold" onClick={() => handlePickupSort('revenue')}>
+                            Valor {pickupSortField === 'revenue' ? (pickupSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {topPickupCities.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 font-medium text-left truncate max-w-[90px]" title={item.city}>{item.city}</td>
+                            <td className="py-3 text-right font-bold text-slate-800">{item.count}</td>
+                            <td className="py-3 text-right font-semibold text-emerald-600">
+                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                            </td>
+                          </tr>
+                        ))}
+                        {topPickupCities.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="py-12 text-center text-slate-400 text-xs">Sem retiradas.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </section>
