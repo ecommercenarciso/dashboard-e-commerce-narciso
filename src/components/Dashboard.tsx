@@ -61,6 +61,8 @@ export default function Dashboard() {
 
   const [productSortField, setProductSortField] = useState<'name' | 'category' | 'brand' | 'quantity' | 'revenue'>('revenue');
   const [productSortDirection, setProductSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [subcategorySortField, setSubcategorySortField] = useState<'name' | 'revenue' | 'orders'>('revenue');
+  const [subcategorySortDirection, setSubcategorySortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
   // Goals (Metas) Persisted State
@@ -3335,6 +3337,33 @@ export default function Dashboard() {
               }
             });
 
+            const categoryOrderCount: Record<string, Set<string>> = {};
+            detailedOrdersList.forEach(order => {
+              const orderCategories = new Set<string>();
+              if (order.items) {
+                order.items.forEach((item: any) => {
+                  let category = item.category && item.category !== 'Não Informado' ? item.category : 'Outros';
+                  if (category === 'Outros') {
+                    const lowerName = (item.name || '').toLowerCase();
+                    if (lowerName.includes('lençol') || lowerName.includes('cama') || lowerName.includes('travesseiro') || lowerName.includes('fronha') || lowerName.includes('cobreleito') || lowerName.includes('edredom') || lowerName.includes('manta') || lowerName.includes('pillow') || lowerName.includes('colchão')) {
+                      category = 'Cama';
+                    } else if (lowerName.includes('toalha') || lowerName.includes('banho') || lowerName.includes('rosto') || lowerName.includes('piso') || lowerName.includes('robe') || lowerName.includes('touca')) {
+                      category = 'Banho';
+                    } else if (lowerName.includes('mesa') || lowerName.includes('copa') || lowerName.includes('jantar') || lowerName.includes('guardanapo') || lowerName.includes('americano') || lowerName.includes('prato') || lowerName.includes('copo')) {
+                      category = 'Mesa';
+                    } else if (lowerName.includes('almofada') || lowerName.includes('cortina') || lowerName.includes('tapete') || lowerName.includes('decoração') || lowerName.includes('difusor') || lowerName.includes('vela') || lowerName.includes('quadro')) {
+                      category = 'Decoração';
+                    }
+                  }
+                  orderCategories.add(category);
+                });
+              }
+              orderCategories.forEach(cat => {
+                if (!categoryOrderCount[cat]) categoryOrderCount[cat] = new Set();
+                categoryOrderCount[cat].add(order.orderId);
+              });
+            });
+
             const productList = Object.values(productStats);
 
             const categorySummary: Record<string, { quantity: number, revenue: number }> = {};
@@ -3380,6 +3409,37 @@ export default function Dashboard() {
               } else {
                 setProductSortField(field);
                 setProductSortDirection('desc');
+              }
+            };
+
+            const subcategoryList = Object.entries(categorySummary).map(([name, data]) => {
+              const ordersCount = categoryOrderCount[name] ? categoryOrderCount[name].size : 0;
+              return {
+                name,
+                revenue: data.revenue,
+                quantity: data.quantity,
+                orders: ordersCount
+              };
+            });
+
+            const sortedSubcategoryList = [...subcategoryList].sort((a, b) => {
+              let comparison = 0;
+              if (subcategorySortField === 'name') {
+                comparison = a.name.localeCompare(b.name);
+              } else if (subcategorySortField === 'revenue') {
+                comparison = a.revenue - b.revenue;
+              } else if (subcategorySortField === 'orders') {
+                comparison = a.orders - b.orders;
+              }
+              return subcategorySortDirection === 'desc' ? -comparison : comparison;
+            });
+
+            const handleSubcategoryTableSort = (field: typeof subcategorySortField) => {
+              if (subcategorySortField === field) {
+                setSubcategorySortDirection(subcategorySortDirection === 'asc' ? 'desc' : 'asc');
+              } else {
+                setSubcategorySortField(field);
+                setSubcategorySortDirection('desc');
               }
             };
 
@@ -3486,6 +3546,47 @@ export default function Dashboard() {
                         <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
                       )}
                     </div>
+                  </div>
+                </section>
+
+                {/* CAMADA DE SUBCATEGORIAS */}
+                <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col w-full">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                    <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider">Desempenho por Subcategoria (VTEX)</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-[12px] border-collapse">
+                      <thead>
+                        <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8">
+                          <th className="pb-2 cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('name')}>
+                            Subcategoria {subcategorySortField === 'name' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                          </th>
+                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('revenue')}>
+                            Faturamento {subcategorySortField === 'revenue' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                          </th>
+                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('orders')}>
+                            Pedidos {subcategorySortField === 'orders' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedSubcategoryList.length > 0 ? (
+                          sortedSubcategoryList.map((cat, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
+                              <td className="font-semibold text-slate-900">{cat.name}</td>
+                              <td className="text-right font-medium text-slate-900">
+                                R$ {cat.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-right text-slate-500 font-semibold">{cat.orders} ped.</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={3} className="text-center py-4 text-slate-400">Nenhuma subcategoria faturada no período</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </section>
 
