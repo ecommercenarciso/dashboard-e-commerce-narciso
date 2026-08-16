@@ -3481,6 +3481,34 @@ export default function Dashboard() {
               return productSortDirection === 'desc' ? -comparison : comparison;
             });
 
+            const productsRetiradaList = productList
+              .map(p => {
+                const retData = p.deliveryChannels['Retirada'] || { count: 0, revenue: 0 };
+                return {
+                  name: p.name,
+                  category: p.category,
+                  brand: p.brand,
+                  quantity: retData.count,
+                  revenue: retData.revenue
+                };
+              })
+              .filter(p => p.quantity > 0)
+              .sort((a, b) => b.revenue - a.revenue);
+
+            const productsEntregaList = productList
+              .map(p => {
+                const entData = p.deliveryChannels['Entrega'] || { count: 0, revenue: 0 };
+                return {
+                  name: p.name,
+                  category: p.category,
+                  brand: p.brand,
+                  quantity: entData.count,
+                  revenue: entData.revenue
+                };
+              })
+              .filter(p => p.quantity > 0)
+              .sort((a, b) => b.revenue - a.revenue);
+
             const handleProductTableSort = (field: typeof productSortField) => {
               if (productSortField === field) {
                 setProductSortDirection(productSortDirection === 'asc' ? 'desc' : 'asc');
@@ -3701,7 +3729,7 @@ export default function Dashboard() {
                   {/* Detalhe da Subcategoria Selecionada (5 Colunas de Layout) */}
                   <div className="xl:col-span-5 bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col min-h-[420px] justify-between">
                     {currentSelectedSubcategory ? (
-                      <div className="flex flex-col gap-5 w-full">
+                      <div className="flex flex-col gap-5 w-full overflow-y-auto max-h-[380px] pr-2">
                         <div className="border-b border-slate-100 pb-3">
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Subcategoria Selecionada</span>
                           <h4 className="text-sm font-bold text-indigo-700 mt-1 leading-snug">{currentSelectedSubcategory.name}</h4>
@@ -3893,7 +3921,7 @@ export default function Dashboard() {
                   {/* Tabela de Detalhe do Produto Selecionado (5 Colunas de Layout) */}
                   <div className="xl:col-span-5 bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col min-h-[420px] justify-between">
                     {currentSelected ? (
-                      <div className="flex flex-col gap-5 w-full">
+                      <div className="flex flex-col gap-5 w-full overflow-y-auto max-h-[380px] pr-2">
                         <div className="border-b border-slate-100 pb-3">
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Produto Selecionado</span>
                           <h4 className="text-sm font-bold text-indigo-700 mt-1 leading-snug">{currentSelected.name}</h4>
@@ -4021,6 +4049,75 @@ export default function Dashboard() {
                         Selecione um produto para visualizar o detalhamento cruzado
                       </div>
                     )}
+                  </div>
+                </section>
+
+                {/* CAMADA DE ENVIOS: RETIRADA VS ENTREGA */}
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full mt-4">
+                  {/* Produtos mais vendidos - Retirada */}
+                  <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col min-h-[360px]">
+                    <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Produtos Mais Vendidos - Retirada (VTEX)</h3>
+                    <div className="overflow-x-auto overflow-y-auto max-h-[300px] flex-1">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8 select-none">
+                            <th className="pb-2">Produto</th>
+                            <th className="pb-2 text-right">Qtd</th>
+                            <th className="pb-2 text-right">Receita</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productsRetiradaList.length > 0 ? (
+                            productsRetiradaList.slice(0, 30).map((p, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
+                                <td className="font-semibold text-slate-800 pr-2 truncate max-w-[200px]" title={p.name}>{p.name}</td>
+                                <td className="text-right text-slate-500 font-mono pr-2">{p.quantity} un.</td>
+                                <td className="text-right font-bold text-slate-900 font-mono">
+                                  R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={3} className="text-center py-8 text-slate-400">Nenhum produto faturado via Retirada</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Produtos mais vendidos - Entrega */}
+                  <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col min-h-[360px]">
+                    <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Produtos Mais Vendidos - Entrega (VTEX)</h3>
+                    <div className="overflow-x-auto overflow-y-auto max-h-[300px] flex-1">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8 select-none">
+                            <th className="pb-2">Produto</th>
+                            <th className="pb-2 text-right">Qtd</th>
+                            <th className="pb-2 text-right">Receita</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productsEntregaList.length > 0 ? (
+                            productsEntregaList.slice(0, 30).map((p, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
+                                <td className="font-semibold text-slate-800 pr-2 truncate max-w-[200px]" title={p.name}>{p.name}</td>
+                                <td className="text-right text-slate-500 font-mono pr-2">{p.quantity} un.</td>
+                                <td className="text-right font-bold text-slate-900 font-mono">
+                                  R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={3} className="text-center py-8 text-slate-400">Nenhum produto faturado via Entrega</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </section>
               </div>
