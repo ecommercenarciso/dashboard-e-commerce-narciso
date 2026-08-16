@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList, ScatterChart, Scatter, ZAxis, ReferenceLine } from 'recharts';
 import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
@@ -3535,6 +3535,9 @@ export default function Dashboard() {
                 return entregaSortDirection === 'desc' ? -comparison : comparison;
               });
 
+            const maxRetiradaQty = productsRetiradaList.length > 0 ? Math.max(...productsRetiradaList.map(p => p.quantity)) : 1;
+            const maxEntregaQty = productsEntregaList.length > 0 ? Math.max(...productsEntregaList.map(p => p.quantity)) : 1;
+
             const handleProductTableSort = (field: typeof productSortField) => {
               if (productSortField === field) {
                 setProductSortDirection(productSortDirection === 'asc' ? 'desc' : 'asc');
@@ -3619,52 +3622,128 @@ export default function Dashboard() {
               'Quantidade': data.quantity
             })).sort((a, b) => b.Faturamento - a.Faturamento);
 
+            // 1. Média de Itens por Pedido (PPA)
+            const totalSubcategoryQty = subcategoryList.reduce((acc, c) => acc + c.quantity, 0);
+            const totalSubcategoryOrders = subcategoryList.reduce((acc, c) => acc + c.orders, 0);
+            const overallPpa = totalSubcategoryOrders > 0 ? totalSubcategoryQty / totalSubcategoryOrders : 0;
+
+            // 2. Share de Omnicanalidade (Retirada)
+            const totalRetiradaQty = productList.reduce((acc, p) => acc + (p.deliveryChannels['Retirada']?.count || 0), 0);
+            const totalDeliveryQty = productList.reduce((acc, p) => acc + (p.deliveryChannels['Entrega']?.count || 0), 0);
+            const totalOmniQty = totalRetiradaQty + totalDeliveryQty;
+            const omniShare = totalOmniQty > 0 ? (totalRetiradaQty / totalOmniQty) * 100 : 0;
+
+            // 3. Giro de Categoria Líder (Ticket Médio da subcategoria líder)
+            const leaderSubcategory = sortedSubcategoryList[0];
+            const leaderSubcategoryTicket = leaderSubcategory && leaderSubcategory.orders > 0 
+              ? leaderSubcategory.revenue / leaderSubcategory.orders 
+              : 0;
+
+            // Scatter plot data formatting
+            const scatterData = sortedProductList.map(p => ({
+              name: p.name,
+              qty: p.quantity,
+              revenue: p.revenue
+            }));
+
+            // Find average/mid points to split quadrants
+            const scatterQtys = scatterData.map(d => d.qty);
+            const scatterRevs = scatterData.map(d => d.revenue);
+            const midQty = scatterQtys.length > 0 ? (Math.max(...scatterQtys) + Math.min(...scatterQtys)) / 2 : 10;
+            const midRev = scatterRevs.length > 0 ? (Math.max(...scatterRevs) + Math.min(...scatterRevs)) / 2 : 1000;
+
+            // Stacked Bar Chart for subcategories logistic behavior
+            const deliveryBehaviorData = sortedSubcategoryList.map(c => {
+              const catData = categorySummary[c.name];
+              return {
+                name: c.name,
+                'Retirada': catData?.deliveryChannels['Retirada']?.count || 0,
+                'Entrega': catData?.deliveryChannels['Entrega']?.count || 0
+              };
+            });
+
             return (
               <div className="flex flex-col gap-6 w-full text-slate-700">
                 {/* CAMADA 1: CARDS DE KPI (PRODUTOS) */}
-                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 w-full">
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
                     <div>
-                      <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1">Itens Vendidos (VTEX)</p>
-                      <h2 className="text-[24px] font-bold text-slate-900 leading-none mt-2">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Itens Vendidos</p>
+                      <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
                         {totalItemsCount.toLocaleString('pt-BR')} un.
                       </h2>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium">Quantidade total de peças faturadas</p>
+                    <p className="text-[10px] text-slate-400 font-medium leading-tight">Total de peças faturadas</p>
                   </div>
 
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
                     <div>
-                      <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1">Faturamento em Produtos</p>
-                      <h2 className="text-[24px] font-bold text-slate-900 leading-none mt-2">
-                        R$ {totalProductRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Faturamento Itens</p>
+                      <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
+                        R$ {totalProductRevenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                       </h2>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium">Receita bruta de itens vendidos</p>
+                    <p className="text-[10px] text-slate-400 font-medium leading-tight">Receita de itens vendidos</p>
                   </div>
 
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
                     <div>
-                      <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria Líder</p>
-                      <h2 className="text-[22px] font-bold text-indigo-600 leading-none mt-2 truncate" title={topCategory}>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria Líder</p>
+                      <h2 className="text-[16px] font-bold text-indigo-600 leading-none mt-1 truncate" title={topCategory}>
                         {topCategory}
                       </h2>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium">
-                      Faturamento: R$ {(categorySummary[topCategory]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    <p className="text-[10px] text-slate-400 font-medium leading-tight">
+                      Receita: R$ {(categorySummary[topCategory]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                     </p>
                   </div>
 
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
                     <div>
-                      <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1">Marca Líder</p>
-                      <h2 className="text-[22px] font-bold text-indigo-600 leading-none mt-2 truncate" title={topBrand}>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Marca Líder</p>
+                      <h2 className="text-[16px] font-bold text-indigo-600 leading-none mt-1 truncate" title={topBrand}>
                         {topBrand}
                       </h2>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium">
-                      Faturamento: R$ {(brandSummary[topBrand]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    <p className="text-[10px] text-slate-400 font-medium leading-tight">
+                      Receita: R$ {(brandSummary[topBrand]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                     </p>
+                  </div>
+
+                  {/* NOVOS CARDS DE EFICIÊNCIA OPERACIONAL */}
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Itens / Pedido (PPA)</p>
+                      <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
+                        {overallPpa.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.
+                      </h2>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium leading-tight">Eficiência de Cross-selling</p>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Omnicanalidade (Retirada)</p>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <h2 className="text-[20px] font-bold text-slate-900 leading-none">
+                          {omniShare.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
+                        </h2>
+                        <span className="text-[9px] text-slate-400 font-semibold">dos itens</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden mt-1">
+                      <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${omniShare}%` }}></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Giro Categoria Líder</p>
+                      <h2 className="text-[18px] font-bold text-indigo-600 leading-none mt-1 truncate" title={leaderSubcategory?.name || 'Nenhuma'}>
+                        R$ {leaderSubcategoryTicket.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      </h2>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium leading-tight truncate">Ticket Médio de: {leaderSubcategory?.name || 'Nenhuma'}</p>
                   </div>
                 </section>
 
@@ -3700,6 +3779,80 @@ export default function Dashboard() {
                             <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${v.toLocaleString('pt-BR')}`} />
                             <Tooltip formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR')}`, 'Faturamento']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                             <Bar dataKey="Faturamento" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* CAMADA DE MATRIZ DE PERFORMANCE E COMPORTAMENTO LOGÍSTICO (65% / 35%) */}
+                <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 w-full">
+                  {/* Scatter Plot - Matriz de Performance de Produtos (65%) */}
+                  <div className="xl:col-span-8 bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] relative">
+                    <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-4">Matriz de Performance de Produtos</h3>
+                    
+                    {/* Quadrant labels overlay behind the chart */}
+                    <div className="absolute inset-0 top-16 left-12 right-6 bottom-12 pointer-events-none grid grid-cols-2 grid-rows-2 opacity-[0.06] font-bold text-xs select-none">
+                      <div className="flex items-start justify-start p-4 text-slate-900 border-r border-b border-dashed border-slate-400">Produtos Estratégicos</div>
+                      <div className="flex items-start justify-end p-4 text-slate-900 border-b border-dashed border-slate-400">Produtos Campeões</div>
+                      <div className="flex items-end justify-start p-4 text-slate-900 border-r border-dashed border-slate-400">Baixa Tração</div>
+                      <div className="flex items-end justify-end p-4 text-slate-900">Produtos de Giro</div>
+                    </div>
+
+                    <div className="flex-1 w-full min-h-0 z-10">
+                      {scatterData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                            <XAxis type="number" dataKey="qty" name="Quantidade" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis type="number" dataKey="revenue" name="Receita" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${v.toLocaleString('pt-BR')}`} />
+                            <Tooltip 
+                              cursor={{ strokeDasharray: '3 3' }}
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="bg-white p-3 border border-slate-200 rounded-lg shadow-lg text-xs flex flex-col gap-1 max-w-[240px]">
+                                      <p className="font-bold text-indigo-950 leading-tight">{data.name}</p>
+                                      <p className="text-slate-500 font-semibold">Qtd Vendida: <span className="text-slate-950 font-mono">{data.qty} un.</span></p>
+                                      <p className="text-slate-500 font-semibold">Faturamento: <span className="text-slate-950 font-mono">R$ {data.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <ReferenceLine x={midQty} stroke="#cbd5e1" strokeDasharray="3 3" />
+                            <ReferenceLine y={midRev} stroke="#cbd5e1" strokeDasharray="3 3" />
+                            <Scatter name="Produtos" data={scatterData} fill="#6366f1" />
+                          </ScatterChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stacked Bar Chart - Preferência de Entrega por Subcategoria (35%) */}
+                  <div className="xl:col-span-4 bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col h-[380px]">
+                    <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-4">Preferência de Entrega por Subcategoria</h3>
+                    <div className="flex-1 w-full min-h-0">
+                      {deliveryBehaviorData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={deliveryBehaviorData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                              formatter={(value: any, name: any) => [`${value} un.`, name]}
+                            />
+                            <Legend verticalAlign="top" height={36} iconSize={10} wrapperStyle={{ fontSize: 10, fontWeight: 600 }} />
+                            <Bar dataKey="Retirada" stackId="a" fill="#3b82f6" name="Retirada" />
+                            <Bar dataKey="Entrega" stackId="a" fill="#f97316" name="Entrega" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
@@ -4105,28 +4258,32 @@ export default function Dashboard() {
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8 select-none">
-                            <th className="pb-2 cursor-pointer hover:text-slate-600" onClick={() => handleRetiradaSort('name')}>
-                              Produto {retiradaSortField === 'name' ? (retiradaSortDirection === 'desc' ? '▼' : '▲') : ''}
-                            </th>
-                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleRetiradaSort('quantity')}>
-                              Qtd {retiradaSortField === 'quantity' ? (retiradaSortDirection === 'desc' ? '▼' : '▲') : ''}
-                            </th>
-                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleRetiradaSort('revenue')}>
-                              Receita {retiradaSortField === 'revenue' ? (retiradaSortDirection === 'desc' ? '▼' : '▲') : ''}
-                            </th>
+                            <th className="pb-2 text-left">Produto</th>
+                            <th className="pb-2 text-right w-36">Qtd</th>
+                            <th className="pb-2 text-right w-24">Receita</th>
                           </tr>
                         </thead>
                         <tbody>
                           {productsRetiradaList.length > 0 ? (
-                            productsRetiradaList.slice(0, 30).map((p, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
-                                <td className="font-semibold text-slate-800 pr-2 truncate max-w-[200px]" title={p.name}>{p.name}</td>
-                                <td className="text-right text-slate-500 font-mono pr-2">{p.quantity} un.</td>
-                                <td className="text-right font-bold text-slate-900 font-mono">
-                                  R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </td>
-                              </tr>
-                            ))
+                            productsRetiradaList.slice(0, 30).map((p, idx) => {
+                              const pct = maxRetiradaQty > 0 ? (p.quantity / maxRetiradaQty) * 100 : 0;
+                              return (
+                                <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
+                                  <td className="font-semibold text-slate-800 pr-2 truncate max-w-[180px] text-left" title={p.name}>{p.name}</td>
+                                  <td className="text-right pr-2">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <span className="font-mono text-slate-600 font-semibold">{p.quantity} un.</span>
+                                      <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden hidden sm:block">
+                                        <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${pct}%` }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="text-right font-bold text-slate-900 font-mono">
+                                    R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </td>
+                                </tr>
+                              );
+                            })
                           ) : (
                             <tr>
                               <td colSpan={3} className="text-center py-8 text-slate-400">Nenhum produto faturado via Retirada</td>
@@ -4144,28 +4301,32 @@ export default function Dashboard() {
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8 select-none">
-                            <th className="pb-2 cursor-pointer hover:text-slate-600" onClick={() => handleEntregaSort('name')}>
-                              Produto {entregaSortField === 'name' ? (entregaSortDirection === 'desc' ? '▼' : '▲') : ''}
-                            </th>
-                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleEntregaSort('quantity')}>
-                              Qtd {entregaSortField === 'quantity' ? (entregaSortDirection === 'desc' ? '▼' : '▲') : ''}
-                            </th>
-                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleEntregaSort('revenue')}>
-                              Receita {entregaSortField === 'revenue' ? (entregaSortDirection === 'desc' ? '▼' : '▲') : ''}
-                            </th>
+                            <th className="pb-2 text-left">Produto</th>
+                            <th className="pb-2 text-right w-36">Qtd</th>
+                            <th className="pb-2 text-right w-24">Receita</th>
                           </tr>
                         </thead>
                         <tbody>
                           {productsEntregaList.length > 0 ? (
-                            productsEntregaList.slice(0, 30).map((p, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
-                                <td className="font-semibold text-slate-800 pr-2 truncate max-w-[200px]" title={p.name}>{p.name}</td>
-                                <td className="text-right text-slate-500 font-mono pr-2">{p.quantity} un.</td>
-                                <td className="text-right font-bold text-slate-900 font-mono">
-                                  R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </td>
-                              </tr>
-                            ))
+                            productsEntregaList.slice(0, 30).map((p, idx) => {
+                              const pct = maxEntregaQty > 0 ? (p.quantity / maxEntregaQty) * 100 : 0;
+                              return (
+                                <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
+                                  <td className="font-semibold text-slate-800 pr-2 truncate max-w-[180px] text-left" title={p.name}>{p.name}</td>
+                                  <td className="text-right pr-2">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <span className="font-mono text-slate-600 font-semibold">{p.quantity} un.</span>
+                                      <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden hidden sm:block">
+                                        <div className="bg-orange-500 h-full rounded-full" style={{ width: `${pct}%` }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="text-right font-bold text-slate-900 font-mono">
+                                    R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </td>
+                                </tr>
+                              );
+                            })
                           ) : (
                             <tr>
                               <td colSpan={3} className="text-center py-8 text-slate-400">Nenhum produto faturado via Entrega</td>
