@@ -61,7 +61,7 @@ export default function Dashboard() {
 
   const [productSortField, setProductSortField] = useState<'name' | 'category' | 'brand' | 'quantity' | 'revenue'>('revenue');
   const [productSortDirection, setProductSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [subcategorySortField, setSubcategorySortField] = useState<'name' | 'revenue' | 'orders' | 'quantity'>('revenue');
+  const [subcategorySortField, setSubcategorySortField] = useState<'name' | 'revenue' | 'orders' | 'quantity' | 'avgItems'>('revenue');
   const [subcategorySortDirection, setSubcategorySortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
@@ -3414,11 +3414,13 @@ export default function Dashboard() {
 
             const subcategoryList = Object.entries(categorySummary).map(([name, data]) => {
               const ordersCount = categoryOrderCount[name] ? categoryOrderCount[name].size : 0;
+              const avgItems = ordersCount > 0 ? data.quantity / ordersCount : 0;
               return {
                 name,
                 revenue: data.revenue,
                 quantity: data.quantity,
-                orders: ordersCount
+                orders: ordersCount,
+                avgItems
               };
             });
 
@@ -3432,6 +3434,8 @@ export default function Dashboard() {
                 comparison = a.orders - b.orders;
               } else if (subcategorySortField === 'quantity') {
                 comparison = a.quantity - b.quantity;
+              } else if (subcategorySortField === 'avgItems') {
+                comparison = a.avgItems - b.avgItems;
               }
               return subcategorySortDirection === 'desc' ? -comparison : comparison;
             });
@@ -3572,6 +3576,9 @@ export default function Dashboard() {
                           <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('orders')}>
                             Pedidos {subcategorySortField === 'orders' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
                           </th>
+                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('avgItems')}>
+                            Itens / Ped. {subcategorySortField === 'avgItems' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3584,11 +3591,14 @@ export default function Dashboard() {
                               </td>
                               <td className="text-right text-slate-500 font-semibold">{cat.quantity} un.</td>
                               <td className="text-right text-slate-500 font-semibold">{cat.orders} ped.</td>
+                              <td className="text-right text-slate-500 font-semibold">
+                                {cat.avgItems.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.
+                              </td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={4} className="text-center py-4 text-slate-400">Nenhuma subcategoria faturada no período</td>
+                            <td colSpan={5} className="text-center py-4 text-slate-400">Nenhuma subcategoria faturada no período</td>
                           </tr>
                         )}
                       </tbody>
