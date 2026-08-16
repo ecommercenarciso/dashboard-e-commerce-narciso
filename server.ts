@@ -747,7 +747,7 @@ app.get('/api/vtex/order-detail/:orderId', async (c) => {
     const deliveryChannel = o.shippingData?.logisticsInfo?.[0]?.deliveryChannel || 'delivery';
     
     const city = o.shippingData?.address?.city || 'Não Informado';
-    const carrier = o.shippingData?.logisticsInfo?.[0]?.selectedCourierName || o.shippingData?.logisticsInfo?.[0]?.selectedSla || 'Não Informado';
+    const carrier = o.shippingData?.logisticsInfo?.[0]?.deliveryIds?.[0]?.courierName || o.shippingData?.logisticsInfo?.[0]?.selectedCourierName || o.shippingData?.logisticsInfo?.[0]?.selectedSla || 'Não Informado';
     
     const paymentMethod = o.paymentData?.transactions?.[0]?.payments?.[0]?.paymentSystemName || 'Pix';
     const installments = o.paymentData?.transactions?.[0]?.payments?.[0]?.installments || 1;
