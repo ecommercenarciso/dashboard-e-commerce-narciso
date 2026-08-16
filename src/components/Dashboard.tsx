@@ -1302,193 +1302,210 @@ export default function Dashboard() {
               </h1>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 justify-start lg:justify-end text-slate-700">
-              {/* Period Type Selector */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Período</span>
-                <select 
-                  value={periodType}
-                  onChange={(e) => handlePeriodChange(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36"
-                >
-                  <option value="Fixo">Fixo</option>
-                  <option value="Hoje">Hoje</option>
-                  <option value="Ontem">Ontem</option>
-                  <optgroup label="Esta semana">
-                    <option value="Esta semana (começa no domingo)">Esta semana (D)</option>
-                    <option value="Esta semana (começa na segunda-feira)">Esta semana (S)</option>
-                  </optgroup>
-                  <optgroup label="Este mês">
-                    <option value="Este mês">Este mês</option>
-                    <option value="Este mês, até agora">Este mês, até agora</option>
-                  </optgroup>
-                  <optgroup label="Este trimestre">
-                    <option value="Este trimestre">Este trimestre</option>
-                    <option value="Este trimestre, até agora">Este trimestre, até agora</option>
-                  </optgroup>
-                  <optgroup label="Este ano">
-                    <option value="Este ano">Este ano</option>
-                    <option value="Este ano, até agora">Este ano, até agora</option>
-                  </optgroup>
-                  <optgroup label="Últimos">
-                    <option value="Últimos 7 dias">Últimos 7 dias</option>
-                    <option value="Últimos 14 dias">Últimos 14 dias</option>
-                    <option value="Últimos 28 dias">Últimos 28 dias</option>
-                    <option value="Últimos 30 dias">Últimos 30 dias</option>
-                  </optgroup>
-                  <optgroup label="Passado">
-                    <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
-                    <option value="Semana passada (começa na segunda-feira)">Semana passada (S)</option>
-                    <option value="Mês passado">Mês passado</option>
-                    <option value="Trimestre passado">Trimestre passado</option>
-                    <option value="Ano passado">Ano passado</option>
-                  </optgroup>
-                </select>
-              </div>
+            <div className="flex flex-wrap items-start gap-4 justify-start lg:justify-end text-slate-700">
+              
+              {/* FILTROS DE DADOS */}
+              <div className="flex flex-wrap items-start gap-3">
+                {/* Period Type Selector */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Período</span>
+                  <select 
+                    value={periodType}
+                    onChange={(e) => handlePeriodChange(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36"
+                  >
+                    <option value="Fixo">Fixo</option>
+                    <option value="Hoje">Hoje</option>
+                    <option value="Ontem">Ontem</option>
+                    <optgroup label="Esta semana">
+                      <option value="Esta semana (começa no domingo)">Esta semana (D)</option>
+                      <option value="Esta semana (começa na segunda-feira)">Esta semana (S)</option>
+                    </optgroup>
+                    <optgroup label="Este mês">
+                      <option value="Este mês">Este mês</option>
+                      <option value="Este mês, até agora">Este mês, até agora</option>
+                    </optgroup>
+                    <optgroup label="Este trimestre">
+                      <option value="Este trimestre">Este trimestre</option>
+                      <option value="Este trimestre, até agora">Este trimestre, até agora</option>
+                    </optgroup>
+                    <optgroup label="Este ano">
+                      <option value="Este ano">Este ano</option>
+                      <option value="Este ano, até agora">Este ano, até agora</option>
+                    </optgroup>
+                    <optgroup label="Últimos">
+                      <option value="Últimos 7 dias">Últimos 7 dias</option>
+                      <option value="Últimos 14 dias">Últimos 14 dias</option>
+                      <option value="Últimos 28 dias">Últimos 28 dias</option>
+                      <option value="Últimos 30 dias">Últimos 30 dias</option>
+                    </optgroup>
+                    <optgroup label="Passado">
+                      <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
+                      <option value="Semana passada (começa na segunda-feira)">Semana passada (S)</option>
+                      <option value="Mês passado">Mês passado</option>
+                      <option value="Trimestre passado">Trimestre passado</option>
+                      <option value="Ano passado">Ano passado</option>
+                    </optgroup>
+                  </select>
+                </div>
 
-              {/* Start Date (Fixo only) */}
-              {periodType === 'Fixo' && (
-                <>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Início</span>
-                    <input 
-                      type="date" 
-                      value={filters.startDate}
-                      onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                      className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Fim</span>
-                    <input 
-                      type="date" 
-                      value={filters.endDate}
-                      onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                      className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Comparison Type */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Comparar com</span>
-                <select 
-                  value={comparisonType}
-                  onChange={(e) => setComparisonType(e.target.value as 'days' | 'period')}
-                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-44"
-                >
-                  <option value="period">Período equivalente anterior</option>
-                  <option value="days">Mesmo nº de dias anteriores</option>
-                </select>
-              </div>
-
-              {/* Status Selector Dropdown */}
-              <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status</span>
-                <button 
-                  type="button"
-                  onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36 flex items-center justify-between gap-1 text-left"
-                >
-                  <span className="truncate">
-                    {filters.status.length === 0 || filters.status.length === 5
-                      ? 'Todos os Status' 
-                      : filters.status.length === 1
-                        ? (statusLabelMap[filters.status[0]] || filters.status[0])
-                        : `${filters.status.length} selecionados`}
-                  </span>
-                  <span className="text-[9px] text-slate-400">▼</span>
-                </button>
-                
-                {isStatusDropdownOpen && (
-                  <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-0.5 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFilters({ ...filters, status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'] })}
-                        className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer select-none"
-                      >
-                        Marcar todos
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFilters({ ...filters, status: [] })}
-                        className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
-                      >
-                        Limpar todos
-                      </button>
+                {/* Start Date (Fixo only) */}
+                {periodType === 'Fixo' && (
+                  <>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Início</span>
+                      <input 
+                        type="date" 
+                        value={filters.startDate}
+                        onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
+                      />
                     </div>
-                    
-                    {[
-                      { value: 'invoiced', label: 'Faturado' },
-                      { value: 'handling', label: 'Em Preparação' },
-                      { value: 'payment-pending', label: 'Pagamento Pendente' },
-                      { value: 'canceled', label: 'Cancelado' },
-                      { value: 'payment-approved', label: 'Aprovado' }
-                    ].map((opt) => {
-                      const isChecked = filters.status.includes(opt.value);
-                      return (
-                        <label key={opt.value} className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none py-0.5">
-                          <input 
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleStatusCheckboxChange(opt.value)}
-                            className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>{opt.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Fim</span>
+                      <input 
+                        type="date" 
+                        value={filters.endDate}
+                        onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                        className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-28"
+                      />
+                    </div>
+                  </>
                 )}
-              </div>
 
-              {/* Action: Acumulado / Interval (Hour/Day/Week/Month) */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Agrupamento</span>
-                <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 h-9 items-center">
-                  {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
-                    <button
-                      key={interval}
-                      onClick={() => setChartInterval(interval)}
-                      className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-                        chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                      }`}
-                    >
-                      {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
-                    </button>
-                  ))}
+                {/* Comparison Type */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Comparar com</span>
+                  <select 
+                    value={comparisonType}
+                    onChange={(e) => setComparisonType(e.target.value as 'days' | 'period')}
+                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-44"
+                  >
+                    <option value="period">Período equivalente anterior</option>
+                    <option value="days">Mesmo nº de dias anteriores</option>
+                  </select>
+                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5 whitespace-nowrap bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded">
+                    vs {format(prevStart, 'dd/MM/yyyy')} a {format(prevEnd, 'dd/MM/yyyy')}
+                  </span>
+                </div>
+
+                {/* Status Selector Dropdown */}
+                <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status</span>
+                  <button 
+                    type="button"
+                    onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                    className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 h-9 text-slate-700 focus:border-blue-500 focus:bg-white transition-all outline-none w-36 flex items-center justify-between gap-1 text-left"
+                  >
+                    <span className="truncate">
+                      {filters.status.length === 0 || filters.status.length === 5
+                        ? 'Todos os Status' 
+                        : filters.status.length === 1
+                          ? (statusLabelMap[filters.status[0]] || filters.status[0])
+                          : `${filters.status.length} selecionados`}
+                    </span>
+                    <span className="text-[9px] text-slate-400">▼</span>
+                  </button>
+                  
+                  {isStatusDropdownOpen && (
+                    <div className="absolute top-[48px] left-0 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-0.5 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFilters({ ...filters, status: ['invoiced', 'handling', 'payment-pending', 'canceled', 'payment-approved'] })}
+                          className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer select-none"
+                        >
+                          Marcar todos
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFilters({ ...filters, status: [] })}
+                          className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
+                        >
+                          Limpar todos
+                        </button>
+                      </div>
+                      
+                      {[
+                        { value: 'invoiced', label: 'Faturado' },
+                        { value: 'handling', label: 'Em Preparação' },
+                        { value: 'payment-pending', label: 'Pagamento Pendente' },
+                        { value: 'canceled', label: 'Cancelado' },
+                        { value: 'payment-approved', label: 'Aprovado' }
+                      ].map((opt) => {
+                        const isChecked = filters.status.includes(opt.value);
+                        return (
+                          <label key={opt.value} className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none py-0.5">
+                            <input 
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleStatusCheckboxChange(opt.value)}
+                              className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Modo</span>
-                <button
-                  onClick={() => setIsCumulative(!isCumulative)}
-                  className={`px-3 h-9 text-xs font-bold rounded-lg border transition-all ${
-                    isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {isCumulative ? '✓ Acumulado' : 'Acumulado'}
-                </button>
+              {/* DIVIDER */}
+              <div className="hidden xl:block h-9 w-[1px] bg-slate-200 self-start"></div>
+
+              {/* CONTROLES DE VISUALIZAÇÃO E AÇÕES */}
+              <div className="flex flex-wrap items-start gap-3">
+                {/* Action: Acumulado / Interval (Hour/Day/Week/Month) */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Agrupamento</span>
+                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 h-9 items-center">
+                    {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
+                      <button
+                        key={interval}
+                        onClick={() => setChartInterval(interval)}
+                        className={`px-2.5 py-1 text-[10px] font-medium rounded transition-colors ${
+                          chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Modo</span>
+                  <button
+                    onClick={() => setIsCumulative(!isCumulative)}
+                    className={`px-3 h-9 text-xs font-bold rounded-lg border transition-all ${
+                      isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {isCumulative ? '✓ Acumulado' : 'Acumulado'}
+                  </button>
+                </div>
+
+                {/* Refresh Button */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
+                  <button onClick={fetchData} className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 h-9 w-9 shrink-0" title="Atualizar dados">
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Export PDF Button */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
+                  <button 
+                    onClick={() => window.print()}
+                    className="flex items-center gap-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 h-9 shrink-0"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>PDF</span>
+                  </button>
+                </div>
               </div>
-
-              <div className="h-6 w-[1px] bg-slate-200 self-end mb-1"></div>
-
-              {/* Refresh Button */}
-              <button onClick={fetchData} className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 h-9 w-9 self-end mb-1 shrink-0" title="Atualizar dados">
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-
-              {/* Export PDF Button */}
-              <button 
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 h-9 self-end mb-1 shrink-0"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="hidden xl:inline">PDF</span>
-              </button>
             </div>
           </div>
         </header>
