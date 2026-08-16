@@ -3219,6 +3219,13 @@ export default function Dashboard() {
           })()}
 
           {activeTab === 'products' && (() => {
+            console.log('PRODUCTS TAB DEBUG:', {
+              vtexOrdersCount: vtexOrders.length,
+              currentVtexOrdersCount: currentVtexOrders.length,
+              detailedOrdersListCount: detailedOrdersList.length,
+              detailedOrdersSample: detailedOrdersList.slice(0, 3)
+            });
+
             const productStats: Record<string, {
               name: string;
               category: string;
