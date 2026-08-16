@@ -1906,10 +1906,10 @@ export default function Dashboard() {
               </div>
 
               {/* Linha 5: Tabelas de Detalhamento e Maiores Clientes */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 
-                {/* Ranking de Clientes (1/3) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] lg:col-span-1">
+                {/* Ranking de Clientes (2/5) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] lg:col-span-2">
                   <h3 className="font-bold text-slate-800 text-sm mb-4">Maiores Compradores</h3>
                   <div className="flex-1 overflow-y-auto pr-1">
                     <table className="w-full text-left text-xs">
@@ -1936,7 +1936,7 @@ export default function Dashboard() {
                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
                               <td className="py-2.5 font-medium flex items-center gap-1.5 min-w-0">
                                 <span className="text-[10px] font-bold text-slate-400">#{idx + 1}</span>
-                                <span className="truncate max-w-[85px] text-slate-800" title={client.name}>{client.name}</span>
+                                <span className="truncate max-w-[155px] text-slate-800" title={client.name}>{client.name}</span>
                               </td>
                               <td className="py-2.5 text-right font-bold text-slate-600">{client.count}</td>
                               <td className="py-2.5 text-right font-bold text-slate-800">
@@ -1960,8 +1960,8 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Últimos Pedidos Detalhados (2/3) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[380px] lg:col-span-2 overflow-hidden">
+                {/* Últimos Pedidos Detalhados (3/5) */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[380px] lg:col-span-3 overflow-hidden">
                   <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50">
                     <div className="flex items-center gap-4">
                       <div className="relative">
