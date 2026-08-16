@@ -765,12 +765,27 @@ app.get('/api/vtex/order-detail/:orderId', async (c) => {
       clientName: o.clientProfileData ? `${o.clientProfileData.firstName} ${o.clientProfileData.lastName || ''}`.trim() : 'Cliente Indefinido',
       totalValue: o.value,
       status: o.status,
-      items: o.items?.map((item: any) => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        sellingPrice: item.sellingPrice
-      })) || [],
+      items: o.items?.map((item: any) => {
+        const brand = item.additionalInfo?.brandName || 'Não Informado';
+        
+        let category = 'Não Informado';
+        const categories = item.additionalInfo?.categories || [];
+        if (categories.length > 0) {
+          const sorted = [...categories].sort((a, b) => b.length - a.length);
+          const deepest = sorted[0] || '';
+          const parts = deepest.split('/').filter(Boolean);
+          category = parts[parts.length - 1] || 'Não Informado';
+        }
+
+        return {
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          sellingPrice: item.sellingPrice,
+          brand,
+          category
+        };
+      }) || [],
       shippingValue: shippingTotal,
       deliveryChannel: deliveryChannel,
       city,

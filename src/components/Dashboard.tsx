@@ -3246,27 +3246,32 @@ export default function Dashboard() {
                   const pQty = item.quantity || 1;
                   const pRev = pPrice * pQty;
 
-                  let category = 'Outros';
-                  const lowerName = pName.toLowerCase();
-                  if (lowerName.includes('lençol') || lowerName.includes('cama') || lowerName.includes('travesseiro') || lowerName.includes('fronha') || lowerName.includes('cobreleito') || lowerName.includes('edredom') || lowerName.includes('manta') || lowerName.includes('pillow') || lowerName.includes('colchão')) {
-                    category = 'Cama';
-                  } else if (lowerName.includes('toalha') || lowerName.includes('banho') || lowerName.includes('rosto') || lowerName.includes('piso') || lowerName.includes('robe') || lowerName.includes('touca')) {
-                    category = 'Banho';
-                  } else if (lowerName.includes('mesa') || lowerName.includes('copa') || lowerName.includes('jantar') || lowerName.includes('guardanapo') || lowerName.includes('americano') || lowerName.includes('prato') || lowerName.includes('copo')) {
-                    category = 'Mesa';
-                  } else if (lowerName.includes('almofada') || lowerName.includes('cortina') || lowerName.includes('tapete') || lowerName.includes('decoração') || lowerName.includes('difusor') || lowerName.includes('vela') || lowerName.includes('quadro')) {
-                    category = 'Decoração';
+                  let category = item.category && item.category !== 'Não Informado' ? item.category : 'Outros';
+                  if (category === 'Outros') {
+                    const lowerName = pName.toLowerCase();
+                    if (lowerName.includes('lençol') || lowerName.includes('cama') || lowerName.includes('travesseiro') || lowerName.includes('fronha') || lowerName.includes('cobreleito') || lowerName.includes('edredom') || lowerName.includes('manta') || lowerName.includes('pillow') || lowerName.includes('colchão')) {
+                      category = 'Cama';
+                    } else if (lowerName.includes('toalha') || lowerName.includes('banho') || lowerName.includes('rosto') || lowerName.includes('piso') || lowerName.includes('robe') || lowerName.includes('touca')) {
+                      category = 'Banho';
+                    } else if (lowerName.includes('mesa') || lowerName.includes('copa') || lowerName.includes('jantar') || lowerName.includes('guardanapo') || lowerName.includes('americano') || lowerName.includes('prato') || lowerName.includes('copo')) {
+                      category = 'Mesa';
+                    } else if (lowerName.includes('almofada') || lowerName.includes('cortina') || lowerName.includes('tapete') || lowerName.includes('decoração') || lowerName.includes('difusor') || lowerName.includes('vela') || lowerName.includes('quadro')) {
+                      category = 'Decoração';
+                    }
                   }
 
-                  let brand = 'Narciso Enxovais';
-                  if (lowerName.includes('copa') || lowerName.includes('copa & cia')) {
-                    brand = 'Copa & Cia';
-                  } else if (lowerName.includes('karsten')) {
-                    brand = 'Karsten';
-                  } else if (lowerName.includes('buddemeyer')) {
-                    brand = 'Buddemeyer';
-                  } else if (lowerName.includes('artex')) {
-                    brand = 'Artex';
+                  let brand = item.brand && item.brand !== 'Não Informado' ? item.brand : 'Narciso Enxovais';
+                  if (brand === 'Narciso Enxovais') {
+                    const lowerName = pName.toLowerCase();
+                    if (lowerName.includes('copa') || lowerName.includes('copa & cia')) {
+                      brand = 'Copa & Cia';
+                    } else if (lowerName.includes('karsten')) {
+                      brand = 'Karsten';
+                    } else if (lowerName.includes('buddemeyer')) {
+                      brand = 'Buddemeyer';
+                    } else if (lowerName.includes('artex')) {
+                      brand = 'Artex';
+                    }
                   }
 
                   if (!productStats[pName]) {
