@@ -513,11 +513,15 @@ export default function Dashboard() {
   const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
 
   // Order status distribution data - based on current period only
-  const statusCounts = currentVtexOrders.reduce((acc, order) => {
+  const statusMetrics = currentVtexOrders.reduce((acc, order) => {
     const status = order.status || 'other';
-    acc[status] = (acc[status] || 0) + 1;
+    if (!acc[status]) {
+      acc[status] = { count: 0, revenue: 0 };
+    }
+    acc[status].count += 1;
+    acc[status].revenue += ((order.totalValue || 0) / 100);
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, { count: number, revenue: number }>);
 
   const statusLabelMap: Record<string, string> = {
     'invoiced': 'Faturado',
@@ -537,11 +541,15 @@ export default function Dashboard() {
     'other': '#64748b' // slate
   };
 
-  const pieData = Object.keys(statusCounts).map(key => ({
+  const pieData = Object.keys(statusMetrics).map(key => ({
     name: statusLabelMap[key] || key,
-    value: statusCounts[key],
-    color: statusColorMap[key] || '#64748b'
+    value: statusMetrics[key].count,
+    revenue: statusMetrics[key].revenue,
+    color: statusColorMap[key] || '#64748b',
+    key: key
   }));
+
+  const daysCount = Math.max(Math.round(Math.abs(new Date(filters.endDate).getTime() - new Date(filters.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1, 1);
 
   // ==========================================
   // Detailed Order Indicators calculations (Sales Tab)
@@ -1600,8 +1608,67 @@ export default function Dashboard() {
               </div>
             </div>
           </section>
-            </>
-          )}
+
+          {/* Tabela de Status dos Pedidos VTEX */}
+          <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm">Detalhamento por Status dos Pedidos (VTEX)</h3>
+              <p className="text-xs text-slate-400">Resumo acumulado, médias diárias e ticket médio por status de pedido no período de {daysCount} {daysCount === 1 ? 'dia' : 'dias'}</p>
+            </div>
+            
+            {pieData.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs">
+                {loading ? 'Carregando status...' : 'Nenhum pedido no período'}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-600">
+                  <thead className="text-[10px] text-slate-500 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold text-right">Soma Pedidos</th>
+                      <th className="px-4 py-3 font-semibold text-right">Soma Faturamento</th>
+                      <th className="px-4 py-3 font-semibold text-right">Média Pedidos/Dia</th>
+                      <th className="px-4 py-3 font-semibold text-right">Média Faturamento/Dia</th>
+                      <th className="px-4 py-3 font-semibold text-right">Ticket Médio</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pieData.map((item, idx) => {
+                      const avgOrders = item.value / daysCount;
+                      const avgRev = item.revenue / daysCount;
+                      const tktMed = item.value > 0 ? (item.revenue / item.value) : 0;
+                      
+                      return (
+                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-slate-800 flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                            {item.name}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-700">{item.value.toLocaleString('pt-BR')}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-700">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-500">{avgOrders.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-500">R$ {avgRev.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-4 py-3 text-right font-bold text-indigo-600">R$ {tktMed.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                      );
+                    })}
+                    {/* Linha de Total */}
+                    <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
+                      <td className="px-4 py-3 text-slate-800">Total</td>
+                      <td className="px-4 py-3 text-right text-slate-800">{totalVtexOrders.toLocaleString('pt-BR')}</td>
+                      <td className="px-4 py-3 text-right text-slate-800">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="px-4 py-3 text-right text-slate-600">{(totalVtexOrders / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                      <td className="px-4 py-3 text-right text-slate-600">R$ {(totalVtexRevenue / daysCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="px-4 py-3 text-right text-indigo-700">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      )}
 
           {/* Sales Tab (Indicadores Detalhados de Pedidos) */}
           {activeTab === 'sales' && (
