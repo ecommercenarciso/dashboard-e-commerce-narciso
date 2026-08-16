@@ -3627,11 +3627,8 @@ export default function Dashboard() {
             const totalSubcategoryOrders = subcategoryList.reduce((acc, c) => acc + c.orders, 0);
             const overallPpa = totalSubcategoryOrders > 0 ? totalSubcategoryQty / totalSubcategoryOrders : 0;
 
-            // 2. Share de Omnicanalidade (Retirada)
-            const totalRetiradaQty = productList.reduce((acc, p) => acc + (p.deliveryChannels['Retirada']?.count || 0), 0);
-            const totalDeliveryQty = productList.reduce((acc, p) => acc + (p.deliveryChannels['Entrega']?.count || 0), 0);
-            const totalOmniQty = totalRetiradaQty + totalDeliveryQty;
-            const omniShare = totalOmniQty > 0 ? (totalRetiradaQty / totalOmniQty) * 100 : 0;
+            // 2. Receita Média dos Itens
+            const avgItemRevenue = totalItemsCount > 0 ? totalProductRevenue / totalItemsCount : 0;
 
             // 3. Giro de Categoria Líder (Ticket Médio da subcategoria líder)
             const leaderSubcategory = sortedSubcategoryList[0];
@@ -3665,87 +3662,97 @@ export default function Dashboard() {
             return (
               <div className="flex flex-col gap-6 w-full text-slate-700">
                 {/* CAMADA 1: CARDS DE KPI (PRODUTOS) */}
-                <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 w-full">
-                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Itens Vendidos</p>
-                      <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
-                        {totalItemsCount.toLocaleString('pt-BR')} un.
-                      </h2>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium leading-tight">Total de peças faturadas</p>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Faturamento Itens</p>
-                      <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
-                        R$ {totalProductRevenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-                      </h2>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium leading-tight">Receita de itens vendidos</p>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria Líder</p>
-                      <h2 className="text-[16px] font-bold text-indigo-600 leading-none mt-1 truncate" title={topCategory}>
-                        {topCategory}
-                      </h2>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium leading-tight">
-                      Receita: R$ {(categorySummary[topCategory]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Marca Líder</p>
-                      <h2 className="text-[16px] font-bold text-indigo-600 leading-none mt-1 truncate" title={topBrand}>
-                        {topBrand}
-                      </h2>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium leading-tight">
-                      Receita: R$ {(brandSummary[topBrand]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-                    </p>
-                  </div>
-
-                  {/* NOVOS CARDS DE EFICIÊNCIA OPERACIONAL */}
-                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Itens / Pedido (PPA)</p>
-                      <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
-                        {overallPpa.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.
-                      </h2>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium leading-tight">Eficiência de Cross-selling</p>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Omnicanalidade (Retirada)</p>
-                      <div className="flex items-baseline gap-1 mt-1">
-                        <h2 className="text-[20px] font-bold text-slate-900 leading-none">
-                          {omniShare.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
+                <div className="flex flex-col gap-4 w-full">
+                  {/* Linha 1: Métricas de Volume e Receita */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Itens Vendidos</p>
+                        <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
+                          {totalItemsCount.toLocaleString('pt-BR')} un.
                         </h2>
-                        <span className="text-[9px] text-slate-400 font-semibold">dos itens</span>
                       </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">Total de peças faturadas</p>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden mt-1">
-                      <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${omniShare}%` }}></div>
+
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Faturamento Itens</p>
+                        <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
+                          R$ {totalProductRevenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                        </h2>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">Receita de itens vendidos</p>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Número de Pedidos</p>
+                        <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
+                          {detailedOrdersList.length.toLocaleString('pt-BR')} ped.
+                        </h2>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">Pedidos únicos faturados</p>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Receita Média dos Itens</p>
+                        <h2 className="text-[20px] font-bold text-indigo-600 leading-none mt-1">
+                          R$ {avgItemRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </h2>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">Valor faturado por peça vendida</p>
                     </div>
                   </div>
 
-                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Giro Categoria Líder</p>
-                      <h2 className="text-[18px] font-bold text-indigo-600 leading-none mt-1 truncate" title={leaderSubcategory?.name || 'Nenhuma'}>
-                        R$ {leaderSubcategoryTicket.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-                      </h2>
+                  {/* Linha 2: Líderes e Eficiência */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria Líder</p>
+                        <h2 className="text-[16px] font-bold text-indigo-600 leading-none mt-1 truncate" title={topCategory}>
+                          {topCategory}
+                        </h2>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">
+                        Receita: R$ {(categorySummary[topCategory]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      </p>
                     </div>
-                    <p className="text-[10px] text-slate-400 font-medium leading-tight truncate">Ticket Médio de: {leaderSubcategory?.name || 'Nenhuma'}</p>
+
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Marca Líder</p>
+                        <h2 className="text-[16px] font-bold text-indigo-600 leading-none mt-1 truncate" title={topBrand}>
+                          {topBrand}
+                        </h2>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">
+                        Receita: R$ {(brandSummary[topBrand]?.revenue || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      </p>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Itens / Pedido (PPA)</p>
+                        <h2 className="text-[20px] font-bold text-slate-900 leading-none mt-1">
+                          {overallPpa.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.
+                        </h2>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">Eficiência de Cross-selling</p>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Giro Categoria Líder</p>
+                        <h2 className="text-[18px] font-bold text-indigo-600 leading-none mt-1 truncate" title={leaderSubcategory?.name || 'Nenhuma'}>
+                          R$ {leaderSubcategoryTicket.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                        </h2>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight truncate">Ticket Médio de: {leaderSubcategory?.name || 'Nenhuma'}</p>
+                    </div>
                   </div>
-                </section>
+                </div>
 
                 {/* CAMADA 2: GRÁFICOS DE CATEGORIAS E MARCAS (50% / 50%) */}
                 <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
