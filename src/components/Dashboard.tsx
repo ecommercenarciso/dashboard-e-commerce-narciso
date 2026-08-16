@@ -29,6 +29,8 @@ export default function Dashboard() {
   const [deliverySortDirection, setDeliverySortDirection] = useState<'asc' | 'desc'>('desc');
   const [pickupSortField, setPickupSortField] = useState<'city' | 'count' | 'revenue'>('count');
   const [pickupSortDirection, setPickupSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [carrierSortField, setCarrierSortField] = useState<'name' | 'count' | 'revenue'>('count');
+  const [carrierSortDirection, setCarrierSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const handleBuyerSort = (field: 'name' | 'count' | 'total' | 'avg') => {
     if (buyerSortField === field) {
@@ -54,6 +56,15 @@ export default function Dashboard() {
     } else {
       setPickupSortField(field);
       setPickupSortDirection('desc');
+    }
+  };
+
+  const handleCarrierSort = (field: 'name' | 'count' | 'revenue') => {
+    if (carrierSortField === field) {
+      setCarrierSortDirection(carrierSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setCarrierSortField(field);
+      setCarrierSortDirection('desc');
     }
   };
 
@@ -752,7 +763,17 @@ export default function Dashboard() {
         count: data.count,
         revenue: data.revenue
       }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => {
+        let comparison = 0;
+        if (carrierSortField === 'name') {
+          comparison = a.name.localeCompare(b.name);
+        } else if (carrierSortField === 'count') {
+          comparison = a.count - b.count;
+        } else if (carrierSortField === 'revenue') {
+          comparison = a.revenue - b.revenue;
+        }
+        return carrierSortDirection === 'desc' ? -comparison : comparison;
+      });
 
     // 4. Cancellation reasons - exact counts
     const sampleCanceled = detailedOrdersList.filter(o => o.status === 'canceled' && o.cancelReason);
@@ -871,7 +892,18 @@ export default function Dashboard() {
       { name: 'Total Express', count: Math.round(totalVtexOrders * 0.5), revenue: totalVtexRevenue * 0.5 },
       { name: 'Correios', count: Math.round(totalVtexOrders * 0.3), revenue: totalVtexRevenue * 0.3 },
       { name: 'Jadlog', count: Math.round(totalVtexOrders * 0.2), revenue: totalVtexRevenue * 0.2 }
-    ].filter(c => c.count > 0);
+    ].filter(c => c.count > 0)
+     .sort((a, b) => {
+        let comparison = 0;
+        if (carrierSortField === 'name') {
+          comparison = a.name.localeCompare(b.name);
+        } else if (carrierSortField === 'count') {
+          comparison = a.count - b.count;
+        } else if (carrierSortField === 'revenue') {
+          comparison = a.revenue - b.revenue;
+        }
+        return carrierSortDirection === 'desc' ? -comparison : comparison;
+     });
 
     cancelReasonsList = [
       { reason: 'Desistência do cliente', count: Math.round(canceledCount * 0.7) },
@@ -1870,18 +1902,28 @@ export default function Dashboard() {
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px] lg:col-span-1">
                   <h3 className="font-bold text-slate-800 text-sm mb-4">Desempenho de Transportadoras</h3>
                   <div className="overflow-y-auto flex-1">
-                    <table className="w-full text-left">
-                      <thead className="text-[10px] text-slate-500 uppercase border-b border-slate-100">
+                    <table className="w-full text-left text-xs">
+                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white select-none">
                         <tr>
-                          <th className="pb-2 font-semibold">Parceiro / Courier</th>
-                          <th className="pb-2 font-semibold text-right">Pedidos</th>
+                          <th className="pb-2 font-semibold cursor-pointer hover:text-slate-800" onClick={() => handleCarrierSort('name')}>
+                            Courier {carrierSortField === 'name' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleCarrierSort('count')}>
+                            Ped. {carrierSortField === 'count' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
+                          <th className="pb-2 font-semibold text-right cursor-pointer hover:text-slate-800" onClick={() => handleCarrierSort('revenue')}>
+                            Valor {carrierSortField === 'revenue' ? (carrierSortDirection === 'asc' ? '▲' : '▼') : ''}
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
                         {carriersList.map((item, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-2.5 font-medium">{item.name}</td>
+                            <td className="py-2.5 font-medium truncate max-w-[100px]" title={item.name}>{item.name}</td>
                             <td className="py-2.5 text-right font-bold text-slate-800">{item.count}</td>
+                            <td className="py-2.5 text-right font-semibold text-emerald-600">
+                              R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                            </td>
                           </tr>
                         ))}
                         {carriersList.length === 0 && (
