@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 
@@ -1471,7 +1471,7 @@ export default function Dashboard() {
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'sales' ? 'text-white bg-slate-800' : 'hover:text-white'}`}
               title="Análise de Vendas"
             >
-              <ShoppingCart className="w-5 h-5 shrink-0" />
+              <TrendingUp className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Análise de Vendas</span>}
             </div>
             <div 
@@ -1479,7 +1479,7 @@ export default function Dashboard() {
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'products' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Análise de Produtos"
             >
-              <Sparkles className="w-5 h-5 shrink-0" />
+              <Package className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Produtos e Categorias</span>}
             </div>
              <div 
