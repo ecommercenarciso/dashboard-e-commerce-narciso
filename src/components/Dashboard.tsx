@@ -122,8 +122,8 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      const start = new Date(filters.startDate);
-      const end = new Date(filters.endDate);
+      const start = new Date(filters.startDate + 'T00:00:00');
+      const end = new Date(filters.endDate + 'T00:00:00');
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
@@ -131,8 +131,8 @@ export default function Dashboard() {
       let prevEnd = new Date(end);
 
       if (comparisonType === 'custom' && filters.customCompareStart && filters.customCompareEnd) {
-        prevStart = new Date(filters.customCompareStart);
-        prevEnd = new Date(filters.customCompareEnd);
+        prevStart = new Date(filters.customCompareStart + 'T00:00:00');
+        prevEnd = new Date(filters.customCompareEnd + 'T00:00:00');
       } else if (comparisonType === 'days') {
         prevStart.setDate(prevStart.getDate() - diffDays);
         prevEnd.setDate(prevEnd.getDate() - diffDays);
@@ -452,8 +452,8 @@ export default function Dashboard() {
   const startYmd = filters.startDate.replace(/-/g, '');
   const endYmd = filters.endDate.replace(/-/g, '');
 
-  const start = new Date(filters.startDate);
-  const end = new Date(filters.endDate);
+  const start = new Date(filters.startDate + 'T00:00:00');
+  const end = new Date(filters.endDate + 'T00:00:00');
   const diffTime = Math.abs(end.getTime() - start.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
@@ -461,8 +461,8 @@ export default function Dashboard() {
   let prevEnd = new Date(end);
 
   if (comparisonType === 'custom' && filters.customCompareStart && filters.customCompareEnd) {
-    prevStart = new Date(filters.customCompareStart);
-    prevEnd = new Date(filters.customCompareEnd);
+    prevStart = new Date(filters.customCompareStart + 'T00:00:00');
+    prevEnd = new Date(filters.customCompareEnd + 'T00:00:00');
   } else if (comparisonType === 'days') {
     prevStart.setDate(prevStart.getDate() - diffDays);
     prevEnd.setDate(prevEnd.getDate() - diffDays);
