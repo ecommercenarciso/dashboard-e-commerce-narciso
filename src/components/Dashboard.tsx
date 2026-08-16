@@ -656,8 +656,8 @@ export default function Dashboard() {
   // New detailed logistics, cancelation, and payments indicators calculations:
   // We use detailedOrdersList as our active sample and query the exact counts without scaling/projection.
   
-  let topDeliveryCities: { city: string, count: number }[] = [];
-  let topPickupCities: { city: string, count: number }[] = [];
+  let topDeliveryCities: { city: string, count: number, revenue: number }[] = [];
+  let topPickupCities: { city: string, count: number, revenue: number }[] = [];
   let carriersList: { name: string, count: number, revenue: number }[] = [];
   let cancelReasonsList: { reason: string, count: number }[] = [];
   let paymentMethodsData: { name: string, value: number }[] = [];
@@ -668,22 +668,30 @@ export default function Dashboard() {
     const sampleDeliveryOrders = detailedOrdersList.filter(o => o.deliveryChannel === 'delivery' && o.city && o.city !== 'Não Informado');
     const samplePickupOrders = detailedOrdersList.filter(o => o.deliveryChannel !== 'delivery' && o.city && o.city !== 'Não Informado');
     
-    // 1. Delivery Cities - full list of exact counts
-    const rawDeliveryCities: Record<string, number> = {};
+    // 1. Delivery Cities - full list of exact counts and revenue
+    const rawDeliveryCities: Record<string, { count: number, revenue: number }> = {};
     sampleDeliveryOrders.forEach(o => {
-      rawDeliveryCities[o.city] = (rawDeliveryCities[o.city] || 0) + 1;
+      if (!rawDeliveryCities[o.city]) {
+        rawDeliveryCities[o.city] = { count: 0, revenue: 0 };
+      }
+      rawDeliveryCities[o.city].count += 1;
+      rawDeliveryCities[o.city].revenue += (o.totalValue || 0) / 100;
     });
     topDeliveryCities = Object.entries(rawDeliveryCities)
-      .map(([city, count]) => ({ city, count }))
+      .map(([city, data]) => ({ city, count: data.count, revenue: data.revenue }))
       .sort((a, b) => b.count - a.count);
 
-    // 2. Pickup Cities - full list of exact counts
-    const rawPickupCities: Record<string, number> = {};
+    // 2. Pickup Cities - full list of exact counts and revenue
+    const rawPickupCities: Record<string, { count: number, revenue: number }> = {};
     samplePickupOrders.forEach(o => {
-      rawPickupCities[o.city] = (rawPickupCities[o.city] || 0) + 1;
+      if (!rawPickupCities[o.city]) {
+        rawPickupCities[o.city] = { count: 0, revenue: 0 };
+      }
+      rawPickupCities[o.city].count += 1;
+      rawPickupCities[o.city].revenue += (o.totalValue || 0) / 100;
     });
     topPickupCities = Object.entries(rawPickupCities)
-      .map(([city, count]) => ({ city, count }))
+      .map(([city, data]) => ({ city, count: data.count, revenue: data.revenue }))
       .sort((a, b) => b.count - a.count);
 
     // 3. Carriers - full list of exact counts
@@ -768,7 +776,8 @@ export default function Dashboard() {
       if (unmappedDelivery > 0) {
         topDeliveryCities.push({
           city: 'Aguardando Sincronização...',
-          count: unmappedDelivery
+          count: unmappedDelivery,
+          revenue: 0
         });
       }
 
@@ -776,21 +785,22 @@ export default function Dashboard() {
       if (unmappedPickup > 0) {
         topPickupCities.push({
           city: 'Aguardando Sincronização...',
-          count: unmappedPickup
+          count: unmappedPickup,
+          revenue: 0
         });
       }
     }
   } else {
     // Graceful fallback for empty detailedOrdersList
     topDeliveryCities = [
-      { city: 'São Paulo', count: Math.round(deliveryOrdersCount * 0.4) },
-      { city: 'Rio de Janeiro', count: Math.round(deliveryOrdersCount * 0.3) },
-      { city: 'Belo Horizonte', count: Math.round(deliveryOrdersCount * 0.2) }
+      { city: 'São Paulo', count: Math.round(deliveryOrdersCount * 0.4), revenue: totalVtexRevenue * 0.4 },
+      { city: 'Rio de Janeiro', count: Math.round(deliveryOrdersCount * 0.3), revenue: totalVtexRevenue * 0.3 },
+      { city: 'Belo Horizonte', count: Math.round(deliveryOrdersCount * 0.2), revenue: totalVtexRevenue * 0.2 }
     ].filter(c => c.count > 0);
     
     topPickupCities = [
-      { city: 'Recife', count: Math.round(pickupOrdersCount * 0.6) },
-      { city: 'Olinda', count: Math.round(pickupOrdersCount * 0.4) }
+      { city: 'Recife', count: Math.round(pickupOrdersCount * 0.6), revenue: totalVtexRevenue * 0.05 },
+      { city: 'Olinda', count: Math.round(pickupOrdersCount * 0.4), revenue: totalVtexRevenue * 0.03 }
     ].filter(c => c.count > 0);
 
     carriersList = [
@@ -1866,15 +1876,26 @@ export default function Dashboard() {
                     <div className="flex flex-col overflow-hidden">
                       <h4 className="text-xs font-bold text-indigo-600 mb-2 border-b border-slate-100 pb-1 flex items-center justify-between">
                         <span>Cidades de Entrega</span>
-                        <span className="text-[10px] text-slate-400 font-normal">Soma Encomendas</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Encomendas</span>
                       </h4>
                       <div className="overflow-y-auto flex-1 pr-1">
-                        {topDeliveryCities.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center py-2 text-xs border-b border-slate-50">
-                            <span className="font-medium text-slate-600">{idx + 1}. {item.city}</span>
-                            <span className="font-bold text-slate-800">{item.count} ped.</span>
-                          </div>
-                        ))}
+                        <table className="w-full text-left text-xs">
+                          <tbody className="divide-y divide-slate-50 text-slate-700">
+                            {topDeliveryCities.map((item, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                <td className="py-2 font-medium text-slate-600 truncate max-w-[100px]" title={item.city}>
+                                  {idx + 1}. {item.city}
+                                </td>
+                                <td className="py-2 text-right font-bold text-slate-800">
+                                  {item.count} ped.
+                                </td>
+                                <td className="py-2 text-right font-semibold text-emerald-600">
+                                  R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                         {topDeliveryCities.length === 0 && (
                           <p className="text-xs text-slate-400 text-center py-12">Nenhuma cidade de entrega.</p>
                         )}
@@ -1888,12 +1909,23 @@ export default function Dashboard() {
                         <span className="text-[10px] text-slate-400 font-normal">Retirados em Loja</span>
                       </h4>
                       <div className="overflow-y-auto flex-1 pr-1">
-                        {topPickupCities.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center py-2 text-xs border-b border-slate-50">
-                            <span className="font-medium text-slate-600">{idx + 1}. {item.city}</span>
-                            <span className="font-bold text-slate-800">{item.count} ped.</span>
-                          </div>
-                        ))}
+                        <table className="w-full text-left text-xs">
+                          <tbody className="divide-y divide-slate-50 text-slate-700">
+                            {topPickupCities.map((item, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                <td className="py-2 font-medium text-slate-600 truncate max-w-[100px]" title={item.city}>
+                                  {idx + 1}. {item.city}
+                                </td>
+                                <td className="py-2 text-right font-bold text-slate-800">
+                                  {item.count} ped.
+                                </td>
+                                <td className="py-2 text-right font-semibold text-emerald-600">
+                                  R$ {item.revenue ? item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                         {topPickupCities.length === 0 && (
                           <p className="text-xs text-slate-400 text-center py-12">Nenhuma cidade com retiradas.</p>
                         )}
