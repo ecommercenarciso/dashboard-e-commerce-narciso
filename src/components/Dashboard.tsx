@@ -87,7 +87,7 @@ export default function Dashboard() {
 
   // One-time cache migration: clear order detail cache if it doesn't have the updated category logic
   useEffect(() => {
-    const migrated = localStorage.getItem('vtex_cache_migrated_v4');
+    const migrated = localStorage.getItem('vtex_cache_migrated_v5');
     if (!migrated) {
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
@@ -95,8 +95,8 @@ export default function Dashboard() {
           localStorage.removeItem(key);
         }
       }
-      localStorage.setItem('vtex_cache_migrated_v4', 'true');
-      console.log('Cleared old VTEX order detail cache for migration v4.');
+      localStorage.setItem('vtex_cache_migrated_v5', 'true');
+      console.log('Cleared old VTEX order detail cache for migration v5.');
     }
   }, []);
 
@@ -278,7 +278,13 @@ export default function Dashboard() {
         const cached = localStorage.getItem(`order_detail_${order.orderId}`);
         if (cached) {
           try {
-            return { ...order, ...JSON.parse(cached) };
+            const parsed = JSON.parse(cached);
+            const hasOldGuess = parsed.items && parsed.items.some((item: any) => item.category === 'Cama' || item.category === 'Outros' || item.category === 'Não Informado' || !item.category);
+            if (hasOldGuess) {
+              localStorage.removeItem(`order_detail_${order.orderId}`);
+              return order;
+            }
+            return { ...order, ...parsed };
           } catch (e) {
             // ignore
           }
