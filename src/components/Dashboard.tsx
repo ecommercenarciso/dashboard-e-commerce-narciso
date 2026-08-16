@@ -644,7 +644,7 @@ export default function Dashboard() {
   const canceledRevenue = canceledOrders.reduce((acc, o) => acc + ((o.totalValue || 0) / 100), 0);
   const canceledRate = totalVtexOrders > 0 ? (canceledCount / totalVtexOrders) * 100 : 0;
   
-  const approvedOrders = currentVtexOrders.filter(o => o.status === 'invoiced' || o.status === 'payment-approved');
+  const approvedOrders = currentVtexOrders.filter(o => o.status !== 'canceled');
   const approvedCount = approvedOrders.length;
   const approvedRevenue = approvedOrders.reduce((acc, o) => acc + ((o.totalValue || 0) / 100), 0);
 
