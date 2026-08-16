@@ -83,6 +83,21 @@ export default function Dashboard() {
     }
   }, []);
 
+  // One-time cache migration: clear order detail cache if it doesn't have the updated category logic
+  useEffect(() => {
+    const migrated = localStorage.getItem('vtex_cache_migrated_v3');
+    if (!migrated) {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('order_detail_')) {
+          localStorage.removeItem(key);
+        }
+      }
+      localStorage.setItem('vtex_cache_migrated_v3', 'true');
+      console.log('Cleared old VTEX order detail cache for migration v3.');
+    }
+  }, []);
+
   const handleGoalChange = (key: keyof typeof goals, value: number) => {
     const newGoals = { ...goals, [key]: value };
     setGoals(newGoals);
@@ -290,8 +305,7 @@ export default function Dashboard() {
           if (parsed.failed && Date.now() - parsed.timestamp < 120000) {
             return false;
           }
-          const hasMissingCategories = parsed.items && parsed.items.some((item: any) => !item.category || item.category === 'Não Informado');
-          if ((parsed.state === undefined || hasMissingCategories) && !parsed.failed) {
+          if (parsed.state === undefined && !parsed.failed) {
             return !fetchingIds.has(order.orderId);
           }
         } catch (e) {
