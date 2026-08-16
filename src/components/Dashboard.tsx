@@ -48,6 +48,10 @@ export default function Dashboard() {
 
   const datePickerRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const monthDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
+  const [selectedMonthsRange, setSelectedMonthsRange] = useState<{ start: number; end: number } | null>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -56,6 +60,9 @@ export default function Dashboard() {
       }
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setIsStatusDropdownOpen(false);
+      }
+      if (monthDropdownRef.current && !monthDropdownRef.current.contains(event.target as Node)) {
+        setIsMonthDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -216,7 +223,7 @@ export default function Dashboard() {
         } else if (p === 'Últimos 14 dias') {
           prevStart = subDays(start, 14);
           prevEnd = subDays(end, 14);
-        } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado') {
+        } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado' || p === 'Últimos 60 dias' || p === 'Últimos 90 dias' || p === 'Últimos 120 dias' || p === 'Últimos 180 dias') {
           prevStart = subMonths(start, 1);
           prevEnd = subMonths(end, 1);
         } else if (p.includes('trimestre') || p === 'Trimestre passado') {
@@ -494,6 +501,22 @@ export default function Dashboard() {
         start = subDays(today, 29);
         end = today;
         break;
+      case 'Últimos 60 dias':
+        start = subDays(today, 59);
+        end = today;
+        break;
+      case 'Últimos 90 dias':
+        start = subDays(today, 89);
+        end = today;
+        break;
+      case 'Últimos 120 dias':
+        start = subDays(today, 119);
+        end = today;
+        break;
+      case 'Últimos 180 dias':
+        start = subDays(today, 179);
+        end = today;
+        break;
       case 'Semana passada (começa no domingo)':
         start = startOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
         end = endOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
@@ -550,7 +573,7 @@ export default function Dashboard() {
       } else if (p === 'Últimos 14 dias') {
         prevStart = subDays(start, 14);
         prevEnd = subDays(end, 14);
-      } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado') {
+      } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado' || p === 'Últimos 60 dias' || p === 'Últimos 90 dias' || p === 'Últimos 120 dias' || p === 'Últimos 180 dias') {
         prevStart = subMonths(start, 1);
         prevEnd = subMonths(end, 1);
       } else if (p.includes('trimestre') || p === 'Trimestre passado') {
@@ -650,6 +673,22 @@ export default function Dashboard() {
             start = subDays(today, 29);
             end = today;
             break;
+        case 'Últimos 60 dias':
+            start = subDays(today, 59);
+            end = today;
+            break;
+        case 'Últimos 90 dias':
+            start = subDays(today, 89);
+            end = today;
+            break;
+        case 'Últimos 120 dias':
+            start = subDays(today, 119);
+            end = today;
+            break;
+        case 'Últimos 180 dias':
+            start = subDays(today, 179);
+            end = today;
+            break;
         case 'Semana passada (começa no domingo)':
             start = startOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
             end = endOfWeek(subWeeks(today, 1), { weekStartsOn: 0 });
@@ -677,6 +716,62 @@ export default function Dashboard() {
         startDate: format(start, 'yyyy-MM-dd'),
         endDate: format(end, 'yyyy-MM-dd')
     });
+  };
+
+  const MONTH_NAMES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  const handleMonthClick = (m: number) => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+
+    if (!selectedMonthsRange) {
+      const start = new Date(currentYear, m, 1);
+      const end = endOfMonth(new Date(currentYear, m, 1));
+      setSelectedMonthsRange({ start: m, end: m });
+      setPeriodType(MONTH_NAMES[m]);
+      setFilters({
+        ...filters,
+        startDate: format(start, 'yyyy-MM-dd'),
+        endDate: format(end, 'yyyy-MM-dd')
+      });
+    } else {
+      const { start: sMonth, end: eMonth } = selectedMonthsRange;
+      
+      if (m === sMonth - 1) {
+        const start = new Date(currentYear, m, 1);
+        const end = new Date(currentYear, eMonth, 1);
+        setSelectedMonthsRange({ start: m, end: eMonth });
+        setPeriodType(`${MONTH_NAMES[m]} - ${MONTH_NAMES[eMonth]}`);
+        setFilters({
+          ...filters,
+          startDate: format(start, 'yyyy-MM-dd'),
+          endDate: format(endOfMonth(end), 'yyyy-MM-dd')
+        });
+      } else if (m === eMonth + 1) {
+        const start = new Date(currentYear, sMonth, 1);
+        const end = new Date(currentYear, m, 1);
+        setSelectedMonthsRange({ start: sMonth, end: m });
+        setPeriodType(`${MONTH_NAMES[sMonth]} - ${MONTH_NAMES[m]}`);
+        setFilters({
+          ...filters,
+          startDate: format(start, 'yyyy-MM-dd'),
+          endDate: format(endOfMonth(end), 'yyyy-MM-dd')
+        });
+      } else {
+        const start = new Date(currentYear, m, 1);
+        const end = endOfMonth(new Date(currentYear, m, 1));
+        setSelectedMonthsRange({ start: m, end: m });
+        setPeriodType(MONTH_NAMES[m]);
+        setFilters({
+          ...filters,
+          startDate: format(start, 'yyyy-MM-dd'),
+          endDate: format(end, 'yyyy-MM-dd')
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -714,7 +809,7 @@ export default function Dashboard() {
     } else if (p === 'Últimos 14 dias') {
       prevStart = subDays(start, 14);
       prevEnd = subDays(end, 14);
-    } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado') {
+    } else if (p.includes('mês') || p === 'Últimos 28 dias' || p === 'Últimos 30 dias' || p === 'Mês passado' || p === 'Últimos 60 dias' || p === 'Últimos 90 dias' || p === 'Últimos 120 dias' || p === 'Últimos 180 dias') {
       prevStart = subMonths(start, 1);
       prevEnd = subMonths(end, 1);
     } else if (p.includes('trimestre') || p === 'Trimestre passado') {
@@ -1572,8 +1667,40 @@ export default function Dashboard() {
               </h1>
             </div>
 
-            {/* VTEX-style period selector button */}
-            <div className="relative" ref={datePickerRef}>
+            {/* VTEX-style period selector button & shortcuts */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => handlePeriodChange('Hoje')}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all cursor-pointer ${periodType === 'Hoje' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Hoje
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePeriodChange('Ontem')}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all cursor-pointer ${periodType === 'Ontem' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Ontem
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePeriodChange('Esta semana (começa na segunda-feira)')}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all cursor-pointer ${periodType === 'Esta semana (começa na segunda-feira)' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Semana
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePeriodChange('Este mês, até agora')}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all cursor-pointer ${periodType === 'Este mês, até agora' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Mês
+                </button>
+              </div>
+
+              <div className="relative" ref={datePickerRef}>
               <button
                 onClick={openDatePicker}
                 className="flex items-center gap-1 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs rounded-lg px-3 h-9 text-slate-700 transition-all font-semibold outline-none cursor-pointer shadow-xs"
@@ -1618,8 +1745,12 @@ export default function Dashboard() {
                         <optgroup label="Últimos">
                           <option value="Últimos 7 dias">Últimos 7 dias</option>
                           <option value="Últimos 14 dias">Últimos 14 dias</option>
-                          <option value="Últimos 28 dias">Últimos 28 dias</option>
+                           <option value="Últimos 28 dias">Últimos 28 dias</option>
                           <option value="Últimos 30 dias">Últimos 30 dias</option>
+                          <option value="Últimos 60 dias">Últimos 60 dias</option>
+                          <option value="Últimos 90 dias">Últimos 90 dias</option>
+                          <option value="Últimos 120 dias">Últimos 120 dias</option>
+                          <option value="Últimos 180 dias">Últimos 180 dias</option>
                         </optgroup>
                         <optgroup label="Passado">
                           <option value="Semana passada (começa no domingo)">Semana passada (D)</option>
@@ -1736,6 +1867,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            </div>
           </div>
 
           {/* Row 2: Secondary Filters (Status, Grouping, Mode, Actions) */}
@@ -1798,6 +1930,67 @@ export default function Dashboard() {
                         </label>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+
+              {/* Month Dropdown Filter */}
+              <div className="flex flex-col gap-0.5 relative" ref={monthDropdownRef}>
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Filtrar por Mês</span>
+                <button 
+                  type="button"
+                  onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
+                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-indigo-500 focus:bg-white transition-all outline-none w-44 flex items-center justify-between gap-1 text-left cursor-pointer"
+                >
+                  <span className="truncate">
+                    {selectedMonthsRange 
+                      ? (selectedMonthsRange.start === selectedMonthsRange.end 
+                          ? MONTH_NAMES[selectedMonthsRange.start] 
+                          : `${MONTH_NAMES[selectedMonthsRange.start]} a ${MONTH_NAMES[selectedMonthsRange.end]}`)
+                      : 'Selecionar Mês'}
+                  </span>
+                  <span className="text-[9px] text-slate-400">▼</span>
+                </button>
+                
+                {isMonthDropdownOpen && (
+                  <div className="absolute top-[48px] left-0 z-50 w-52 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 flex flex-col gap-1">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-1 gap-2">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Meses (Ano Atual)</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMonthsRange(null);
+                          setPeriodType('Este mês, até agora');
+                          handlePeriodChange('Este mês, até agora');
+                        }}
+                        className="text-[9px] text-red-500 hover:text-red-700 font-semibold cursor-pointer select-none"
+                      >
+                        Resetar
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-0.5 max-h-[220px] overflow-y-auto pr-1">
+                      {MONTH_NAMES.map((name, idx) => {
+                        const isSelected = selectedMonthsRange && idx >= selectedMonthsRange.start && idx <= selectedMonthsRange.end;
+                        const isContiguousEdge = selectedMonthsRange && (idx === selectedMonthsRange.start - 1 || idx === selectedMonthsRange.end + 1);
+                        
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleMonthClick(idx)}
+                            className={`w-full text-left text-xs px-2.5 py-1.5 rounded transition-all text-slate-700 font-medium ${
+                              isSelected 
+                                ? 'bg-indigo-600 text-white font-bold' 
+                                : isContiguousEdge
+                                  ? 'hover:bg-slate-100 bg-indigo-50/30 text-indigo-900 border-l-2 border-indigo-500'
+                                  : 'hover:bg-slate-100'
+                            }`}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

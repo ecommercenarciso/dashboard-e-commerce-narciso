@@ -422,7 +422,7 @@ app.post('/api/ga4/funnel', async (c) => {
           filter: {
             fieldName: 'eventName',
             inListFilter: {
-              values: ['view_item', 'add_to_cart', 'Checkout Carrinho', 'Checkout Entrega', 'Checkout Pagamento', 'Checkout Identificação', 'begin_checkout', 'add_payment_info']
+              values: ['view_item', 'add_to_cart', 'Checkout Carrinho', 'Checkout Entrega', 'Checkout Pagamento', 'Checkout Identificação', 'begin_checkout', 'add_payment_info', 'add_shipping_info']
             }
           }
         }
@@ -450,7 +450,7 @@ app.post('/api/ga4/funnel', async (c) => {
             
             if (eventName === 'view_item') funnel.viewItem = users;
             if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') viewCartUsers = Math.max(viewCartUsers, users);
-            if (eventName === 'Checkout Entrega') funnel.shipping = users;
+            if (eventName === 'Checkout Entrega' || eventName === 'add_shipping_info') funnel.shipping = Math.max(funnel.shipping, users);
             if (eventName === 'Checkout Pagamento' || eventName === 'add_payment_info') funnel.payment = Math.max(funnel.payment, users);
         });
     }
