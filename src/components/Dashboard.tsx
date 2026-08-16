@@ -864,29 +864,29 @@ export default function Dashboard() {
           revenue: 0
         });
       }
-
-      // States calculation in active mode
-      const rawStates: Record<string, { count: number, revenue: number }> = {};
-      detailedOrdersList.forEach(o => {
-        const stateName = o.state || 'Não Informado';
-        if (!rawStates[stateName]) {
-          rawStates[stateName] = { count: 0, revenue: 0 };
-        }
-        rawStates[stateName].count += 1;
-        rawStates[stateName].revenue += (o.totalValue || 0) / 100;
-      });
-      if (unmappedCount > 0) {
-        rawStates['Aguardando Sincronização...'] = {
-          count: unmappedCount,
-          revenue: 0
-        };
-      }
-      statesList = Object.entries(rawStates).map(([state, data]) => ({
-        state,
-        count: data.count,
-        revenue: data.revenue
-      }));
     }
+
+    // States calculation in active mode
+    const rawStates: Record<string, { count: number, revenue: number }> = {};
+    detailedOrdersList.forEach(o => {
+      const stateName = o.state || 'Não Informado';
+      if (!rawStates[stateName]) {
+        rawStates[stateName] = { count: 0, revenue: 0 };
+      }
+      rawStates[stateName].count += 1;
+      rawStates[stateName].revenue += (o.totalValue || 0) / 100;
+    });
+    if (unmappedCount > 0) {
+      rawStates['Aguardando Sincronização...'] = {
+        count: unmappedCount,
+        revenue: 0
+      };
+    }
+    statesList = Object.entries(rawStates).map(([state, data]) => ({
+      state,
+      count: data.count,
+      revenue: data.revenue
+    }));
   } else {
     // Graceful fallback for empty detailedOrdersList
     topDeliveryCities = [
