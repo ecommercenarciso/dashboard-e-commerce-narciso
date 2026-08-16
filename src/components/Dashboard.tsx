@@ -1886,25 +1886,43 @@ export default function Dashboard() {
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[380px] lg:col-span-1">
                   <h3 className="font-bold text-slate-800 text-sm mb-4">Maiores Compradores</h3>
                   <div className="flex-1 overflow-y-auto pr-1">
-                    <div className="flex flex-col divide-y divide-slate-100">
-                      {topClients.map((client, idx) => (
-                        <div key={idx} className="py-3 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-bold text-slate-400 w-5">#{idx + 1}</span>
-                            <div>
-                              <p className="text-xs font-bold text-slate-700 max-w-[120px] truncate">{client.name}</p>
-                              <p className="text-[10px] text-slate-400">{client.count} compras</p>
-                            </div>
-                          </div>
-                          <span className="text-xs font-bold text-slate-700">R$ {client.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                        </div>
-                      ))}
-                      {topClients.length === 0 && (
-                        <div className="h-full flex items-center justify-center text-slate-400 text-xs py-12">
-                          Nenhum comprador registrado no período.
-                        </div>
-                      )}
-                    </div>
+                    <table className="w-full text-left text-xs">
+                      <thead className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-100 sticky top-0 bg-white">
+                        <tr>
+                          <th className="pb-2 font-semibold">Cliente</th>
+                          <th className="pb-2 font-semibold text-right">Ped.</th>
+                          <th className="pb-2 font-semibold text-right">Total</th>
+                          <th className="pb-2 font-semibold text-right text-indigo-600">Média/Ped.</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {topClients.map((client, idx) => {
+                          const avgPerOrder = client.count > 0 ? (client.total / client.count) : 0;
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-2.5 font-medium flex items-center gap-1.5 min-w-0">
+                                <span className="text-[10px] font-bold text-slate-400">#{idx + 1}</span>
+                                <span className="truncate max-w-[85px] text-slate-800" title={client.name}>{client.name}</span>
+                              </td>
+                              <td className="py-2.5 text-right font-bold text-slate-600">{client.count}</td>
+                              <td className="py-2.5 text-right font-bold text-slate-800">
+                                R$ {client.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="py-2.5 text-right font-semibold text-indigo-600">
+                                R$ {avgPerOrder.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {topClients.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="py-12 text-center text-slate-400 text-xs">
+                              Nenhum comprador registrado no período.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
