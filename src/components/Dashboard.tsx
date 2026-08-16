@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList } from 'recharts';
 import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products'>('executive');
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
+
   const [chartInterval, setChartInterval] = useState<'hour' | 'day' | 'week' | 'month'>('day');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
@@ -44,6 +45,24 @@ export default function Dashboard() {
   const [tempComparisonType, setTempComparisonType] = useState<'days' | 'period' | 'custom'>('period');
   const [tempCompareStart, setTempCompareStart] = useState('');
   const [tempCompareEnd, setTempCompareEnd] = useState('');
+
+  const datePickerRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setIsDatePickerOpen(false);
+      }
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setIsStatusDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // DRE Calculator State Hooks
   const [dreCalcMode, setDreCalcMode] = useState<'target_profit' | 'target_revenue'>('target_profit');
@@ -1547,7 +1566,7 @@ export default function Dashboard() {
             </div>
 
             {/* VTEX-style period selector button */}
-            <div className="relative">
+            <div className="relative" ref={datePickerRef}>
               <button
                 onClick={openDatePicker}
                 className="flex items-center gap-1 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs rounded-lg px-3 h-9 text-slate-700 transition-all font-semibold outline-none cursor-pointer shadow-xs"
@@ -1716,7 +1735,7 @@ export default function Dashboard() {
           <div className="border-t border-slate-100 pt-3 flex flex-wrap items-center justify-between gap-3 text-slate-700">
             {/* Status Dropdown */}
             <div className="flex items-center gap-2">
-              <div className="flex flex-col gap-0.5 relative" onMouseLeave={() => setIsStatusDropdownOpen(false)}>
+              <div className="flex flex-col gap-0.5 relative" ref={statusDropdownRef}>
                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status do Pedido</span>
                 <button 
                   type="button"
