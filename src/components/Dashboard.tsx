@@ -85,6 +85,12 @@ export default function Dashboard() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
 
+  const [retiradaSortField, setRetiradaSortField] = useState<'name' | 'quantity' | 'revenue'>('revenue');
+  const [retiradaSortDirection, setRetiradaSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const [entregaSortField, setEntregaSortField] = useState<'name' | 'quantity' | 'revenue'>('revenue');
+  const [entregaSortDirection, setEntregaSortDirection] = useState<'asc' | 'desc'>('desc');
+
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
     revenue: 50000,
@@ -3493,7 +3499,17 @@ export default function Dashboard() {
                 };
               })
               .filter(p => p.quantity > 0)
-              .sort((a, b) => b.revenue - a.revenue);
+              .sort((a, b) => {
+                let comparison = 0;
+                if (retiradaSortField === 'name') {
+                  comparison = a.name.localeCompare(b.name);
+                } else if (retiradaSortField === 'quantity') {
+                  comparison = a.quantity - b.quantity;
+                } else if (retiradaSortField === 'revenue') {
+                  comparison = a.revenue - b.revenue;
+                }
+                return retiradaSortDirection === 'desc' ? -comparison : comparison;
+              });
 
             const productsEntregaList = productList
               .map(p => {
@@ -3507,7 +3523,17 @@ export default function Dashboard() {
                 };
               })
               .filter(p => p.quantity > 0)
-              .sort((a, b) => b.revenue - a.revenue);
+              .sort((a, b) => {
+                let comparison = 0;
+                if (entregaSortField === 'name') {
+                  comparison = a.name.localeCompare(b.name);
+                } else if (entregaSortField === 'quantity') {
+                  comparison = a.quantity - b.quantity;
+                } else if (entregaSortField === 'revenue') {
+                  comparison = a.revenue - b.revenue;
+                }
+                return entregaSortDirection === 'desc' ? -comparison : comparison;
+              });
 
             const handleProductTableSort = (field: typeof productSortField) => {
               if (productSortField === field) {
@@ -3515,6 +3541,24 @@ export default function Dashboard() {
               } else {
                 setProductSortField(field);
                 setProductSortDirection('desc');
+              }
+            };
+
+            const handleRetiradaSort = (field: typeof retiradaSortField) => {
+              if (retiradaSortField === field) {
+                setRetiradaSortDirection(retiradaSortDirection === 'asc' ? 'desc' : 'asc');
+              } else {
+                setRetiradaSortField(field);
+                setRetiradaSortDirection('desc');
+              }
+            };
+
+            const handleEntregaSort = (field: typeof entregaSortField) => {
+              if (entregaSortField === field) {
+                setEntregaSortDirection(entregaSortDirection === 'asc' ? 'desc' : 'asc');
+              } else {
+                setEntregaSortField(field);
+                setEntregaSortDirection('desc');
               }
             };
 
@@ -4061,9 +4105,15 @@ export default function Dashboard() {
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8 select-none">
-                            <th className="pb-2">Produto</th>
-                            <th className="pb-2 text-right">Qtd</th>
-                            <th className="pb-2 text-right">Receita</th>
+                            <th className="pb-2 cursor-pointer hover:text-slate-600" onClick={() => handleRetiradaSort('name')}>
+                              Produto {retiradaSortField === 'name' ? (retiradaSortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleRetiradaSort('quantity')}>
+                              Qtd {retiradaSortField === 'quantity' ? (retiradaSortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleRetiradaSort('revenue')}>
+                              Receita {retiradaSortField === 'revenue' ? (retiradaSortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -4094,9 +4144,15 @@ export default function Dashboard() {
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8 select-none">
-                            <th className="pb-2">Produto</th>
-                            <th className="pb-2 text-right">Qtd</th>
-                            <th className="pb-2 text-right">Receita</th>
+                            <th className="pb-2 cursor-pointer hover:text-slate-600" onClick={() => handleEntregaSort('name')}>
+                              Produto {entregaSortField === 'name' ? (entregaSortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleEntregaSort('quantity')}>
+                              Qtd {entregaSortField === 'quantity' ? (entregaSortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleEntregaSort('revenue')}>
+                              Receita {entregaSortField === 'revenue' ? (entregaSortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
