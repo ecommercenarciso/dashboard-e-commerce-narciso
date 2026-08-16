@@ -83,6 +83,7 @@ export default function Dashboard() {
   const [subcategorySortField, setSubcategorySortField] = useState<'name' | 'revenue' | 'orders' | 'quantity' | 'avgItems'>('revenue');
   const [subcategorySortDirection, setSubcategorySortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -3389,7 +3390,15 @@ export default function Dashboard() {
 
             const productList = Object.values(productStats);
 
-            const categorySummary: Record<string, { quantity: number, revenue: number }> = {};
+            const categorySummary: Record<string, { 
+              quantity: number; 
+              revenue: number;
+              payments: Record<string, { count: number, revenue: number }>;
+              deliveryChannels: Record<string, { count: number, revenue: number }>;
+              cities: Record<string, { count: number, revenue: number }>;
+              states: Record<string, { count: number, revenue: number }>;
+              carriers: Record<string, { count: number, revenue: number }>;
+            }> = {};
             const brandSummary: Record<string, { quantity: number, revenue: number }> = {};
             let totalItemsCount = 0;
             let totalProductRevenue = 0;
@@ -3398,9 +3407,55 @@ export default function Dashboard() {
               totalItemsCount += p.quantity;
               totalProductRevenue += p.revenue;
 
-              if (!categorySummary[p.category]) categorySummary[p.category] = { quantity: 0, revenue: 0 };
-              categorySummary[p.category].quantity += p.quantity;
-              categorySummary[p.category].revenue += p.revenue;
+              if (!categorySummary[p.category]) {
+                categorySummary[p.category] = { 
+                  quantity: 0, 
+                  revenue: 0,
+                  payments: {},
+                  deliveryChannels: {},
+                  cities: {},
+                  states: {},
+                  carriers: {}
+                };
+              }
+              const cs = categorySummary[p.category];
+              cs.quantity += p.quantity;
+              cs.revenue += p.revenue;
+
+              // Merge payments
+              Object.entries(p.payments || {}).forEach(([key, val]) => {
+                if (!cs.payments[key]) cs.payments[key] = { count: 0, revenue: 0 };
+                cs.payments[key].count += val.count;
+                cs.payments[key].revenue += val.revenue;
+              });
+
+              // Merge deliveryChannels
+              Object.entries(p.deliveryChannels || {}).forEach(([key, val]) => {
+                if (!cs.deliveryChannels[key]) cs.deliveryChannels[key] = { count: 0, revenue: 0 };
+                cs.deliveryChannels[key].count += val.count;
+                cs.deliveryChannels[key].revenue += val.revenue;
+              });
+
+              // Merge cities
+              Object.entries(p.cities || {}).forEach(([key, val]) => {
+                if (!cs.cities[key]) cs.cities[key] = { count: 0, revenue: 0 };
+                cs.cities[key].count += val.count;
+                cs.cities[key].revenue += val.revenue;
+              });
+
+              // Merge states
+              Object.entries(p.states || {}).forEach(([key, val]) => {
+                if (!cs.states[key]) cs.states[key] = { count: 0, revenue: 0 };
+                cs.states[key].count += val.count;
+                cs.states[key].revenue += val.revenue;
+              });
+
+              // Merge carriers
+              Object.entries(p.carriers || {}).forEach(([key, val]) => {
+                if (!cs.carriers[key]) cs.carriers[key] = { count: 0, revenue: 0 };
+                cs.carriers[key].count += val.count;
+                cs.carriers[key].revenue += val.revenue;
+              });
 
               if (!brandSummary[p.brand]) brandSummary[p.brand] = { quantity: 0, revenue: 0 };
               brandSummary[p.brand].quantity += p.quantity;
@@ -3475,6 +3530,10 @@ export default function Dashboard() {
             const currentSelected = selectedProduct && productStats[selectedProduct] 
               ? productStats[selectedProduct] 
               : productList.length > 0 ? sortedProductList[0] : null;
+
+            const currentSelectedSubcategory = selectedSubcategory && categorySummary[selectedSubcategory]
+              ? { name: selectedSubcategory, ...categorySummary[selectedSubcategory], orders: (categoryOrderCount[selectedSubcategory] ? categoryOrderCount[selectedSubcategory].size : 0) }
+              : sortedSubcategoryList.length > 0 ? { name: sortedSubcategoryList[0].name, ...categorySummary[sortedSubcategoryList[0].name], orders: (categoryOrderCount[sortedSubcategoryList[0].name] ? categoryOrderCount[sortedSubcategoryList[0].name].size : 0) } : null;
 
             const categoryChartData = Object.entries(categorySummary).map(([name, data]) => ({
               name,
@@ -3579,53 +3638,196 @@ export default function Dashboard() {
                 </section>
 
                 {/* CAMADA DE SUBCATEGORIAS */}
-                <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col w-full">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                    <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider">Desempenho por Subcategoria (VTEX)</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-[12px] border-collapse">
-                      <thead>
-                        <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8">
-                          <th className="pb-2 cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('name')}>
-                            Subcategoria {subcategorySortField === 'name' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
-                          </th>
-                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('revenue')}>
-                            Faturamento {subcategorySortField === 'revenue' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
-                          </th>
-                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('quantity')}>
-                            Qtd Itens {subcategorySortField === 'quantity' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
-                          </th>
-                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('orders')}>
-                            Pedidos {subcategorySortField === 'orders' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
-                          </th>
-                          <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('avgItems')}>
-                            Itens / Ped. {subcategorySortField === 'avgItems' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedSubcategoryList.length > 0 ? (
-                          sortedSubcategoryList.map((cat, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors">
-                              <td className="font-semibold text-slate-900">{cat.name}</td>
-                              <td className="text-right font-medium text-slate-900">
-                                R$ {cat.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </td>
-                              <td className="text-right text-slate-500 font-semibold">{cat.quantity} un.</td>
-                              <td className="text-right text-slate-500 font-semibold">{cat.orders} ped.</td>
-                              <td className="text-right text-slate-500 font-semibold">
-                                {cat.avgItems.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={5} className="text-center py-4 text-slate-400">Nenhuma subcategoria faturada no período</td>
+                <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 w-full">
+                  {/* Tabela de Subcategorias (7 Colunas de Layout) */}
+                  <div className="xl:col-span-7 bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col min-h-[420px]">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                      <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider">Desempenho por Subcategoria (VTEX)</h3>
+                      <span className="text-[10px] text-slate-400 font-semibold">Selecione uma subcategoria para ver detalhamento</span>
+                    </div>
+                    <div className="overflow-x-auto overflow-y-auto max-h-[440px]">
+                      <table className="w-full text-left text-[12px] border-collapse">
+                        <thead>
+                          <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider h-8 select-none">
+                            <th className="pb-2 cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('name')}>
+                              Subcategoria {subcategorySortField === 'name' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('revenue')}>
+                              Faturamento {subcategorySortField === 'revenue' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('quantity')}>
+                              Qtd Itens {subcategorySortField === 'quantity' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('orders')}>
+                              Pedidos {subcategorySortField === 'orders' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
+                            <th className="pb-2 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSubcategoryTableSort('avgItems')}>
+                              Itens / Ped. {subcategorySortField === 'avgItems' ? (subcategorySortDirection === 'desc' ? '▼' : '▲') : ''}
+                            </th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {sortedSubcategoryList.length > 0 ? (
+                            sortedSubcategoryList.map((cat, idx) => {
+                              const isSelected = currentSelectedSubcategory?.name === cat.name;
+                              return (
+                                <tr 
+                                  key={idx} 
+                                  onClick={() => setSelectedSubcategory(cat.name)}
+                                  className={`hover:bg-slate-50 border-b border-slate-100 h-10 transition-colors cursor-pointer ${isSelected ? 'bg-indigo-50/50 hover:bg-indigo-50/70 font-semibold' : ''}`}
+                                >
+                                  <td className="font-semibold text-slate-900 pr-2">{cat.name}</td>
+                                  <td className="text-right font-medium text-slate-900">
+                                    R$ {cat.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="text-right text-slate-500 font-semibold">{cat.quantity} un.</td>
+                                  <td className="text-right text-slate-500 font-semibold">{cat.orders} ped.</td>
+                                  <td className="text-right text-slate-500 font-semibold">
+                                    {cat.avgItems.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} un.
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={5} className="text-center py-4 text-slate-400">Nenhuma subcategoria faturada no período</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Detalhe da Subcategoria Selecionada (5 Colunas de Layout) */}
+                  <div className="xl:col-span-5 bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col min-h-[420px] justify-between">
+                    {currentSelectedSubcategory ? (
+                      <div className="flex flex-col gap-5 w-full">
+                        <div className="border-b border-slate-100 pb-3">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Subcategoria Selecionada</span>
+                          <h4 className="text-sm font-bold text-indigo-700 mt-1 leading-snug">{currentSelectedSubcategory.name}</h4>
+                          <div className="flex gap-4 mt-2 text-[10px] text-slate-500 font-semibold">
+                            <span>Faturamento: <strong className="text-slate-700">R$ {currentSelectedSubcategory.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
+                            <span>Pedidos: <strong className="text-slate-700">{currentSelectedSubcategory.orders}</strong></span>
+                          </div>
+                        </div>
+
+                        {/* Breakdown by Delivery Channel */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vendas por Tipo de Envio</span>
+                          <div className="border border-slate-100 rounded-lg overflow-hidden text-xs">
+                            <div className="bg-slate-50 px-3 py-1.5 flex justify-between font-bold text-slate-500 uppercase tracking-wider text-[9px] border-b border-slate-100">
+                              <span>Canal</span>
+                              <div className="flex gap-8">
+                                <span className="w-10 text-right">Qtd</span>
+                                <span className="w-16 text-right">Receita</span>
+                              </div>
+                            </div>
+                            <div className="divide-y divide-slate-100 px-3 bg-white">
+                              {Object.entries(currentSelectedSubcategory.deliveryChannels)
+                                .sort((a, b) => b[1].revenue - a[1].revenue)
+                                .map(([channel, data], idx) => (
+                                  <div key={idx} className="py-2 flex justify-between items-center text-slate-600">
+                                    <span className="font-semibold text-slate-700">{channel}</span>
+                                    <div className="flex gap-8 font-mono">
+                                      <span className="w-10 text-right">{data.count}</span>
+                                      <span className="w-16 text-right font-bold text-slate-900">R$ {data.revenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Breakdown by Payment Method */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vendas por Meio de Pagamento</span>
+                          <div className="border border-slate-100 rounded-lg overflow-hidden text-xs">
+                            <div className="bg-slate-50 px-3 py-1.5 flex justify-between font-bold text-slate-500 uppercase tracking-wider text-[9px] border-b border-slate-100">
+                              <span>Meio de Pagamento</span>
+                              <div className="flex gap-8">
+                                <span className="w-10 text-right">Qtd</span>
+                                <span className="w-16 text-right">Receita</span>
+                              </div>
+                            </div>
+                            <div className="divide-y divide-slate-100 px-3 bg-white">
+                              {Object.entries(currentSelectedSubcategory.payments)
+                                .sort((a, b) => b[1].revenue - a[1].revenue)
+                                .map(([payment, data], idx) => (
+                                  <div key={idx} className="py-2 flex justify-between items-center text-slate-600">
+                                    <span className="font-semibold text-slate-700">{payment}</span>
+                                    <div className="flex gap-8 font-mono">
+                                      <span className="w-10 text-right">{data.count}</span>
+                                      <span className="w-16 text-right font-bold text-slate-900">R$ {data.revenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Breakdown by Carrier */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vendas por Transportadora</span>
+                          <div className="border border-slate-100 rounded-lg overflow-hidden text-xs">
+                            <div className="bg-slate-50 px-3 py-1.5 flex justify-between font-bold text-slate-500 uppercase tracking-wider text-[9px] border-b border-slate-100">
+                              <span>Transportadora</span>
+                              <div className="flex gap-8">
+                                <span className="w-10 text-right">Qtd</span>
+                                <span className="w-16 text-right">Receita</span>
+                              </div>
+                            </div>
+                            <div className="divide-y divide-slate-100 px-3 bg-white">
+                              {Object.entries(currentSelectedSubcategory.carriers)
+                                .sort((a, b) => b[1].revenue - a[1].revenue)
+                                .map(([carrier, data], idx) => (
+                                  <div key={idx} className="py-2 flex justify-between items-center text-slate-600">
+                                    <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={carrier}>{carrier}</span>
+                                    <div className="flex gap-8 font-mono">
+                                      <span className="w-10 text-right">{data.count}</span>
+                                      <span className="w-16 text-right font-bold text-slate-900">R$ {data.revenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Breakdown by City/State */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vendas por Destinos (Cidade/Estado)</span>
+                          <div className="border border-slate-100 rounded-lg overflow-hidden text-xs">
+                            <div className="bg-slate-50 px-3 py-1.5 flex justify-between font-bold text-slate-500 uppercase tracking-wider text-[9px] border-b border-slate-100">
+                              <span>Destino</span>
+                              <div className="flex gap-8">
+                                <span className="w-10 text-right">Qtd</span>
+                                <span className="w-16 text-right">Receita</span>
+                              </div>
+                            </div>
+                            <div className="divide-y divide-slate-100 px-3 bg-white max-h-[160px] overflow-y-auto">
+                              {Object.entries(currentSelectedSubcategory.cities)
+                                .sort((a, b) => b[1].revenue - a[1].revenue)
+                                .slice(0, 5)
+                                .map(([city, data], idx) => {
+                                  const parentState = detailedOrdersList.find(o => o.city === city)?.state || '';
+                                  return (
+                                    <div key={idx} className="py-2 flex justify-between items-center text-slate-600">
+                                      <span className="font-semibold text-slate-700">{city} - {parentState}</span>
+                                      <div className="flex gap-8 font-mono">
+                                        <span className="w-10 text-right">{data.count}</span>
+                                        <span className="w-16 text-right font-bold text-slate-900">R$ {data.revenue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm py-12">
+                        Selecione uma subcategoria para visualizar o detalhamento cruzado
+                      </div>
+                    )}
                   </div>
                 </section>
 
@@ -3638,7 +3840,7 @@ export default function Dashboard() {
                       <span className="text-[10px] text-slate-400 font-semibold">Selecione um produto para ver detalhamento</span>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto overflow-y-auto max-h-[440px]">
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider font-bold text-[10px] select-none">
