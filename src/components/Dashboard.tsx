@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 
@@ -15,7 +15,7 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre'>('executive');
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
   const [chartInterval, setChartInterval] = useState<'hour' | 'day' | 'week' | 'month'>('day');
@@ -44,6 +44,19 @@ export default function Dashboard() {
   const [tempComparisonType, setTempComparisonType] = useState<'days' | 'period' | 'custom'>('period');
   const [tempCompareStart, setTempCompareStart] = useState('');
   const [tempCompareEnd, setTempCompareEnd] = useState('');
+
+  // DRE Calculator State Hooks
+  const [dreCalcMode, setDreCalcMode] = useState<'target_profit' | 'target_revenue'>('target_profit');
+  const [dreTargetProfit, setDreTargetProfit] = useState(15000);
+  const [dreTargetRevenue, setDreTargetRevenue] = useState(100000);
+  const [dreCmv, setDreCmv] = useState(38);
+  const [dreTax, setDreTax] = useState(8);
+  const [dreCancel, setDreCancel] = useState(3);
+  const [dreGateway, setDreGateway] = useState(2.5);
+  const [drePlatform, setDrePlatform] = useState(1.5);
+  const [dreShipping, setDreShipping] = useState(4);
+  const [dreMarketing, setDreMarketing] = useState(15);
+  const [dreFixedCosts, setDreFixedCosts] = useState(20000);
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -1416,13 +1429,21 @@ export default function Dashboard() {
               <ShoppingCart className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Análise de Vendas</span>}
             </div>
-            <div 
+             <div 
               onClick={() => setActiveTab('goals')}
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'goals' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Acompanhamento de Metas"
             >
               <Target className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Metas e Resultados</span>}
+            </div>
+            <div 
+              onClick={() => setActiveTab('dre')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'dre' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Calculadora DRE"
+            >
+              <Calculator className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora DRE</span>}
             </div>
             <div 
               className={`flex items-center gap-3 py-2 transition-colors cursor-pointer text-slate-500 hover:text-slate-400 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
@@ -1479,7 +1500,13 @@ export default function Dashboard() {
                 <Menu className="w-5 h-5" />
               </button>
               <h1 className="text-xl font-semibold text-slate-900 truncate">
-                {activeTab === 'executive' ? 'Dashboard de Operações' : activeTab === 'sales' ? 'Análise de Vendas' : 'Acompanhamento de Metas'}
+                {activeTab === 'executive' 
+                  ? 'Dashboard de Operações' 
+                  : activeTab === 'sales' 
+                    ? 'Análise de Vendas' 
+                    : activeTab === 'goals' 
+                      ? 'Acompanhamento de Metas' 
+                      : 'Calculadora de Metas DRE'}
               </h1>
             </div>
 
@@ -2766,6 +2793,389 @@ export default function Dashboard() {
                 </div>
              </div>
           )}
+
+          {activeTab === 'dre' && (() => {
+            const cPct = dreCancel / 100;
+            const tPct = dreTax / 100;
+            const cmvPct = dreCmv / 100;
+            const gPct = dreGateway / 100;
+            const pPct = drePlatform / 100;
+            const sPct = dreShipping / 100;
+            const mPct = dreMarketing / 100;
+
+            const marginRatio = (1 - cPct) * (1 - cmvPct) - tPct - gPct - (1 - cPct) * pPct - sPct - mPct;
+
+            let grossRevenue = 0;
+            let netProfit = 0;
+
+            if (dreCalcMode === 'target_profit') {
+              netProfit = dreTargetProfit;
+              grossRevenue = marginRatio > 0 ? (dreTargetProfit + dreFixedCosts) / marginRatio : 0;
+            } else {
+              grossRevenue = dreTargetRevenue;
+              netProfit = (dreTargetRevenue * marginRatio) - dreFixedCosts;
+            }
+
+            const breakEven = marginRatio > 0 ? dreFixedCosts / marginRatio : 0;
+
+            const cancellations = grossRevenue * cPct;
+            const netRevenue = grossRevenue * (1 - cPct);
+            const taxes = grossRevenue * tPct;
+            const cogs = netRevenue * cmvPct;
+            const grossProfit = netRevenue - cogs;
+            
+            const varGateway = grossRevenue * gPct;
+            const varPlatform = netRevenue * pPct;
+            const varShipping = grossRevenue * sPct;
+            const varMarketing = grossRevenue * mPct;
+            const totalVarCosts = varGateway + varPlatform + varShipping + varMarketing;
+            
+            const contributionMargin = grossProfit - taxes - totalVarCosts;
+            const contributionMarginPct = grossRevenue > 0 ? (contributionMargin / grossRevenue) * 100 : 0;
+            const netProfitMarginPct = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
+
+            const marketingSpend = varMarketing;
+            const roas = marketingSpend > 0 ? grossRevenue / marketingSpend : 0;
+
+            const getScenarioData = (multiplier: number) => {
+              const g = grossRevenue * multiplier;
+              const netRev = g * (1 - cPct);
+              const cMargin = (netRev * (1 - cmvPct)) - (g * tPct) - (g * gPct) - (netRev * pPct) - (g * sPct) - (g * mPct);
+              const profit = cMargin - dreFixedCosts;
+              return { g, cMargin, profit };
+            };
+
+            const scenarioPessimista = getScenarioData(0.85);
+            const scenarioRealista = getScenarioData(1.0);
+            const scenarioOtimista = getScenarioData(1.15);
+
+            return (
+              <div className="flex flex-col gap-6 w-full text-slate-700">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-white rounded-lg border border-slate-200 shadow-sm p-6 gap-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">Simulador de Metas e Cenários Financeiros (DRE)</h2>
+                    <p className="text-xs text-slate-500 mt-1">Simule o faturamento necessário a partir das suas despesas operacionais, CMV e impostos reais.</p>
+                  </div>
+                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 h-10 items-center shrink-0">
+                    <button
+                      onClick={() => setDreCalcMode('target_profit')}
+                      className={`px-4 py-1.5 text-xs font-semibold rounded transition-colors cursor-pointer ${
+                        dreCalcMode === 'target_profit' ? 'text-slate-700 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      A partir do Lucro Líquido
+                    </button>
+                    <button
+                      onClick={() => setDreCalcMode('target_revenue')}
+                      className={`px-4 py-1.5 text-xs font-semibold rounded transition-colors cursor-pointer ${
+                        dreCalcMode === 'target_revenue' ? 'text-slate-700 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      A partir do Faturamento
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
+                  <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col gap-5">
+                    <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Configurações Operacionais</h3>
+                    
+                    {dreCalcMode === 'target_profit' ? (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-baseline">
+                          <label className="text-xs font-bold text-slate-600">Lucro Líquido Desejado (R$)</label>
+                          <input 
+                            type="number" 
+                            value={dreTargetProfit} 
+                            onChange={(e) => setDreTargetProfit(Number(e.target.value))} 
+                            className="w-24 text-right bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs font-bold text-indigo-600 outline-none"
+                          />
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100000" 
+                          step="1000" 
+                          value={dreTargetProfit} 
+                          onChange={(e) => setDreTargetProfit(Number(e.target.value))} 
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-baseline">
+                          <label className="text-xs font-bold text-slate-600">Meta de Faturamento Bruto (R$)</label>
+                          <input 
+                            type="number" 
+                            value={dreTargetRevenue} 
+                            onChange={(e) => setDreTargetRevenue(Number(e.target.value))} 
+                            className="w-28 text-right bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs font-bold text-indigo-600 outline-none"
+                          />
+                        </div>
+                        <input 
+                          type="range" 
+                          min="10000" 
+                          max="500000" 
+                          step="5000" 
+                          value={dreTargetRevenue} 
+                          onChange={(e) => setDreTargetRevenue(Number(e.target.value))} 
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-baseline">
+                        <label className="text-xs font-bold text-slate-600">CMV / Custo de Produto ({dreCmv}%)</label>
+                        <span className="text-[10px] text-slate-400 font-semibold">% do faturamento líquido</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="10" 
+                        max="80" 
+                        step="1" 
+                        value={dreCmv} 
+                        onChange={(e) => setDreCmv(Number(e.target.value))} 
+                        className="w-full accent-slate-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-baseline">
+                        <label className="text-xs font-bold text-slate-600">Impostos sobre Faturamento ({dreTax}%)</label>
+                        <span className="text-[10px] text-slate-400 font-semibold">Ex: Simples Nacional</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="25" 
+                        step="0.5" 
+                        value={dreTax} 
+                        onChange={(e) => setDreTax(Number(e.target.value))} 
+                        className="w-full accent-slate-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-baseline">
+                        <label className="text-xs font-bold text-slate-600">Custos Fixos Totais (R$ {dreFixedCosts.toLocaleString('pt-BR')})</label>
+                        <span className="text-[10px] text-slate-400 font-semibold">Equipe, ferramentas, agência</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="100000" 
+                        step="1000" 
+                        value={dreFixedCosts} 
+                        onChange={(e) => setDreFixedCosts(Number(e.target.value))} 
+                        className="w-full accent-slate-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-baseline">
+                        <label className="text-xs font-bold text-slate-600">Investimento em Mídia ({dreMarketing}%)</label>
+                        <span className="text-[10px] text-indigo-500 font-semibold">ROAS aprox: {(100/dreMarketing).toFixed(1)}x</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="40" 
+                        step="1" 
+                        value={dreMarketing} 
+                        onChange={(e) => setDreMarketing(Number(e.target.value))} 
+                        className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-slate-600">Cancelamento / Devoluções ({dreCancel}%)</label>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="15" 
+                        step="0.5" 
+                        value={dreCancel} 
+                        onChange={(e) => setDreCancel(Number(e.target.value))} 
+                        className="w-full accent-slate-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                      />
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Outros Custos Variáveis</span>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="flex flex-col gap-0.5">
+                          <label className="text-[9px] font-bold text-slate-500">Gateway (%)</label>
+                          <input 
+                            type="number" 
+                            step="0.1" 
+                            value={dreGateway} 
+                            onChange={(e) => setDreGateway(Number(e.target.value))} 
+                            className="bg-slate-50 border border-slate-200 text-xs rounded px-1.5 py-1 text-center font-bold outline-none"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <label className="text-[9px] font-bold text-slate-500">Plataforma (%)</label>
+                          <input 
+                            type="number" 
+                            step="0.1" 
+                            value={drePlatform} 
+                            onChange={(e) => setDrePlatform(Number(e.target.value))} 
+                            className="bg-slate-50 border border-slate-200 text-xs rounded px-1.5 py-1 text-center font-bold outline-none"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <label className="text-[9px] font-bold text-slate-500">Frete (%)</label>
+                          <input 
+                            type="number" 
+                            step="0.1" 
+                            value={dreShipping} 
+                            onChange={(e) => setDreShipping(Number(e.target.value))} 
+                            className="bg-slate-50 border border-slate-200 text-xs rounded px-1.5 py-1 text-center font-bold outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-7 flex flex-col gap-6 w-full">
+                    <div className="grid grid-cols-3 gap-3 w-full">
+                      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex flex-col justify-between">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Faturamento Necessário</span>
+                        <h4 className="text-lg font-black text-slate-900 mt-1">R$ {grossRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h4>
+                        <span className="text-[9px] text-slate-400 mt-1">ROAS de mídia: {roas.toFixed(1)}x</span>
+                      </div>
+                      
+                      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex flex-col justify-between">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ponto de Equilíbrio</span>
+                        <h4 className="text-lg font-black text-slate-900 mt-1">R$ {breakEven.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h4>
+                        <span className="text-[9px] text-slate-400 mt-1">Faturamento mínimo</span>
+                      </div>
+
+                      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex flex-col justify-between">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Margem de Lucro %</span>
+                        <h4 className={`text-lg font-black mt-1 ${netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {netProfitMarginPct.toFixed(1)}%
+                        </h4>
+                        <span className="text-[9px] text-slate-400 mt-1">Lucro Líquido: R$ {netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
+                      <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 mb-3">Demonstrativo do Resultado Simulado</h3>
+                      
+                      <div className="flex flex-col gap-1.5">
+                        {[
+                          { label: '(+) Faturamento Bruto', val: grossRevenue, pct: 100, isBold: true, highlight: 'bg-slate-50 text-slate-900 font-extrabold' },
+                          { label: '(-) Cancelamentos e Devoluções', val: cancellations, pct: dreCancel, isBold: false },
+                          { label: '(=) Faturamento Líquido', val: netRevenue, pct: 100 - dreCancel, isBold: true },
+                          { label: '(-) CMV / Custo de Produto', val: cogs, pct: (100 - dreCancel) * cmvPct, isBold: false },
+                          { label: '(=) Lucro Bruto', val: grossProfit, pct: (100 - dreCancel) * (1 - cmvPct), isBold: true },
+                          { label: '(-) Imposto sobre Faturamento', val: taxes, pct: dreTax, isBold: false },
+                          { label: '(-) Taxas do Gateway de Pagamento', val: varGateway, pct: dreGateway, isBold: false },
+                          { label: '(-) Comissão da Plataforma VTEX', val: varPlatform, pct: (100 - dreCancel) * pPct, isBold: false },
+                          { label: '(-) Custo de Frete Subsidiado', val: varShipping, pct: dreShipping, isBold: false },
+                          { label: '(-) Investimento de Mídia (Ads)', val: varMarketing, pct: dreMarketing, isBold: false, highlight: 'text-indigo-600' },
+                          { label: '(=) Margem de Contribuição', val: contributionMargin, pct: contributionMarginPct, isBold: true, highlight: 'bg-indigo-50/50 text-indigo-700 font-extrabold' },
+                          { label: '(-) Custos Fixos Totais', val: dreFixedCosts, pct: grossRevenue > 0 ? (dreFixedCosts / grossRevenue) * 100 : 0, isBold: false },
+                          { label: '(=) Lucro Líquido / EBITDA', val: netProfit, pct: netProfitMarginPct, isBold: true, highlight: netProfit >= 0 ? 'bg-emerald-50 text-emerald-700 font-extrabold text-[13px] border border-emerald-200' : 'bg-rose-50 text-rose-700 font-extrabold text-[13px] border border-rose-200' }
+                        ].map((row, idx) => {
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`flex items-center justify-between text-xs py-1.5 px-3.5 rounded transition-colors ${row.highlight || 'text-slate-600 hover:bg-slate-50'}`}
+                            >
+                              <span className={row.isBold ? 'font-bold text-slate-800' : 'pl-3'}>{row.label}</span>
+                              <div className="flex items-center gap-6">
+                                <span className="text-[10px] text-slate-400 font-bold w-12 text-right">{row.pct.toFixed(1)}%</span>
+                                <span className="font-mono w-24 text-right">R$ {row.val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
+                  <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4">Análise Comparativa de Cenários</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 hover:border-slate-300 transition-colors">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cenário Pessimista (-15%)</span>
+                        <span className="text-[10px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-extrabold">Alerta</span>
+                      </div>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Fat. Bruto:</span>
+                          <span className="font-mono font-semibold">R$ {scenarioPessimista.g.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Margem Contrib.:</span>
+                          <span className="font-mono font-semibold">R$ {scenarioPessimista.cMargin.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </div>
+                        <div className="flex justify-between text-xs border-t border-slate-100 pt-1.5 mt-1 font-bold">
+                          <span className="text-slate-700">Lucro Líquido:</span>
+                          <span className={`font-mono ${scenarioPessimista.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            R$ {scenarioPessimista.profit.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-indigo-200 bg-indigo-50/10 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Cenário Realista (100%)</span>
+                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-extrabold">Base</span>
+                      </div>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Fat. Bruto:</span>
+                          <span className="font-mono font-semibold text-slate-800">R$ {scenarioRealista.g.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Margem Contrib.:</span>
+                          <span className="font-mono font-semibold text-slate-800">R$ {scenarioRealista.cMargin.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </div>
+                        <div className="flex justify-between text-xs border-t border-slate-100 pt-1.5 mt-1 font-bold">
+                          <span className="text-indigo-800">Lucro Líquido:</span>
+                          <span className={`font-mono ${scenarioRealista.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            R$ {scenarioRealista.profit.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 hover:border-slate-300 transition-colors">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cenário Otimista (+15%)</span>
+                        <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-extrabold">Sucesso</span>
+                      </div>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Fat. Bruto:</span>
+                          <span className="font-mono font-semibold">R$ {scenarioOtimista.g.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Margem Contrib.:</span>
+                          <span className="font-mono font-semibold">R$ {scenarioOtimista.cMargin.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </div>
+                        <div className="flex justify-between text-xs border-t border-slate-100 pt-1.5 mt-1 font-bold">
+                          <span className="text-slate-700">Lucro Líquido:</span>
+                          <span className={`font-mono ${scenarioOtimista.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            R$ {scenarioOtimista.profit.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           </div>
         </div>
