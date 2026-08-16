@@ -1767,69 +1767,14 @@ export default function Dashboard() {
 
               </div>
 
-              {/* Linha 2: Cancelamentos & SLA (Tempos de Processamento) */}
+              {/* Linha 2: Meios de Pagamento, Parcelamento & SLA */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Motivos de Cancelamento (2/3 de espaço) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[280px] lg:col-span-2">
-                  <h3 className="font-bold text-slate-800 text-sm mb-4">Motivos de Cancelamento</h3>
-                  <div className="overflow-y-auto flex-1">
-                    <table className="w-full text-left">
-                      <thead className="text-[10px] text-slate-500 uppercase border-b border-slate-100">
-                        <tr>
-                          <th className="pb-2 font-semibold">Motivo do Cancelamento</th>
-                          <th className="pb-2 font-semibold text-right">Pedidos</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
-                        {cancelReasonsList.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-2.5 font-medium">{item.reason}</td>
-                            <td className="py-2.5 text-right font-bold text-slate-800">{item.count}</td>
-                          </tr>
-                        ))}
-                        {cancelReasonsList.length === 0 && (
-                          <tr>
-                            <td colSpan={2} className="py-12 text-center text-slate-400">
-                              Nenhum pedido cancelado registrado no período.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Tempo de Processamento SLA (1/3 de espaço) */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[280px] lg:col-span-1 justify-between">
-                  <h3 className="font-bold text-slate-800 text-sm mb-2">Tempo de Faturamento (SLA)</h3>
-                  <div className="text-center py-4">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aprovação → Faturamento</span>
-                    <h2 className="text-4xl font-extrabold text-indigo-600 mt-2">{avgInvoiceTimeHours}h</h2>
-                    <p className="text-xs text-slate-500 mt-1">Tempo médio de processamento</p>
-                  </div>
-                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Pedidos Faturados analisados:</span>
-                      <span className="font-bold text-slate-700">{approvedCount}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Estágio atual:</span>
-                      <span className="font-bold text-emerald-600">Fluxo Normal</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Linha 3: Gráficos de Meios de Pagamento e Parcelamento */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* Meios de Pagamento (Pizza) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[300px]">
                   <h3 className="font-bold text-slate-800 text-sm mb-4">Meios de Pagamento mais Utilizados</h3>
                   <div className="flex-1 flex items-center justify-between">
-                    <div className="w-[180px] h-[180px]">
+                    <div className="w-[140px] h-[140px]">
                       {paymentMethodsData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
@@ -1837,8 +1782,8 @@ export default function Dashboard() {
                               data={paymentMethodsData}
                               cx="50%"
                               cy="50%"
-                              innerRadius={50}
-                              outerRadius={75}
+                              innerRadius={40}
+                              outerRadius={60}
                               paddingAngle={3}
                               dataKey="value"
                             >
@@ -1854,16 +1799,16 @@ export default function Dashboard() {
                       )}
                     </div>
                     
-                    <div className="flex flex-col gap-2.5 pr-4 flex-1 pl-6">
+                    <div className="flex flex-col gap-2 pr-2 flex-1 pl-4 overflow-y-auto max-h-[160px]">
                       {paymentMethodsData.map((item, idx) => {
                         const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
                         return (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors[idx % colors.length] }} />
-                              <span className="text-slate-600 font-medium">{item.name}</span>
+                          <div key={idx} className="flex items-center justify-between text-[11px]">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
+                              <span className="text-slate-600 font-medium truncate">{item.name}</span>
                             </div>
-                            <span className="text-slate-800 font-bold">{item.value} ped.</span>
+                            <span className="text-slate-800 font-bold shrink-0">{item.value} ped.</span>
                           </div>
                         );
                       })}
@@ -1877,15 +1822,15 @@ export default function Dashboard() {
                   <div className="flex-1 w-full min-h-[180px]">
                     {installmentsData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={installmentsData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                        <BarChart data={installmentsData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                          <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                           <Tooltip 
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             formatter={(value: any) => [`${value} compras`, 'Frequência']}
                           />
-                          <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={45} />
+                          <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={35} />
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
@@ -1893,6 +1838,26 @@ export default function Dashboard() {
                         Nenhuma venda parcelada identificada no período.
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Tempo de Processamento SLA */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[300px] justify-between">
+                  <h3 className="font-bold text-slate-800 text-sm mb-2">Tempo de Faturamento (SLA)</h3>
+                  <div className="text-center py-4">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aprovação → Faturamento</span>
+                    <h2 className="text-4xl font-extrabold text-indigo-600 mt-2">{avgInvoiceTimeHours}h</h2>
+                    <p className="text-xs text-slate-500 mt-1">Tempo médio de processamento</p>
+                  </div>
+                  <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Pedidos Faturados analisados:</span>
+                      <span className="font-bold text-slate-700">{approvedCount}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Estágio atual:</span>
+                      <span className="font-bold text-emerald-600">Fluxo Normal</span>
+                    </div>
                   </div>
                 </div>
 
