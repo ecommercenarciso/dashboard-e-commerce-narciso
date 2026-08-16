@@ -1129,22 +1129,44 @@ export default function Dashboard() {
       .sort((a: any, b: any) => a.key.localeCompare(b.key));
   })();
 
-  // Memoized Chart Data for Sales tab supporting Cumulative Toggle
+  // Memoized Chart Data for Sales/Executive tab supporting Cumulative Toggle
   const finalChartData = React.useMemo(() => {
     if (!isCumulative) return aggregatedChartData;
     
     let runningRevenue = 0;
     let runningOrders = 0;
+    let runningVisitors = 0;
+    let runningViewItem = 0;
+    let runningCart = 0;
+    let runningShipping = 0;
+    let runningPayment = 0;
+    let runningSessions = 0;
+    let runningConversions = 0;
     
     return aggregatedChartData.map(item => {
       runningRevenue += item.vtexRevenue || 0;
       runningOrders += item.vtexOrders || 0;
+      runningVisitors += item.visitors || 0;
+      runningViewItem += item.viewItem || 0;
+      runningCart += item.cart || 0;
+      runningShipping += item.shipping || 0;
+      runningPayment += item.payment || 0;
+      runningSessions += item.sessions || 0;
+      runningConversions += item.conversions || 0;
+      
       const vtexTicket = runningOrders > 0 ? (runningRevenue / runningOrders) : 0;
       return {
         ...item,
         vtexRevenue: runningRevenue,
         vtexOrders: runningOrders,
-        vtexTicket
+        vtexTicket,
+        visitors: runningVisitors,
+        viewItem: runningViewItem,
+        cart: runningCart,
+        shipping: runningShipping,
+        payment: runningPayment,
+        sessions: runningSessions,
+        conversions: runningConversions
       };
     });
   }, [aggregatedChartData, isCumulative]);
@@ -1635,24 +1657,34 @@ export default function Dashboard() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold text-slate-800 text-sm">Tendência do Funil de Vendas (GA4)</h3>
-                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
-                    {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
-                      <button
-                        key={interval}
-                        onClick={() => setChartInterval(interval)}
-                        className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
-                          chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsCumulative(!isCumulative)}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all ${
+                        isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {isCumulative ? '✓ Acumulado' : 'Acumulado'}
+                    </button>
+                    <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
+                      {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
+                        <button
+                          key={interval}
+                          onClick={() => setChartInterval(interval)}
+                          className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                            chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="flex-1 w-full min-h-[200px]">
-                  {aggregatedChartData.length > 0 ? (
+                  {finalChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={aggregatedChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                      <LineChart data={finalChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                         <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
@@ -1686,7 +1718,15 @@ export default function Dashboard() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-[320px]">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-slate-800 text-sm">Faturamento & Pedidos (VTEX)</h3>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsCumulative(!isCumulative)}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all ${
+                        isCumulative ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {isCumulative ? '✓ Acumulado' : 'Acumulado'}
+                    </button>
                     <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
                       {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
                         <button
@@ -1703,9 +1743,9 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex-1 w-full min-h-[200px]">
-                   {aggregatedChartData.length > 0 ? (
+                   {finalChartData.length > 0 ? (
                      <ResponsiveContainer width="100%" height="100%">
-                       <LineChart data={aggregatedChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                       <LineChart data={finalChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                          <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                          <YAxis yAxisId="left" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} />
