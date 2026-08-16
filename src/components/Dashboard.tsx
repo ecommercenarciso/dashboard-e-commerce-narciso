@@ -1858,6 +1858,87 @@ export default function Dashboard() {
 
               </div>
 
+              {/* Linha 1.5: Três Gráficos de Tendência VTEX (Faturamento, Pedidos, Ticket Médio) */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="font-bold text-slate-800 text-sm">Evolução de Vendas (VTEX)</h3>
+                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 items-center">
+                    {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
+                      <button
+                        key={interval}
+                        onClick={() => setChartInterval(interval)}
+                        className={`px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                          chartInterval === interval ? 'text-slate-600 bg-white shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        {interval === 'hour' ? 'Hora' : interval === 'day' ? 'Dia' : interval === 'week' ? 'Semana' : 'Mês'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Gráfico 1: Faturamento */}
+                  <div className="flex flex-col h-[220px]">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Faturamento</span>
+                    <div className="flex-1 w-full min-h-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={aggregatedChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
+                          />
+                          <Line type="monotone" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Gráfico 2: Pedidos */}
+                  <div className="flex flex-col h-[220px]">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Pedidos</span>
+                    <div className="flex-1 w-full min-h-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={aggregatedChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [value, 'Pedidos']}
+                          />
+                          <Bar dataKey="vtexOrders" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={30} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Gráfico 3: Ticket Médio */}
+                  <div className="flex flex-col h-[220px]">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Ticket Médio</span>
+                    <div className="flex-1 w-full min-h-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={aggregatedChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Ticket Médio']}
+                          />
+                          <Line type="monotone" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
               {/* Linha 2: Meios de Pagamento, Parcelamento & SLA */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
