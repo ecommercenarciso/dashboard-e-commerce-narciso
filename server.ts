@@ -766,15 +766,23 @@ app.get('/api/vtex/order-detail/:orderId', async (c) => {
       totalValue: o.value,
       status: o.status,
       items: o.items?.map((item: any) => {
-        const brand = item.additionalInfo?.brandName || 'Não Informado';
-        
+        let brand = 'Não Informado';
         let category = 'Não Informado';
-        const categories = item.additionalInfo?.categories || [];
-        if (categories.length > 0) {
-          const sorted = [...categories].sort((a, b) => b.length - a.length);
-          const deepest = sorted[0] || '';
-          const parts = deepest.split('/').filter(Boolean);
-          category = parts[parts.length - 1] || 'Não Informado';
+        
+        try {
+          if (item.additionalInfo) {
+            brand = item.additionalInfo.brandName || 'Não Informado';
+            
+            const categories = item.additionalInfo.categories;
+            if (Array.isArray(categories) && categories.length > 0) {
+              const sorted = [...categories].sort((a, b) => b.length - a.length);
+              const deepest = sorted[0] || '';
+              const parts = deepest.split('/').filter(Boolean);
+              category = parts[parts.length - 1] || 'Não Informado';
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing item brand/category:', e);
         }
 
         return {
