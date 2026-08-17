@@ -291,7 +291,7 @@ app.post('/api/ga4/metrics', async (c) => {
           },
         ],
         dimensions: useHourly ? [{ name: 'date' }, { name: 'hour' }, { name: 'eventName' }] : [{ name: 'date' }, { name: 'eventName' }],
-        metrics: [{ name: 'totalUsers' }], // Query unique users per event
+        metrics: [{ name: 'totalUsers' }, { name: 'sessions' }], // Query unique users and sessions per event
         dimensionFilter: {
           filter: {
             fieldName: 'eventName',
@@ -316,10 +316,15 @@ app.post('/api/ga4/metrics', async (c) => {
         conversions: parseInt(row.metricValues?.[1].value || '0', 10),
         revenue: parseFloat(row.metricValues?.[2].value || '0'),
         visitors: parseInt(row.metricValues?.[3].value || '0', 10),
+        visitorsSessions: parseInt(row.metricValues?.[0].value || '0', 10),
         viewItem: 0,
+        viewItemSessions: 0,
         cart: 0,
+        cartSessions: 0,
         shipping: 0,
-        payment: 0
+        shippingSessions: 0,
+        payment: 0,
+        paymentSessions: 0
       };
     });
 
@@ -328,17 +333,22 @@ app.post('/api/ga4/metrics', async (c) => {
       const hour = useHourly ? String(row.dimensionValues?.[1].value || '00').padStart(2, '0') : '00';
       const eventName = useHourly ? row.dimensionValues?.[2].value : row.dimensionValues?.[1].value;
       const users = parseInt(row.metricValues?.[0].value || '0', 10);
+      const sess = parseInt(row.metricValues?.[1]?.value || '0', 10);
       const key = `${date}_${hour}`;
 
       if (dateMap[key]) {
         if (eventName === 'view_item') {
           dateMap[key].viewItem = users;
+          dateMap[key].viewItemSessions = sess;
         } else if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') {
           dateMap[key].cart = Math.max(dateMap[key].cart, users);
+          dateMap[key].cartSessions = Math.max(dateMap[key].cartSessions, sess);
         } else if (eventName === 'Checkout Entrega') {
           dateMap[key].shipping = users;
+          dateMap[key].shippingSessions = sess;
         } else if (eventName === 'Checkout Pagamento') {
           dateMap[key].payment = users;
+          dateMap[key].paymentSessions = sess;
         }
       }
     });
@@ -350,6 +360,11 @@ app.post('/api/ga4/metrics', async (c) => {
       d.cart = Math.min(d.viewItem, d.cart);
       d.shipping = Math.min(d.cart, d.shipping);
       d.payment = Math.min(d.shipping, d.payment);
+
+      d.viewItemSessions = Math.min(d.visitorsSessions, d.viewItemSessions);
+      d.cartSessions = Math.min(d.viewItemSessions, d.cartSessions);
+      d.shippingSessions = Math.min(d.cartSessions, d.shippingSessions);
+      d.paymentSessions = Math.min(d.shippingSessions, d.paymentSessions);
     });
 
     const data = Object.values(dateMap).sort((a: any, b: any) => `${a.date}_${a.hour}`.localeCompare(`${b.date}_${b.hour}`));
@@ -401,6 +416,7 @@ app.post('/api/ga4/funnel', async (c) => {
         ],
         metrics: [
           { name: 'totalUsers' },
+          { name: 'sessions' },
         ],
       }),
       runGa4Report(accessToken, propertyId!, {
@@ -417,6 +433,7 @@ app.post('/api/ga4/funnel', async (c) => {
         ],
         metrics: [
           { name: 'totalUsers' },
+          { name: 'sessions' },
         ],
         dimensionFilter: {
           filter: {
@@ -431,31 +448,52 @@ app.post('/api/ga4/funnel', async (c) => {
 
     const funnel = {
         visitors: 0,
+        visitorsSessions: 0,
         viewItem: 0,
+        viewItemSessions: 0,
         cart: 0,
+        cartSessions: 0,
         shipping: 0,
-        payment: 0
+        shippingSessions: 0,
+        payment: 0,
+        paymentSessions: 0
     };
 
     if (overallResponse.rows && overallResponse.rows.length > 0) {
         funnel.visitors = parseInt(overallResponse.rows[0].metricValues[0].value, 10);
+        funnel.visitorsSessions = parseInt(overallResponse.rows[0].metricValues[1]?.value || '0', 10);
     }
 
     let viewCartUsers = 0;
+    let viewCartSessions = 0;
 
     if (eventResponse.rows) {
         eventResponse.rows.forEach((row: any) => {
             const eventName = row.dimensionValues[0].value;
             const users = parseInt(row.metricValues[0].value, 10);
+            const sess = parseInt(row.metricValues[1]?.value || '0', 10);
             
-            if (eventName === 'view_item') funnel.viewItem = users;
-            if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') viewCartUsers = Math.max(viewCartUsers, users);
-            if (eventName === 'Checkout Entrega' || eventName === 'add_shipping_info') funnel.shipping = Math.max(funnel.shipping, users);
-            if (eventName === 'Checkout Pagamento' || eventName === 'add_payment_info') funnel.payment = Math.max(funnel.payment, users);
+            if (eventName === 'view_item') {
+              funnel.viewItem = users;
+              funnel.viewItemSessions = sess;
+            }
+            if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') {
+              viewCartUsers = Math.max(viewCartUsers, users);
+              viewCartSessions = Math.max(viewCartSessions, sess);
+            }
+            if (eventName === 'Checkout Entrega' || eventName === 'add_shipping_info') {
+              funnel.shipping = Math.max(funnel.shipping, users);
+              funnel.shippingSessions = Math.max(funnel.shippingSessions, sess);
+            }
+            if (eventName === 'Checkout Pagamento' || eventName === 'add_payment_info') {
+              funnel.payment = Math.max(funnel.payment, users);
+              funnel.paymentSessions = Math.max(funnel.paymentSessions, sess);
+            }
         });
     }
 
     funnel.cart = viewCartUsers;
+    funnel.cartSessions = viewCartSessions;
 
     return c.json(funnel);
   } catch (error: any) {

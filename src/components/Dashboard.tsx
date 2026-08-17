@@ -1460,10 +1460,15 @@ export default function Dashboard() {
           key,
           displayDate,
           visitors: 0,
+          visitorsSessions: 0,
           viewItem: 0,
+          viewItemSessions: 0,
           cart: 0,
+          cartSessions: 0,
           shipping: 0,
+          shippingSessions: 0,
           payment: 0,
+          paymentSessions: 0,
           sessions: 0,
           conversions: 0,
           vtexOrders: 0,
@@ -1472,10 +1477,15 @@ export default function Dashboard() {
       }
       
       groups[key].visitors += row.visitors || 0;
+      groups[key].visitorsSessions += row.visitorsSessions || 0;
       groups[key].viewItem += row.viewItem || 0;
+      groups[key].viewItemSessions += row.viewItemSessions || 0;
       groups[key].cart += row.cart || 0;
+      groups[key].cartSessions += row.cartSessions || 0;
       groups[key].shipping += row.shipping || 0;
+      groups[key].shippingSessions += row.shippingSessions || 0;
       groups[key].payment += row.payment || 0;
+      groups[key].paymentSessions += row.paymentSessions || 0;
       groups[key].sessions += row.sessions || 0;
       groups[key].conversions += row.conversions || 0;
       groups[key].vtexOrders += row.vtexOrders || 0;
@@ -1497,10 +1507,15 @@ export default function Dashboard() {
     let runningRevenue = 0;
     let runningOrders = 0;
     let runningVisitors = 0;
+    let runningVisitorsSessions = 0;
     let runningViewItem = 0;
+    let runningViewItemSessions = 0;
     let runningCart = 0;
+    let runningCartSessions = 0;
     let runningShipping = 0;
+    let runningShippingSessions = 0;
     let runningPayment = 0;
+    let runningPaymentSessions = 0;
     let runningSessions = 0;
     let runningConversions = 0;
     
@@ -1508,10 +1523,15 @@ export default function Dashboard() {
       runningRevenue += item.vtexRevenue || 0;
       runningOrders += item.vtexOrders || 0;
       runningVisitors += item.visitors || 0;
+      runningVisitorsSessions += item.visitorsSessions || 0;
       runningViewItem += item.viewItem || 0;
+      runningViewItemSessions += item.viewItemSessions || 0;
       runningCart += item.cart || 0;
+      runningCartSessions += item.cartSessions || 0;
       runningShipping += item.shipping || 0;
+      runningShippingSessions += item.shippingSessions || 0;
       runningPayment += item.payment || 0;
+      runningPaymentSessions += item.paymentSessions || 0;
       runningSessions += item.sessions || 0;
       runningConversions += item.conversions || 0;
       
@@ -1522,10 +1542,15 @@ export default function Dashboard() {
         vtexOrders: runningOrders,
         vtexTicket,
         visitors: runningVisitors,
+        visitorsSessions: runningVisitorsSessions,
         viewItem: runningViewItem,
+        viewItemSessions: runningViewItemSessions,
         cart: runningCart,
+        cartSessions: runningCartSessions,
         shipping: runningShipping,
+        shippingSessions: runningShippingSessions,
         payment: runningPayment,
+        paymentSessions: runningPaymentSessions,
         sessions: runningSessions,
         conversions: runningConversions
       };

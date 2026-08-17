@@ -43,14 +43,12 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   const [campaignSearch, setCampaignSearch] = useState('');
   const [granularitySearch, setGranularitySearch] = useState('');
   const [granularityPage, setGranularityPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Sorting states
-  const [channelSortField, setChannelSortField] = useState<string>('sessions');
+  const [channelSortField, setChannelSortField] = useState('revenue');
   const [channelSortDir, setChannelSortDir] = useState<'asc' | 'desc'>('desc');
-
-  const [campaignSortField, setCampaignSortField] = useState<string>('sessions');
+  const [campaignSortField, setCampaignSortField] = useState('revenue');
   const [campaignSortDir, setCampaignSortDir] = useState<'asc' | 'desc'>('desc');
+  const [funnelBase, setFunnelBase] = useState<'users' | 'sessions'>('users');
+  const itemsPerPage = 10;
 
   const handleChannelSort = (field: string) => {
     if (channelSortField === field) setChannelSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -309,10 +307,27 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
       </div>
 
       {/* CAMADA 2: Funil GA4 */}
+      <div className="w-full flex justify-between items-end mb-2">
+        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Funil de Conversão do E-commerce</h2>
+        <div className="flex bg-slate-200 p-1 rounded-md">
+          <button 
+            onClick={() => setFunnelBase('users')}
+            className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${funnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Visitantes Únicos
+          </button>
+          <button 
+            onClick={() => setFunnelBase('sessions')}
+            className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${funnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Sessões
+          </button>
+        </div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mb-2">
         {/* Tendência do Funil - Linhas */}
         <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
-          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Tendência do Funil de Vendas (GA4)</h3>
+          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Tendência de Evolução</h3>
           <div className="flex-1 w-full min-h-0">
             {finalChartData && finalChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -322,11 +337,11 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                   <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                   <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                  <Line type="linear" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="1. Visitantes Únicos" />
-                  <Line type="linear" dataKey="viewItem" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
-                  <Line type="linear" dataKey="cart" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
-                  <Line type="linear" dataKey="shipping" stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega" />
-                  <Line type="linear" dataKey="payment" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento" />
+                  <Line type="linear" dataKey={funnelBase === 'users' ? 'visitors' : 'visitorsSessions'} stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={funnelBase === 'users' ? "1. Visitantes Únicos" : "1. Sessões Iniciais"} />
+                  <Line type="linear" dataKey={funnelBase === 'users' ? 'viewItem' : 'viewItemSessions'} stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
+                  <Line type="linear" dataKey={funnelBase === 'users' ? 'cart' : 'cartSessions'} stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
+                  <Line type="linear" dataKey={funnelBase === 'users' ? 'shipping' : 'shippingSessions'} stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega" />
+                  <Line type="linear" dataKey={funnelBase === 'users' ? 'payment' : 'paymentSessions'} stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento" />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -339,7 +354,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
 
         {/* Funil de Conversão - Barras horizontais */}
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
-          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Funil de Conversão (GA4)</h3>
+          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Etapas do Funil</h3>
           
           {!funnelData ? (
             <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
@@ -348,11 +363,11 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
           ) : (
             <div className="flex-1 flex flex-col justify-between py-1 w-full gap-2 min-h-0">
               {[
-                { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
-                { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
-                { label: 'Carrinho', value: funnelData.cart, max: funnelData.visitors },
-                { label: 'Entrega', value: funnelData.shipping, max: funnelData.visitors },
-                { label: 'Pagamento', value: funnelData.payment, max: funnelData.visitors },
+                { label: funnelBase === 'users' ? 'Visitantes Únicos' : 'Sessões', value: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                { label: 'Viu Produto', value: funnelBase === 'users' ? funnelData.viewItem : (funnelData.viewItemSessions || funnelData.viewItem), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                { label: 'Carrinho', value: funnelBase === 'users' ? funnelData.cart : (funnelData.cartSessions || funnelData.cart), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                { label: 'Entrega', value: funnelBase === 'users' ? funnelData.shipping : (funnelData.shippingSessions || funnelData.shipping), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                { label: 'Pagamento', value: funnelBase === 'users' ? funnelData.payment : (funnelData.paymentSessions || funnelData.payment), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
               ].map((step, idx, arr) => {
                 const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
                 const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
