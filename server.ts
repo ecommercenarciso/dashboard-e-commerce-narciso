@@ -490,7 +490,7 @@ app.post('/api/ga4/traffic', async (c) => {
           { name: 'newUsers' },
           { name: 'engagementRate' },
           { name: 'conversions' },
-          { name: 'averageEngagementTimePerSession' },
+          { name: 'averageSessionDuration' },
           { name: 'totalRevenue' }
         ]
       }),
@@ -509,7 +509,7 @@ app.post('/api/ga4/traffic', async (c) => {
           { name: 'sessions' },
           { name: 'totalUsers' },
           { name: 'engagementRate' },
-          { name: 'averageEngagementTimePerSession' },
+          { name: 'averageSessionDuration' },
           { name: 'conversions' },
           { name: 'totalRevenue' }
         ]
@@ -531,7 +531,7 @@ app.post('/api/ga4/traffic', async (c) => {
       }),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'landingPagePlusQueryString' }],
+        dimensions: [{ name: 'landingPage' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'bounceRate' }]
       }),
       runGa4Report(accessToken, propertyId!, {
