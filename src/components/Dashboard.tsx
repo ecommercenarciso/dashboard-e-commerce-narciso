@@ -2300,7 +2300,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Funil de Conversão - Barras horizontais */}
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider m-0">Etapas do Funil</h3>
                       <div className="flex bg-slate-100 p-1 rounded-md">

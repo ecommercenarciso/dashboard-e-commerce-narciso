@@ -327,7 +327,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mb-2">
         {/* Tendência do Funil - Linhas */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[440px]">
           <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Tendência de Evolução</h3>
           <div className="flex-1 w-full min-h-0">
             {finalChartData && finalChartData.length > 0 ? (
@@ -354,7 +354,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         </div>
 
         {/* Funil de Conversão - Barras horizontais */}
-        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[440px]">
           <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Etapas do Funil</h3>
           {!funnelData ? (
             <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
