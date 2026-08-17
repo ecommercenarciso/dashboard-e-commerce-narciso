@@ -464,6 +464,99 @@ app.post('/api/ga4/funnel', async (c) => {
   }
 });
 
+// GA4 Traffic API Route
+app.post('/api/ga4/traffic', async (c) => {
+  try {
+    const { startDate, endDate, prevStartDate, prevEndDate } = await c.req.json();
+
+    const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
+    const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
+    if (missing.length > 0 || !credentialsJson) {
+      console.warn('Missing GA4 credentials. Returning mock data for traffic.');
+      return c.json({ mock: true }); // A full mock implementation can be added if needed
+    }
+
+    const credentials = parseCredentialsJson(credentialsJson);
+    const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
+    const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
+
+    // We need multiple queries because of GA4 API limitations on dimensions/metrics
+    const [overviewData, prevOverviewData, channelsData, geoData, deviceData, campaignsData, landingPagesData, granularityData] = await Promise.all([
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'totalUsers' },
+          { name: 'newUsers' },
+          { name: 'engagementRate' },
+          { name: 'conversions' },
+          { name: 'averageEngagementTimePerSession' },
+          { name: 'totalRevenue' }
+        ]
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate: prevStartDate, endDate: prevEndDate }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'engagementRate' },
+          { name: 'conversions' }
+        ]
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'date' }, { name: 'sessionDefaultChannelGroup' }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'totalUsers' },
+          { name: 'engagementRate' },
+          { name: 'averageEngagementTimePerSession' },
+          { name: 'conversions' },
+          { name: 'totalRevenue' }
+        ]
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'region' }],
+        metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'deviceCategory' }],
+        metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'sessionCampaign' }, { name: 'sessionSource' }, { name: 'sessionMedium' }],
+        metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'landingPagePlusQueryString' }],
+        metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'bounceRate' }]
+      }),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaign' }, { name: 'sessionManualTerm' }, { name: 'sessionManualAdContent' }],
+        metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }, { name: 'advertiserAdCost' }]
+      })
+    ]);
+
+    return c.json({
+      overviewData,
+      prevOverviewData,
+      channelsData,
+      geoData,
+      deviceData,
+      campaignsData,
+      landingPagesData,
+      granularityData
+    });
+  } catch (error: any) {
+    console.error('GA4 Traffic Error:', error);
+    return c.json({ error: error.message || 'Failed to fetch GA4 traffic data' }, 500);
+  }
+});
+
 // VTEX API Routes
 app.post('/api/vtex/orders', async (c) => {
   try {

@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
+import TrafficDashboard from './TrafficDashboard';
 
 export default function Dashboard() {
   const [ga4Data, setGa4Data] = useState<GA4DataRow[]>([]);
@@ -15,7 +16,8 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic'>('executive');
+  const [trafficData, setTrafficData] = useState<any>(null);
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
 
@@ -325,6 +327,23 @@ export default function Dashboard() {
         return order;
       });
       setVtexOrders(enrichedList);
+
+      // Fetch GA4 Traffic Data
+      const trafficResponse = await fetch('/api/ga4/traffic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          startDate: filters.startDate, 
+          endDate: filters.endDate, 
+          prevStartDate: prevStartDateStr,
+          prevEndDate: prevEndDateStr
+        }),
+      });
+      
+      if (trafficResponse.ok) {
+        const trafficJson = await trafficResponse.json();
+        setTrafficData(trafficJson);
+      }
 
     } catch (err: any) {
       setError(err.message);
@@ -1600,6 +1619,14 @@ export default function Dashboard() {
               {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora DRE</span>}
             </div>
             <div 
+              onClick={() => setActiveTab('traffic')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'traffic' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Visão Geral de Tráfego"
+            >
+              <Users className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Visão Geral de Tráfego</span>}
+            </div>
+            <div 
               className={`flex items-center gap-3 py-2 transition-colors cursor-pointer text-slate-500 hover:text-slate-400 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
               title="Insights de Audiência"
             >
@@ -1663,7 +1690,9 @@ export default function Dashboard() {
                       ? 'Análise de Vendas por Produtos e Categorias'
                       : activeTab === 'goals' 
                         ? 'Acompanhamento de Metas' 
-                        : 'Calculadora de Metas DRE'}
+                        : activeTab === 'traffic'
+                          ? 'Visão Geral de Tráfego'
+                          : 'Calculadora de Metas DRE'}
               </h1>
             </div>
 
@@ -4530,6 +4559,10 @@ export default function Dashboard() {
               </div>
             );
           })()}
+
+          {activeTab === 'traffic' && (
+            <TrafficDashboard data={trafficData} filters={filters} />
+          )}
 
           </div>
         </div>
