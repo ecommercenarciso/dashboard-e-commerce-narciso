@@ -377,15 +377,6 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                 
                 return (
                   <React.Fragment key={idx}>
-                    {idx > 0 && (
-                      <div className="flex justify-center -my-2 relative z-10">
-                        <div className="bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500 shadow-sm flex items-center gap-1">
-                          <ArrowDownRight className="w-3 h-3 text-emerald-500" />
-                          {rateLabels[idx]}
-                          <span className="text-emerald-600 font-bold">{stepConversion.toFixed(1)}%</span>
-                        </div>
-                      </div>
-                    )}
                     <div className="flex items-center w-full gap-3 py-1 relative z-0">
                       <div className="w-24 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
                         {step.label}
@@ -405,10 +396,10 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                         </div>
                       </div>
                       
-                      <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
+                      <div className="w-32 pl-1 flex flex-col justify-center min-w-0 shrink-0">
                         <span className="text-sm font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
                         <span className="text-[10px] font-medium text-slate-400 leading-tight">
-                          {idx === 0 ? '100% (Base)' : `${percentageOverall.toFixed(1)}% do total`}
+                          {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toFixed(1)}%`}
                         </span>
                       </div>
                     </div>

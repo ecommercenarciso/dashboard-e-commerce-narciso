@@ -2284,11 +2284,11 @@ export default function Dashboard() {
                             <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                             <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                             <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                            <Line type="linear" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="1. Visitantes Únicos" />
-                            <Line type="linear" dataKey="viewItem" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
-                            <Line type="linear" dataKey="cart" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
-                            <Line type="linear" dataKey="shipping" stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega" />
-                            <Line type="linear" dataKey="payment" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento" />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions'} stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={execFunnelBase === 'users' ? "1. Visitantes Únicos" : "1. Sessões Iniciais"} />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions'} stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'cart' : 'cartSessions'} stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'checkout' : 'checkoutSessions'} stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Checkout" />
+                            <Line type="linear" dataKey="vtexOrders" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Compras VTEX" />
                           </LineChart>
                         </ResponsiveContainer>
                       ) : (
@@ -2340,15 +2340,6 @@ export default function Dashboard() {
                           
                           return (
                             <React.Fragment key={idx}>
-                              {idx > 0 && (
-                                <div className="flex justify-center -my-2 relative z-10">
-                                  <div className="bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500 shadow-sm flex items-center gap-1">
-                                    <ArrowDownRight className="w-3 h-3 text-emerald-500" />
-                                    {rateLabels[idx]}
-                                    <span className="text-emerald-600 font-bold">{stepConversion.toFixed(1)}%</span>
-                                  </div>
-                                </div>
-                              )}
                               <div className="flex items-center w-full gap-3 py-1 relative z-0">
                                 <div className="w-24 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
                                   {step.label}
@@ -2368,10 +2359,10 @@ export default function Dashboard() {
                                   </div>
                                 </div>
                                 
-                                <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
+                                <div className="w-32 pl-1 flex flex-col justify-center min-w-0 shrink-0">
                                   <span className="text-sm font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
                                   <span className="text-[10px] font-medium text-slate-400 leading-tight">
-                                    {idx === 0 ? '100% (Base)' : `${percentageOverall.toFixed(1)}% do total`}
+                                    {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toFixed(1)}%`}
                                   </span>
                                 </div>
                               </div>
