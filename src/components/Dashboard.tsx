@@ -2344,7 +2344,12 @@ export default function Dashboard() {
                             <React.Fragment key={idx}>
                               <div className="flex flex-col w-full gap-1.5 py-1">
                                 <div className="flex justify-between items-end w-full px-1">
-                                  <span className="text-[13px] font-semibold text-slate-600">{step.label}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[13px] font-semibold text-slate-600">{step.label}</span>
+                                    <span className="text-[11px] font-bold" style={{ color: stepColors[idx] }}>
+                                      {percentageOverall.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%
+                                    </span>
+                                  </div>
                                   <div className="text-right flex flex-col items-end">
                                     <span className="text-sm font-bold text-slate-800 leading-none mb-1">{safeValue.toLocaleString('pt-BR')}</span>
                                     <span className="text-[10px] font-medium text-slate-400 leading-none">
@@ -2354,15 +2359,13 @@ export default function Dashboard() {
                                 </div>
                                 <div className="w-full h-6 bg-slate-100 rounded-md overflow-hidden flex items-center p-[2px] border border-slate-200 shadow-sm">
                                   <div 
-                                    className="h-full rounded-[4px] transition-all duration-500 flex items-center justify-end px-1.5"
+                                    className="h-full rounded-[4px] transition-all duration-500"
                                     style={{ 
                                       width: `${percentageOverall}%`,
-                                      minWidth: '40px',
+                                      minWidth: percentageOverall > 0 ? '4px' : '0px',
                                       backgroundColor: stepColors[idx]
                                     }}
-                                  >
-                                    <span className="text-[9px] font-bold text-white/90 truncate">{percentageOverall.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</span>
-                                  </div>
+                                  />
                                 </div>
                               </div>
                             </React.Fragment>
