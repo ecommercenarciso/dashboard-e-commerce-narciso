@@ -526,7 +526,7 @@ app.post('/api/ga4/traffic', async (c) => {
       }),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'sessionCampaign' }, { name: 'sessionSource' }, { name: 'sessionMedium' }],
+        dimensions: [{ name: 'sessionCampaignName' }, { name: 'sessionSource' }, { name: 'sessionMedium' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
       }),
       runGa4Report(accessToken, propertyId!, {
@@ -536,7 +536,7 @@ app.post('/api/ga4/traffic', async (c) => {
       }),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaign' }, { name: 'sessionManualTerm' }, { name: 'sessionManualAdContent' }],
+        dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }, { name: 'advertiserAdCost' }]
       })
     ]);
