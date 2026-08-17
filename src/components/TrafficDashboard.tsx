@@ -12,6 +12,7 @@ interface TrafficDashboardProps {
   funnelData?: any;
   finalChartData?: any[];
   loading?: boolean;
+  vtexOrders?: number;
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -39,7 +40,7 @@ function formatDuration(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function TrafficDashboard({ data, filters, funnelData, finalChartData, loading }: TrafficDashboardProps) {
+export default function TrafficDashboard({ data, filters, funnelData, finalChartData, loading, vtexOrders }: TrafficDashboardProps) {
   const [campaignSearch, setCampaignSearch] = useState('');
   const [granularitySearch, setGranularitySearch] = useState('');
   const [granularityPage, setGranularityPage] = useState(1);
@@ -340,8 +341,8 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                   <Line type="linear" dataKey={funnelBase === 'users' ? 'visitors' : 'visitorsSessions'} stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={funnelBase === 'users' ? "1. Visitantes Únicos" : "1. Sessões Iniciais"} />
                   <Line type="linear" dataKey={funnelBase === 'users' ? 'viewItem' : 'viewItemSessions'} stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
                   <Line type="linear" dataKey={funnelBase === 'users' ? 'cart' : 'cartSessions'} stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
-                  <Line type="linear" dataKey={funnelBase === 'users' ? 'shipping' : 'shippingSessions'} stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega" />
-                  <Line type="linear" dataKey={funnelBase === 'users' ? 'payment' : 'paymentSessions'} stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento" />
+                  <Line type="linear" dataKey={funnelBase === 'users' ? 'checkout' : 'checkoutSessions'} stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Checkout" />
+                  <Line type="linear" dataKey="vtexOrders" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Compras VTEX" />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -355,56 +356,63 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         {/* Funil de Conversão - Barras horizontais */}
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
           <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Etapas do Funil</h3>
-          
           {!funnelData ? (
             <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
               {loading ? 'Carregando funil...' : 'Sem dados de funil'}
             </div>
           ) : (
-            <div className="flex-1 flex flex-col justify-between py-1 w-full gap-2 min-h-0">
+            <div className="flex-1 flex flex-col justify-between py-1 w-full min-h-0">
               {[
-                { label: funnelBase === 'users' ? 'Visitantes Únicos' : 'Sessões', value: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                { label: funnelBase === 'users' ? 'Visitantes' : 'Sessões', value: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                 { label: 'Viu Produto', value: funnelBase === 'users' ? funnelData.viewItem : (funnelData.viewItemSessions || funnelData.viewItem), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                 { label: 'Carrinho', value: funnelBase === 'users' ? funnelData.cart : (funnelData.cartSessions || funnelData.cart), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
-                { label: 'Entrega', value: funnelBase === 'users' ? funnelData.shipping : (funnelData.shippingSessions || funnelData.shipping), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
-                { label: 'Pagamento', value: funnelBase === 'users' ? funnelData.payment : (funnelData.paymentSessions || funnelData.payment), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                { label: 'Checkout', value: funnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                { label: 'Compras VTEX', value: vtexOrders || 0, max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
               ].map((step, idx, arr) => {
                 const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
                 const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
                 const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
                 const stepColors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
+                const rateLabels = ['', 'Taxa de Produto: ', 'Taxa de Carrinho: ', 'Taxa de Checkout: ', 'Taxa de Conversão: '];
                 
                 return (
-                  <div key={idx} className="flex items-center w-full gap-3">
-                    <div className="w-20 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
-                      {step.label}
-                    </div>
-                    
-                    <div className="flex-1 h-7 bg-slate-100 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-200 min-w-0">
-                      <div 
-                        className="h-full rounded-md transition-all duration-500 flex items-center justify-end px-2"
-                        style={{ 
-                          width: `${Math.max(percentageOverall, 12)}%`,
-                          backgroundColor: stepColors[idx]
-                        }}
-                      >
-                        {percentageOverall > 20 && (
-                          <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
-                        )}
+                  <React.Fragment key={idx}>
+                    {idx > 0 && (
+                      <div className="flex justify-center -my-2 relative z-10">
+                        <div className="bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500 shadow-sm flex items-center gap-1">
+                          <ArrowDownRight className="w-3 h-3 text-emerald-500" />
+                          {rateLabels[idx]}
+                          <span className="text-emerald-600 font-bold">{stepConversion.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center w-full gap-3 py-1 relative z-0">
+                      <div className="w-24 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
+                        {step.label}
+                      </div>
+                      
+                      <div className="flex-1 h-8 bg-slate-100 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-200 min-w-0">
+                        <div 
+                          className="h-full rounded-md transition-all duration-500 flex items-center justify-end px-2"
+                          style={{ 
+                            width: `${Math.max(percentageOverall, 12)}%`,
+                            backgroundColor: stepColors[idx]
+                          }}
+                        >
+                          {percentageOverall > 20 && (
+                            <span className="text-[10px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
+                        <span className="text-sm font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
+                        <span className="text-[10px] font-medium text-slate-400 leading-tight">
+                          {idx === 0 ? '100% (Base)' : `${percentageOverall.toFixed(1)}% do total`}
+                        </span>
                       </div>
                     </div>
-                    
-                    <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
-                      <span className="text-xs font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
-                      {idx > 0 ? (
-                        <span className={`text-[10px] font-semibold leading-none ${stepConversion < 20 ? 'text-red-500' : 'text-slate-400'}`}>
-                          {stepConversion.toFixed(1)}% do anterior
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold leading-none text-slate-400">Total de tráfego</span>
-                      )}
-                    </div>
-                  </div>
+                  </React.Fragment>
                 );
               })}
             </div>

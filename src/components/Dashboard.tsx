@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList, ScatterChart, Scatter, ZAxis, ReferenceLine } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileText, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package, ArrowDownRight } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 import TrafficDashboard from './TrafficDashboard';
@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [stateSortField, setStateSortField] = useState<'state' | 'count' | 'revenue'>('count');
   const [stateSortDirection, setStateSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isCumulative, setIsCumulative] = useState(false);
+  const [execFunnelBase, setExecFunnelBase] = useState<'users' | 'sessions'>('users');
   const [salesChartTab, setSalesChartTab] = useState<'revenue' | 'orders' | 'ticket'>('revenue');
   const [citiesTableTab, setCitiesTableTab] = useState<'delivery' | 'pickup'>('delivery');
 
@@ -2299,58 +2300,82 @@ export default function Dashboard() {
                   </div>
 
                   {/* Funil de Conversão - Barras horizontais */}
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Funil de Conversão (GA4)</h3>
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider m-0">Etapas do Funil</h3>
+                      <div className="flex bg-slate-100 p-1 rounded-md">
+                        <button 
+                          onClick={() => setExecFunnelBase('users')}
+                          className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${execFunnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Visitantes
+                        </button>
+                        <button 
+                          onClick={() => setExecFunnelBase('sessions')}
+                          className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${execFunnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Sessões
+                        </button>
+                      </div>
+                    </div>
                     
                     {!funnelData ? (
                       <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
                         {loading ? 'Carregando funil...' : 'Sem dados de funil'}
                       </div>
                     ) : (
-                      <div className="flex-1 flex flex-col justify-between py-1 w-full gap-2 min-h-0">
+                      <div className="flex-1 flex flex-col justify-between py-1 w-full min-h-0">
                         {[
-                          { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
-                          { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
-                          { label: 'Carrinho', value: funnelData.cart, max: funnelData.visitors },
-                          { label: 'Entrega', value: funnelData.shipping, max: funnelData.visitors },
-                          { label: 'Pagamento', value: funnelData.payment, max: funnelData.visitors },
+                          { label: execFunnelBase === 'users' ? 'Visitantes' : 'Sessões', value: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors), max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                          { label: 'Viu Produto', value: execFunnelBase === 'users' ? funnelData.viewItem : (funnelData.viewItemSessions || funnelData.viewItem), max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                          { label: 'Carrinho', value: execFunnelBase === 'users' ? funnelData.cart : (funnelData.cartSessions || funnelData.cart), max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                          { label: 'Checkout', value: execFunnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout), max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                          { label: 'Compras VTEX', value: currentVtexMetrics.orders, max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                         ].map((step, idx, arr) => {
                           const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
                           const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
                           const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
                           const stepColors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
+                          const rateLabels = ['', 'Taxa de Produto: ', 'Taxa de Carrinho: ', 'Taxa de Checkout: ', 'Taxa de Conversão: '];
                           
                           return (
-                            <div key={idx} className="flex items-center w-full gap-3">
-                              <div className="w-20 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
-                                {step.label}
-                              </div>
-                              
-                              <div className="flex-1 h-7 bg-slate-100 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-200 min-w-0">
-                                <div 
-                                  className="h-full rounded-md transition-all duration-500 flex items-center justify-end px-2"
-                                  style={{ 
-                                    width: `${Math.max(percentageOverall, 12)}%`,
-                                    backgroundColor: stepColors[idx]
-                                  }}
-                                >
-                                  {percentageOverall > 20 && (
-                                    <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
-                                  )}
+                            <React.Fragment key={idx}>
+                              {idx > 0 && (
+                                <div className="flex justify-center -my-2 relative z-10">
+                                  <div className="bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500 shadow-sm flex items-center gap-1">
+                                    <ArrowDownRight className="w-3 h-3 text-emerald-500" />
+                                    {rateLabels[idx]}
+                                    <span className="text-emerald-600 font-bold">{stepConversion.toFixed(1)}%</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-center w-full gap-3 py-1 relative z-0">
+                                <div className="w-24 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
+                                  {step.label}
+                                </div>
+                                
+                                <div className="flex-1 h-8 bg-slate-100 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-200 min-w-0">
+                                  <div 
+                                    className="h-full rounded-md transition-all duration-500 flex items-center justify-end px-2"
+                                    style={{ 
+                                      width: `${Math.max(percentageOverall, 12)}%`,
+                                      backgroundColor: stepColors[idx]
+                                    }}
+                                  >
+                                    {percentageOverall > 20 && (
+                                      <span className="text-[10px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
+                                  <span className="text-sm font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
+                                  <span className="text-[10px] font-medium text-slate-400 leading-tight">
+                                    {idx === 0 ? '100% (Base)' : `${percentageOverall.toFixed(1)}% do total`}
+                                  </span>
                                 </div>
                               </div>
-                              
-                              <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
-                                <span className="text-xs font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
-                                {idx > 0 ? (
-                                  <span className="text-[10px] font-semibold text-emerald-600 leading-tight">
-                                    {stepConversion.toFixed(1)}% <span className="text-slate-400 font-normal">conv.</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-slate-400 font-medium leading-tight">100% total</span>
-                                )}
-                              </div>
-                            </div>
+                            </React.Fragment>
                           );
                         })}
                       </div>
@@ -4592,6 +4617,7 @@ export default function Dashboard() {
               funnelData={funnelData}
               finalChartData={finalChartData}
               loading={loading}
+              vtexOrders={currentVtexMetrics.orders}
             />
           )}
 

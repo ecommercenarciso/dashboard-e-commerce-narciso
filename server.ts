@@ -321,10 +321,8 @@ app.post('/api/ga4/metrics', async (c) => {
         viewItemSessions: 0,
         cart: 0,
         cartSessions: 0,
-        shipping: 0,
-        shippingSessions: 0,
-        payment: 0,
-        paymentSessions: 0
+        checkout: 0,
+        checkoutSessions: 0
       };
     });
 
@@ -343,12 +341,9 @@ app.post('/api/ga4/metrics', async (c) => {
         } else if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') {
           dateMap[key].cart = Math.max(dateMap[key].cart, users);
           dateMap[key].cartSessions = Math.max(dateMap[key].cartSessions, sess);
-        } else if (eventName === 'Checkout Entrega') {
-          dateMap[key].shipping = users;
-          dateMap[key].shippingSessions = sess;
-        } else if (eventName === 'Checkout Pagamento') {
-          dateMap[key].payment = users;
-          dateMap[key].paymentSessions = sess;
+        } else if (eventName === 'Checkout Entrega' || eventName === 'Checkout Pagamento' || eventName === 'add_shipping_info' || eventName === 'add_payment_info' || eventName === 'begin_checkout' || eventName === 'Checkout Identificação') {
+          dateMap[key].checkout = Math.max(dateMap[key].checkout, users);
+          dateMap[key].checkoutSessions = Math.max(dateMap[key].checkoutSessions, sess);
         }
       }
     });
@@ -358,13 +353,11 @@ app.post('/api/ga4/metrics', async (c) => {
       const d = dateMap[key];
       d.viewItem = Math.min(d.visitors, d.viewItem);
       d.cart = Math.min(d.viewItem, d.cart);
-      d.shipping = Math.min(d.cart, d.shipping);
-      d.payment = Math.min(d.shipping, d.payment);
+      d.checkout = Math.min(d.cart, d.checkout);
 
       d.viewItemSessions = Math.min(d.visitorsSessions, d.viewItemSessions);
       d.cartSessions = Math.min(d.viewItemSessions, d.cartSessions);
-      d.shippingSessions = Math.min(d.cartSessions, d.shippingSessions);
-      d.paymentSessions = Math.min(d.shippingSessions, d.paymentSessions);
+      d.checkoutSessions = Math.min(d.cartSessions, d.checkoutSessions);
     });
 
     const data = Object.values(dateMap).sort((a: any, b: any) => `${a.date}_${a.hour}`.localeCompare(`${b.date}_${b.hour}`));
@@ -453,10 +446,8 @@ app.post('/api/ga4/funnel', async (c) => {
         viewItemSessions: 0,
         cart: 0,
         cartSessions: 0,
-        shipping: 0,
-        shippingSessions: 0,
-        payment: 0,
-        paymentSessions: 0
+        checkout: 0,
+        checkoutSessions: 0
     };
 
     if (overallResponse.rows && overallResponse.rows.length > 0) {
@@ -481,13 +472,9 @@ app.post('/api/ga4/funnel', async (c) => {
               viewCartUsers = Math.max(viewCartUsers, users);
               viewCartSessions = Math.max(viewCartSessions, sess);
             }
-            if (eventName === 'Checkout Entrega' || eventName === 'add_shipping_info') {
-              funnel.shipping = Math.max(funnel.shipping, users);
-              funnel.shippingSessions = Math.max(funnel.shippingSessions, sess);
-            }
-            if (eventName === 'Checkout Pagamento' || eventName === 'add_payment_info') {
-              funnel.payment = Math.max(funnel.payment, users);
-              funnel.paymentSessions = Math.max(funnel.paymentSessions, sess);
+            if (eventName === 'Checkout Entrega' || eventName === 'add_shipping_info' || eventName === 'Checkout Pagamento' || eventName === 'add_payment_info' || eventName === 'Checkout Identificação' || eventName === 'begin_checkout') {
+              funnel.checkout = Math.max(funnel.checkout, users);
+              funnel.checkoutSessions = Math.max(funnel.checkoutSessions, sess);
             }
         });
     }
