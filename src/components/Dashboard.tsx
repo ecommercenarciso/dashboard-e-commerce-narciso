@@ -2340,30 +2340,28 @@ export default function Dashboard() {
                           
                           return (
                             <React.Fragment key={idx}>
-                              <div className="flex items-center w-full gap-3 py-1 relative z-0">
-                                <div className="w-24 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
-                                  {step.label}
+                              <div className="flex flex-col w-full gap-1.5 py-1">
+                                <div className="flex justify-between items-end w-full px-1">
+                                  <span className="text-[13px] font-semibold text-slate-600">{step.label}</span>
+                                  <div className="text-right flex flex-col items-end">
+                                    <span className="text-sm font-bold text-slate-800 leading-none mb-1">{step.value.toLocaleString('pt-BR')}</span>
+                                    <span className="text-[10px] font-medium text-slate-400 leading-none">
+                                      {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`}
+                                    </span>
+                                  </div>
                                 </div>
-                                
-                                <div className="flex-1 h-8 bg-slate-100 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-200 min-w-0">
+                                <div className="w-full h-6 bg-slate-100 rounded-md overflow-hidden flex items-center p-[2px] border border-slate-200 shadow-sm">
                                   <div 
-                                    className="h-full rounded-md transition-all duration-500 flex items-center justify-end px-2"
+                                    className="h-full rounded-[4px] transition-all duration-500 flex items-center justify-end px-2"
                                     style={{ 
-                                      width: `${Math.max(percentageOverall, 12)}%`,
+                                      width: `${Math.max(percentageOverall, 5)}%`,
                                       backgroundColor: stepColors[idx]
                                     }}
                                   >
-                                    {percentageOverall > 20 && (
-                                      <span className="text-[10px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
+                                    {percentageOverall > 10 && (
+                                      <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
                                     )}
                                   </div>
-                                </div>
-                                
-                                <div className="w-32 pl-1 flex flex-col justify-center min-w-0 shrink-0">
-                                  <span className="text-sm font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
-                                  <span className="text-[10px] font-medium text-slate-400 leading-tight">
-                                    {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`}
-                                  </span>
                                 </div>
                               </div>
                             </React.Fragment>
