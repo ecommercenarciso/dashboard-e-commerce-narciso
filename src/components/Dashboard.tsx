@@ -3294,18 +3294,16 @@ export default function Dashboard() {
                     <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Configuração de Vendas</span>
                       <div className="flex flex-col gap-1.5">
-                        <div className="flex justify-between items-baseline">
-                          <label className="text-xs font-bold text-slate-600">Ticket Médio Estimado (R$ {dreTicket})</label>
-                          <span className="text-[10px] text-slate-400 font-semibold">Simula volume de pedidos</span>
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-bold text-slate-600">Ticket Médio Estimado (R$)</label>
+                          <span className="text-[10px] text-slate-400 font-semibold hidden md:inline">Simula volume de pedidos</span>
                         </div>
                         <input 
-                          type="range" 
-                          min="50" 
-                          max="1500" 
-                          step="10" 
+                          type="number" 
+                          step="1" 
                           value={dreTicket} 
                           onChange={(e) => setDreTicket(Number(e.target.value))} 
-                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
+                          className="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2 font-bold text-slate-800 outline-none focus:border-indigo-500 focus:bg-white transition-all mt-1"
                         />
                       </div>
                     </div>
