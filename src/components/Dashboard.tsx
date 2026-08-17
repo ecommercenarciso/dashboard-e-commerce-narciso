@@ -4561,7 +4561,13 @@ export default function Dashboard() {
           })()}
 
           {activeTab === 'traffic' && (
-            <TrafficDashboard data={trafficData} filters={filters} />
+            <TrafficDashboard 
+              data={trafficData} 
+              filters={filters} 
+              funnelData={funnelData}
+              finalChartData={finalChartData}
+              loading={loading}
+            />
           )}
 
           </div>

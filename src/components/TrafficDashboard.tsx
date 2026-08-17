@@ -10,6 +10,9 @@ import { ArrowUpRight, ArrowDownRight, Users, Search, ChevronLeft, ChevronRight,
 interface TrafficDashboardProps {
   data: any;
   filters: any;
+  funnelData?: any;
+  finalChartData?: any[];
+  loading?: boolean;
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -37,7 +40,7 @@ function formatDuration(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function TrafficDashboard({ data, filters }: TrafficDashboardProps) {
+export default function TrafficDashboard({ data, filters, funnelData, finalChartData, loading }: TrafficDashboardProps) {
   const [campaignSearch, setCampaignSearch] = useState('');
   const [granularitySearch, setGranularitySearch] = useState('');
   const [granularityPage, setGranularityPage] = useState(1);
@@ -291,63 +294,92 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
         </div>
       </div>
 
-      {/* CAMADA 2: Evolução e Mix */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-5 shadow-sm h-[400px] flex flex-col">
-          <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Evolução de Sessões por Canal de Aquisição</span>
-          <div className="flex-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={areaData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} width={40} />
-                <RechartsTooltip 
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                  itemStyle={{ fontSize: '13px', fontWeight: 500 }}
-                  labelStyle={{ fontSize: '12px', color: '#64748B', marginBottom: '8px' }}
-                />
-                {(uniqueChannels as string[]).map((ch) => (
-                  <Area key={ch} type="monotone" dataKey={ch} stackId="1" stroke={CHANNEL_COLORS[ch] || '#CBD5E1'} fill={CHANNEL_COLORS[ch] || '#CBD5E1'} />
-                ))}
-              </AreaChart>
-            </ResponsiveContainer>
+      {/* CAMADA 2: Funil GA4 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mb-2">
+        {/* Tendência do Funil - Linhas */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Tendência do Funil de Vendas (GA4)</h3>
+          <div className="flex-1 w-full min-h-0">
+            {finalChartData && finalChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                  <Line type="linear" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="1. Visitantes Únicos" />
+                  <Line type="linear" dataKey="viewItem" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
+                  <Line type="linear" dataKey="cart" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
+                  <Line type="linear" dataKey="shipping" stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Entrega" />
+                  <Line type="linear" dataKey="payment" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Pagamento" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                {loading ? 'Carregando dados...' : 'Sem dados disponíveis para os filtros selecionados.'}
+              </div>
+            )}
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm h-[400px] flex flex-col">
-          <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Mix de Canais de Tráfego</span>
-          <div className="flex-1 flex items-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={channelAgg.list}
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="sessions"
-                  nameKey="name"
-                >
-                  {channelAgg.list.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[entry.name] || '#CBD5E1'} />
-                  ))}
-                </Pie>
-                <RechartsTooltip 
-                  formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Sessões']}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Legend 
-                  layout="vertical" 
-                  verticalAlign="middle" 
-                  align="right"
-                  wrapperStyle={{ fontSize: '12px', color: '#475569' }}
-                  formatter={(value, entry: any) => {
-                    const dt = channelAgg.list.find(c => c.name === value);
-                    const pct = sessions > 0 ? (dt.sessions / sessions) * 100 : 0;
-                    return <span className="font-medium">{value} ({pct.toFixed(1)}%)</span>;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+
+        {/* Funil de Conversão - Barras horizontais */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Funil de Conversão (GA4)</h3>
+          
+          {!funnelData ? (
+            <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
+              {loading ? 'Carregando funil...' : 'Sem dados de funil'}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col justify-between py-1 w-full gap-2 min-h-0">
+              {[
+                { label: 'Visitantes', value: funnelData.visitors, max: funnelData.visitors },
+                { label: 'Viu Produto', value: funnelData.viewItem, max: funnelData.visitors },
+                { label: 'Carrinho', value: funnelData.cart, max: funnelData.visitors },
+                { label: 'Entrega', value: funnelData.shipping, max: funnelData.visitors },
+                { label: 'Pagamento', value: funnelData.payment, max: funnelData.visitors },
+              ].map((step, idx, arr) => {
+                const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
+                const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
+                const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
+                const stepColors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
+                
+                return (
+                  <div key={idx} className="flex items-center w-full gap-3">
+                    <div className="w-20 text-right text-xs font-semibold text-slate-500 truncate shrink-0">
+                      {step.label}
+                    </div>
+                    
+                    <div className="flex-1 h-7 bg-slate-100 rounded-lg overflow-hidden flex items-center p-0.5 border border-slate-200 min-w-0">
+                      <div 
+                        className="h-full rounded-md transition-all duration-500 flex items-center justify-end px-2"
+                        style={{ 
+                          width: `${Math.max(percentageOverall, 12)}%`,
+                          backgroundColor: stepColors[idx]
+                        }}
+                      >
+                        {percentageOverall > 20 && (
+                          <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="w-24 pl-1 flex flex-col justify-center min-w-0 shrink-0">
+                      <span className="text-xs font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
+                      {idx > 0 ? (
+                        <span className={`text-[10px] font-semibold leading-none ${stepConversion < 20 ? 'text-red-500' : 'text-slate-400'}`}>
+                          {stepConversion.toFixed(1)}% do anterior
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold leading-none text-slate-400">Total de tráfego</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
