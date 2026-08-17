@@ -239,12 +239,13 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   const currentGranData = filteredGran.slice((granularityPage - 1) * itemsPerPage, granularityPage * itemsPerPage);
 
   const renderBadge = (val: number, prevVal?: string | number) => {
-    const isPos = val >= 0;
+    const safeVal = isNaN(val) ? 0 : val;
+    const isPos = safeVal >= 0;
     return (
       <div className="flex flex-col items-end">
         <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${isPos ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
           {isPos ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-          {Math.abs(val).toFixed(1)}%
+          {Math.abs(safeVal).toFixed(1)}%
         </span>
         {prevVal !== undefined && (
           <span className="text-[9px] text-slate-400 font-medium mt-0.5 text-right whitespace-nowrap">vs {prevVal}</span>
@@ -260,50 +261,50 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões Totais</span>
-            {renderBadge(sessionVar, prevSessions.toLocaleString('pt-BR'))}
+            {renderBadge(sessionVar, (prevSessions || 0).toLocaleString('pt-BR'))}
           </div>
-          <div className="text-2xl font-bold text-slate-900">{sessions.toLocaleString('pt-BR')}</div>
+          <div className="text-2xl font-bold text-slate-900">{(sessions || 0).toLocaleString('pt-BR')}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Usuários Únicos</span>
-            {renderBadge(totalUsersVar, prevTotalUsers.toLocaleString('pt-BR'))}
+            {renderBadge(totalUsersVar, (prevTotalUsers || 0).toLocaleString('pt-BR'))}
           </div>
-          <div className="text-2xl font-bold text-slate-900">{totalUsers.toLocaleString('pt-BR')}</div>
-          <div className="text-[10px] text-slate-500 font-medium">Novos: {newUsers.toLocaleString('pt-BR')} | Rec: {returnUsers.toLocaleString('pt-BR')}</div>
+          <div className="text-2xl font-bold text-slate-900">{(totalUsers || 0).toLocaleString('pt-BR')}</div>
+          <div className="text-[10px] text-slate-500 font-medium">Novos: {(newUsers || 0).toLocaleString('pt-BR')} | Rec: {(returnUsers || 0).toLocaleString('pt-BR')}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões / Usuário</span>
-            {renderBadge(sessionsPerUserVar, prevSessionsPerUser.toFixed(2))}
+            {renderBadge(sessionsPerUserVar, (prevSessionsPerUser || 0).toFixed(2))}
           </div>
-          <div className="text-2xl font-bold text-slate-900">{sessionsPerUser.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-slate-900">{(sessionsPerUser || 0).toFixed(2)}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Vis. de Páginas</span>
-            {renderBadge(pageViewsVar, prevPageViews.toLocaleString('pt-BR'))}
+            {renderBadge(pageViewsVar, (prevPageViews || 0).toLocaleString('pt-BR'))}
           </div>
-          <div className="text-2xl font-bold text-slate-900">{pageViews.toLocaleString('pt-BR')}</div>
+          <div className="text-2xl font-bold text-slate-900">{(pageViews || 0).toLocaleString('pt-BR')}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">PVs / Visitante</span>
-            {renderBadge(viewsPerVisitorVar, prevViewsPerVisitor.toFixed(2))}
+            {renderBadge(viewsPerVisitorVar, (prevViewsPerVisitor || 0).toFixed(2))}
           </div>
-          <div className="text-2xl font-bold text-slate-900">{viewsPerVisitor.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-slate-900">{(viewsPerVisitor || 0).toFixed(2)}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">PVs / Sessão</span>
-            {renderBadge(viewsPerSessionVar, prevViewsPerSession.toFixed(2))}
+            {renderBadge(viewsPerSessionVar, (prevViewsPerSession || 0).toFixed(2))}
           </div>
-          <div className="text-2xl font-bold text-slate-900">{viewsPerSession.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-slate-900">{(viewsPerSession || 0).toFixed(2)}</div>
         </div>
       </div>
 
