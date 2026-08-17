@@ -2273,7 +2273,7 @@ export default function Dashboard() {
                 {/* Linha 3: Funil GA4 */}
                 <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
                   {/* Tendência do Funil - Linhas */}
-                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[440px]">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider m-0">Tendência do Funil de Vendas (GA4)</h3>
                       <div className="flex bg-slate-100 p-1 rounded-md shrink-0">
@@ -2316,7 +2316,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Funil de Conversão - Barras horizontais */}
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[440px]">
                     <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Etapas do Funil</h3>
                     
                     {!funnelData ? (
