@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
-  BarChart, Bar, Legend,
+  BarChart, Bar, Legend, LineChart, Line,
   CartesianAxis
 } from 'recharts';
 import { ArrowUpRight, ArrowDownRight, Users, Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
