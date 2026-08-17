@@ -2360,7 +2360,7 @@ export default function Dashboard() {
                                       backgroundColor: stepColors[idx]
                                     }}
                                   >
-                                    <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
+                                    <span className="text-[9px] font-bold text-white/90">{percentageOverall.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</span>
                                   </div>
                                 </div>
                               </div>
