@@ -32,9 +32,14 @@ export interface DashboardFilter {
 
 export interface FunnelData {
   visitors: number;
+  visitorsSessions?: number;
   viewItem: number;
+  viewItemSessions?: number;
   cart: number;
-  shipping: number;
-  payment: number;
+  cartSessions?: number;
+  checkout: number;
+  checkoutSessions?: number;
+  shipping?: number; // kept for backwards compatibility if needed
+  payment?: number; // kept for backwards compatibility if needed
 }
 

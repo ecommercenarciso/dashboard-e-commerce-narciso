@@ -2330,7 +2330,7 @@ export default function Dashboard() {
                           { label: 'Viu Produto', value: execFunnelBase === 'users' ? funnelData.viewItem : (funnelData.viewItemSessions || funnelData.viewItem), max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                           { label: 'Carrinho', value: execFunnelBase === 'users' ? funnelData.cart : (funnelData.cartSessions || funnelData.cart), max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                           { label: 'Checkout', value: execFunnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout), max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
-                          { label: 'Compras VTEX', value: currentVtexMetrics.orders, max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
+                          { label: 'Compras VTEX', value: totalVtexOrders, max: execFunnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                         ].map((step, idx, arr) => {
                           const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
                           const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
@@ -4617,7 +4617,7 @@ export default function Dashboard() {
               funnelData={funnelData}
               finalChartData={finalChartData}
               loading={loading}
-              vtexOrders={currentVtexMetrics.orders}
+              vtexOrders={totalVtexOrders}
             />
           )}
 
