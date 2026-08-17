@@ -2308,7 +2308,7 @@ export default function Dashboard() {
                           onClick={() => setExecFunnelBase('users')}
                           className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${execFunnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                          Visitantes
+                          Visitantes Únicos
                         </button>
                         <button 
                           onClick={() => setExecFunnelBase('sessions')}
