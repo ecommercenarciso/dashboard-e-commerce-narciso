@@ -2354,13 +2354,14 @@ export default function Dashboard() {
                                 </div>
                                 <div className="w-full h-6 bg-slate-100 rounded-md overflow-hidden flex items-center p-[2px] border border-slate-200 shadow-sm">
                                   <div 
-                                    className="h-full rounded-[4px] transition-all duration-500 flex items-center justify-end px-2"
+                                    className="h-full rounded-[4px] transition-all duration-500 flex items-center justify-end px-1.5"
                                     style={{ 
-                                      width: `${Math.max(percentageOverall, 8)}%`,
+                                      width: `${percentageOverall}%`,
+                                      minWidth: '40px',
                                       backgroundColor: stepColors[idx]
                                     }}
                                   >
-                                    <span className="text-[9px] font-bold text-white/90">{percentageOverall.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</span>
+                                    <span className="text-[9px] font-bold text-white/90 truncate">{percentageOverall.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</span>
                                   </div>
                                 </div>
                               </div>
