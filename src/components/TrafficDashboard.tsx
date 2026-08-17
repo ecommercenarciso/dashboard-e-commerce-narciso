@@ -85,14 +85,13 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   const newUsers = parseInt(overview[2]?.value || '0');
   const returnUsers = totalUsers - newUsers;
 
-  const engRate = parseFloat(overview[3]?.value || '0') * 100;
-  const prevEngRate = parseFloat(prevOverview[1]?.value || '0') * 100;
-  const engVar = prevEngRate > 0 ? ((engRate - prevEngRate) / prevEngRate) * 100 : 0;
+  const pageViews = parseInt(overview[7]?.value || '0');
+  const prevPageViews = parseInt(prevOverview[3]?.value || '0');
+  const pageViewsVar = prevPageViews > 0 ? ((pageViews - prevPageViews) / prevPageViews) * 100 : 0;
 
-  const conversions = parseInt(overview[4]?.value || '0');
-  const prevConversions = parseInt(prevOverview[2]?.value || '0');
-  const convVar = prevConversions > 0 ? ((conversions - prevConversions) / prevConversions) * 100 : 0;
-  const convRate = sessions > 0 ? (conversions / sessions) * 100 : 0;
+  const sessionsPerUser = totalUsers > 0 ? sessions / totalUsers : 0;
+  const viewsPerVisitor = totalUsers > 0 ? pageViews / totalUsers : 0;
+  const viewsPerSession = sessions > 0 ? pageViews / sessions : 0;
 
   // --- Camada 2: Mix de Canais ---
   const channelsRaw = data.channelsData?.rows || [];
@@ -259,7 +258,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   return (
     <div className="p-6 bg-slate-50 min-h-full flex flex-col gap-6">
       {/* CAMADA 1: KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões Totais</span>
@@ -273,24 +272,36 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Usuários Únicos</span>
           </div>
           <div className="text-2xl font-bold text-slate-900">{totalUsers.toLocaleString('pt-BR')}</div>
-          <div className="text-xs text-slate-500 font-medium">Novos: {newUsers.toLocaleString('pt-BR')} | Recorrentes: {returnUsers.toLocaleString('pt-BR')}</div>
+          <div className="text-xs text-slate-500 font-medium">Novos: {newUsers.toLocaleString('pt-BR')} | Rec: {returnUsers.toLocaleString('pt-BR')}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
-            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Taxa de Engajamento</span>
-            {renderBadge(engVar)}
+            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões / Usuário</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{engRate.toFixed(1)}%</div>
+          <div className="text-2xl font-bold text-slate-900">{sessionsPerUser.toFixed(2)}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
-            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões Convertidas</span>
-            {renderBadge(convVar)}
+            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Vis. de Páginas</span>
+            {renderBadge(pageViewsVar)}
           </div>
-          <div className="text-2xl font-bold text-slate-900">{conversions.toLocaleString('pt-BR')}</div>
-          <div className="text-xs text-slate-500 font-medium">Taxa de Conversão: {convRate.toFixed(2)}%</div>
+          <div className="text-2xl font-bold text-slate-900">{pageViews.toLocaleString('pt-BR')}</div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
+          <div className="flex justify-between items-start">
+            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">PVs / Visitante</span>
+          </div>
+          <div className="text-2xl font-bold text-slate-900">{viewsPerVisitor.toFixed(2)}</div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
+          <div className="flex justify-between items-start">
+            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">PVs / Sessão</span>
+          </div>
+          <div className="text-2xl font-bold text-slate-900">{viewsPerSession.toFixed(2)}</div>
         </div>
       </div>
 

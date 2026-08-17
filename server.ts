@@ -491,7 +491,8 @@ app.post('/api/ga4/traffic', async (c) => {
           { name: 'engagementRate' },
           { name: 'conversions' },
           { name: 'averageSessionDuration' },
-          { name: 'totalRevenue' }
+          { name: 'totalRevenue' },
+          { name: 'screenPageViews' }
         ]
       }),
       runGa4Report(accessToken, propertyId!, {
@@ -499,7 +500,8 @@ app.post('/api/ga4/traffic', async (c) => {
         metrics: [
           { name: 'sessions' },
           { name: 'engagementRate' },
-          { name: 'conversions' }
+          { name: 'conversions' },
+          { name: 'screenPageViews' }
         ]
       }),
       runGa4Report(accessToken, propertyId!, {
