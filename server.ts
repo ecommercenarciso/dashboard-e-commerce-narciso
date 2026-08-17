@@ -281,6 +281,7 @@ app.post('/api/ga4/metrics', async (c) => {
           { name: 'conversions' },
           { name: 'totalRevenue' },
           { name: 'totalUsers' },
+          { name: 'screenPageViews' },
         ],
       }),
       runGa4Report(accessToken, propertyId!, {
@@ -316,6 +317,7 @@ app.post('/api/ga4/metrics', async (c) => {
         conversions: parseInt(row.metricValues?.[1].value || '0', 10),
         revenue: parseFloat(row.metricValues?.[2].value || '0'),
         visitors: parseInt(row.metricValues?.[3].value || '0', 10),
+        pageViews: parseInt(row.metricValues?.[4].value || '0', 10),
         visitorsSessions: parseInt(row.metricValues?.[0].value || '0', 10),
         viewItem: 0,
         viewItemSessions: 0,

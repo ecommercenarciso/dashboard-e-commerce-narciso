@@ -307,6 +307,58 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         </div>
       </div>
 
+      {/* CAMADA 1.5: Mini Evoluções */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[140px]">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Usuários Únicos</span>
+            <span className="text-sm font-bold text-slate-800">{(totalUsers || 0).toLocaleString('pt-BR')}</span>
+          </div>
+          <div className="flex-1 w-full min-h-0">
+            {finalChartData && finalChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                  <Line type="monotone" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={false} />
+                  <Tooltip contentStyle={{ fontSize: '12px' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : null}
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[140px]">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões</span>
+            <span className="text-sm font-bold text-slate-800">{(sessions || 0).toLocaleString('pt-BR')}</span>
+          </div>
+          <div className="flex-1 w-full min-h-0">
+            {finalChartData && finalChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                  <Line type="monotone" dataKey="sessions" stroke="#8B5CF6" strokeWidth={2} dot={false} />
+                  <Tooltip contentStyle={{ fontSize: '12px' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : null}
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[140px]">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Páginas Visitadas</span>
+            <span className="text-sm font-bold text-slate-800">{(pageViews || 0).toLocaleString('pt-BR')}</span>
+          </div>
+          <div className="flex-1 w-full min-h-0">
+            {finalChartData && finalChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                  <Line type="monotone" dataKey="pageViews" stroke="#10B981" strokeWidth={2} dot={false} />
+                  <Tooltip contentStyle={{ fontSize: '12px' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       {/* CAMADA 2: Funil GA4 */}
       <div className="w-full flex justify-between items-end mb-2">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Funil de Conversão do E-commerce</h2>

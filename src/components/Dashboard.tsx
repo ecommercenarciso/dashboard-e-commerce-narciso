@@ -1462,6 +1462,7 @@ export default function Dashboard() {
           displayDate,
           visitors: 0,
           visitorsSessions: 0,
+          pageViews: 0,
           viewItem: 0,
           viewItemSessions: 0,
           cart: 0,
@@ -1479,6 +1480,7 @@ export default function Dashboard() {
       
       groups[key].visitors += row.visitors || 0;
       groups[key].visitorsSessions += row.visitorsSessions || 0;
+      groups[key].pageViews += row.pageViews || 0;
       groups[key].viewItem += row.viewItem || 0;
       groups[key].viewItemSessions += row.viewItemSessions || 0;
       groups[key].cart += row.cart || 0;
@@ -1509,6 +1511,7 @@ export default function Dashboard() {
     let runningOrders = 0;
     let runningVisitors = 0;
     let runningVisitorsSessions = 0;
+    let runningPageViews = 0;
     let runningViewItem = 0;
     let runningViewItemSessions = 0;
     let runningCart = 0;
@@ -1525,6 +1528,7 @@ export default function Dashboard() {
       runningOrders += item.vtexOrders || 0;
       runningVisitors += item.visitors || 0;
       runningVisitorsSessions += item.visitorsSessions || 0;
+      runningPageViews += item.pageViews || 0;
       runningViewItem += item.viewItem || 0;
       runningViewItemSessions += item.viewItemSessions || 0;
       runningCart += item.cart || 0;
@@ -1544,6 +1548,7 @@ export default function Dashboard() {
         vtexTicket,
         visitors: runningVisitors,
         visitorsSessions: runningVisitorsSessions,
+        pageViews: runningPageViews,
         viewItem: runningViewItem,
         viewItemSessions: runningViewItemSessions,
         cart: runningCart,
