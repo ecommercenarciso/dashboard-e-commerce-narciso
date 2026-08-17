@@ -310,16 +310,16 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
       {/* CAMADA 2: Funil GA4 */}
       <div className="w-full flex justify-between items-end mb-2">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Funil de Conversão do E-commerce</h2>
-        <div className="flex bg-slate-200 p-1 rounded-md">
+        <div className="flex bg-slate-100 p-1 rounded-md shrink-0">
           <button 
             onClick={() => setFunnelBase('users')}
-            className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${funnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${funnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Visitantes Únicos
           </button>
           <button 
             onClick={() => setFunnelBase('sessions')}
-            className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${funnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${funnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Sessões
           </button>
