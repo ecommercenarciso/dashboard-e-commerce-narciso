@@ -369,9 +369,11 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                 { label: 'Checkout', value: funnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                 { label: 'Compras VTEX', value: vtexOrders || 0, max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
               ].map((step, idx, arr) => {
-                const percentageOverall = step.max > 0 ? (step.value / step.max) * 100 : 0;
-                const prevValue = idx === 0 ? step.max : arr[idx - 1].value;
-                const stepConversion = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
+                const safeMax = step.max || 0;
+                const safeValue = step.value || 0;
+                const percentageOverall = safeMax > 0 ? (safeValue / safeMax) * 100 : 0;
+                const prevValue = idx === 0 ? safeMax : (arr[idx - 1].value || 0);
+                const stepConversion = prevValue > 0 ? (safeValue / prevValue) * 100 : 0;
                 const stepColors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
                 const rateLabels = ['', 'Taxa de Produto: ', 'Taxa de Carrinho: ', 'Taxa de Checkout: ', 'Taxa de Conversão: '];
                 
@@ -381,7 +383,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                       <div className="flex justify-between items-end w-full px-1">
                         <span className="text-[13px] font-semibold text-slate-600">{step.label}</span>
                         <div className="text-right flex flex-col items-end">
-                          <span className="text-sm font-bold text-slate-800 leading-none mb-1">{step.value.toLocaleString('pt-BR')}</span>
+                          <span className="text-sm font-bold text-slate-800 leading-none mb-1">{safeValue.toLocaleString('pt-BR')}</span>
                           <span className="text-[10px] font-medium text-slate-400 leading-none">
                             {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`}
                           </span>
