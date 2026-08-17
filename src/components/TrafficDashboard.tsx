@@ -309,48 +309,54 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
 
       {/* CAMADA 1.5: Mini Evoluções */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[140px]">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[180px]">
           <div className="flex justify-between items-center mb-2">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Usuários Únicos</span>
             <span className="text-sm font-bold text-slate-800">{(totalUsers || 0).toLocaleString('pt-BR')}</span>
           </div>
-          <div className="flex-1 w-full min-h-0">
+          <div className="flex-1 w-full min-h-0 mt-2">
             {finalChartData && finalChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-                  <Line type="monotone" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={false} />
+                <LineChart data={finalChartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <Line type="linear" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                   <RechartsTooltip contentStyle={{ fontSize: '12px' }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : null}
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[140px]">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[180px]">
           <div className="flex justify-between items-center mb-2">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões</span>
             <span className="text-sm font-bold text-slate-800">{(sessions || 0).toLocaleString('pt-BR')}</span>
           </div>
-          <div className="flex-1 w-full min-h-0">
+          <div className="flex-1 w-full min-h-0 mt-2">
             {finalChartData && finalChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-                  <Line type="monotone" dataKey="sessions" stroke="#8B5CF6" strokeWidth={2} dot={false} />
+                <LineChart data={finalChartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <Line type="linear" dataKey="sessions" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                   <RechartsTooltip contentStyle={{ fontSize: '12px' }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : null}
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[140px]">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[180px]">
           <div className="flex justify-between items-center mb-2">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Páginas Visitadas</span>
             <span className="text-sm font-bold text-slate-800">{(pageViews || 0).toLocaleString('pt-BR')}</span>
           </div>
-          <div className="flex-1 w-full min-h-0">
+          <div className="flex-1 w-full min-h-0 mt-2">
             {finalChartData && finalChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-                  <Line type="monotone" dataKey="pageViews" stroke="#10B981" strokeWidth={2} dot={false} />
+                <LineChart data={finalChartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <Line type="linear" dataKey="pageViews" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                   <RechartsTooltip contentStyle={{ fontSize: '12px' }} />
                 </LineChart>
               </ResponsiveContainer>
