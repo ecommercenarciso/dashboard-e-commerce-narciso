@@ -319,7 +319,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
                   <Line type="monotone" dataKey="visitors" stroke="#3B82F6" strokeWidth={2} dot={false} />
-                  <Tooltip contentStyle={{ fontSize: '12px' }} />
+                  <RechartsTooltip contentStyle={{ fontSize: '12px' }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : null}
@@ -335,7 +335,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
                   <Line type="monotone" dataKey="sessions" stroke="#8B5CF6" strokeWidth={2} dot={false} />
-                  <Tooltip contentStyle={{ fontSize: '12px' }} />
+                  <RechartsTooltip contentStyle={{ fontSize: '12px' }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : null}
@@ -351,7 +351,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={finalChartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
                   <Line type="monotone" dataKey="pageViews" stroke="#10B981" strokeWidth={2} dot={false} />
-                  <Tooltip contentStyle={{ fontSize: '12px' }} />
+                  <RechartsTooltip contentStyle={{ fontSize: '12px' }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : null}
