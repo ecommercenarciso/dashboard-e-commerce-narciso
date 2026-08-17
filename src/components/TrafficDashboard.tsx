@@ -60,7 +60,7 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
     else { setCampaignSortField(field); setCampaignSortDir('desc'); }
   };
 
-  if (!data || data.mock || !data.overviewData) {
+  if (!data || data.mock || !data.overviewData || !data.overviewData.rows || data.overviewData.rows.length === 0) {
     return (
       <div className="p-8 flex flex-col gap-6 items-center justify-center h-full text-slate-500">
         <Users className="w-12 h-12 text-slate-300" />
@@ -98,22 +98,22 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
     const agg: Record<string, any> = {};
     let maxSessions = 0;
     channelsRaw.forEach((r: any) => {
-      const ch = r.dimensionValues[1].value;
+      const ch = r.dimensionValues?.[1]?.value || '(not set)';
       if (!agg[ch]) {
         agg[ch] = { name: ch, sessions: 0, users: 0, conversions: 0, revenue: 0, engTimeSum: 0, engRateSum: 0, count: 0 };
       }
-      agg[ch].sessions += parseInt(r.metricValues[0].value || '0');
-      agg[ch].users += parseInt(r.metricValues[1].value || '0');
-      agg[ch].engRateSum += parseFloat(r.metricValues[2].value || '0');
-      agg[ch].engTimeSum += parseFloat(r.metricValues[3].value || '0');
-      agg[ch].conversions += parseInt(r.metricValues[4].value || '0');
-      agg[ch].revenue += parseFloat(r.metricValues[5].value || '0');
+      agg[ch].sessions += parseInt(r.metricValues?.[0]?.value || '0');
+      agg[ch].users += parseInt(r.metricValues?.[1]?.value || '0');
+      agg[ch].engRateSum += parseFloat(r.metricValues?.[2]?.value || '0');
+      agg[ch].engTimeSum += parseFloat(r.metricValues?.[3]?.value || '0');
+      agg[ch].conversions += parseInt(r.metricValues?.[4]?.value || '0');
+      agg[ch].revenue += parseFloat(r.metricValues?.[5]?.value || '0');
       agg[ch].count += 1;
     });
 
     const list = Object.values(agg).map(c => {
-      c.engRate = (c.engRateSum / c.count) * 100;
-      c.avgTime = (c.engTimeSum / c.count);
+      c.engRate = c.count > 0 ? (c.engRateSum / c.count) * 100 : 0;
+      c.avgTime = c.count > 0 ? (c.engTimeSum / c.count) : 0;
       c.convRate = c.sessions > 0 ? (c.conversions / c.sessions) * 100 : 0;
       if (c.sessions > maxSessions) maxSessions = c.sessions;
       return c;
@@ -125,24 +125,25 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
   const areaData = useMemo(() => {
     const dateMap: Record<string, any> = {};
     channelsRaw.forEach((r: any) => {
-      const date = r.dimensionValues[0].value;
-      const ch = r.dimensionValues[1].value;
-      const val = parseInt(r.metricValues[0].value || '0');
+      const date = r.dimensionValues?.[0]?.value;
+      const ch = r.dimensionValues?.[1]?.value || '(not set)';
+      const val = parseInt(r.metricValues?.[0]?.value || '0');
       
-      const formattedDate = `${date.substring(6,8)}/${date.substring(4,6)}`;
-      
-      if (!dateMap[date]) dateMap[date] = { date: formattedDate, rawDate: date };
-      dateMap[date][ch] = (dateMap[date][ch] || 0) + val;
+      if (date && date.length >= 8) {
+        const formattedDate = `${date.substring(6,8)}/${date.substring(4,6)}`;
+        if (!dateMap[date]) dateMap[date] = { date: formattedDate, rawDate: date };
+        dateMap[date][ch] = (dateMap[date][ch] || 0) + val;
+      }
     });
     return Object.values(dateMap).sort((a: any, b: any) => a.rawDate.localeCompare(b.rawDate));
   }, [channelsRaw]);
 
-  const uniqueChannels = useMemo(() => Array.from(new Set(channelsRaw.map((r: any) => r.dimensionValues[1].value))), [channelsRaw]);
+  const uniqueChannels = useMemo(() => Array.from(new Set(channelsRaw.map((r: any) => r.dimensionValues?.[1]?.value || '(not set)'))), [channelsRaw]);
 
   // --- Camada 3: Tabela Canais ---
   const sortedChannels = [...channelAgg.list].sort((a, b) => {
-    const vA = a[channelSortField];
-    const vB = b[channelSortField];
+    const vA = a[channelSortField] || 0;
+    const vB = b[channelSortField] || 0;
     if (vA < vB) return channelSortDir === 'asc' ? -1 : 1;
     if (vA > vB) return channelSortDir === 'asc' ? 1 : -1;
     return 0;
@@ -151,40 +152,48 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
   // --- Camada 4: Geo & Devices ---
   const geoRaw = data.geoData?.rows || [];
   const geoData = geoRaw.map((r: any) => ({
-    name: r.dimensionValues[0].value,
-    sessions: parseInt(r.metricValues[0].value || '0'),
-    conversions: parseInt(r.metricValues[1].value || '0'),
-    revenue: parseFloat(r.metricValues[2].value || '0')
+    name: r.dimensionValues?.[0]?.value || '(not set)',
+    sessions: parseInt(r.metricValues?.[0]?.value || '0'),
+    conversions: parseInt(r.metricValues?.[1]?.value || '0'),
+    revenue: parseFloat(r.metricValues?.[2]?.value || '0')
   })).sort((a: any, b: any) => b.sessions - a.sessions).slice(0, 15);
 
   const deviceRaw = data.deviceData?.rows || [];
-  const deviceData = deviceRaw.map((r: any) => ({
-    name: r.dimensionValues[0].value,
-    sessions: parseInt(r.metricValues[0].value || '0'),
-    conversions: parseInt(r.metricValues[1].value || '0'),
-    revenue: parseFloat(r.metricValues[2].value || '0'),
-    convRate: parseInt(r.metricValues[0].value || '0') > 0 ? (parseInt(r.metricValues[1].value || '0') / parseInt(r.metricValues[0].value || '0')) * 100 : 0
-  }));
+  const deviceData = deviceRaw.map((r: any) => {
+    const sess = parseInt(r.metricValues?.[0]?.value || '0');
+    const conv = parseInt(r.metricValues?.[1]?.value || '0');
+    return {
+      name: r.dimensionValues?.[0]?.value || '(not set)',
+      sessions: sess,
+      conversions: conv,
+      revenue: parseFloat(r.metricValues?.[2]?.value || '0'),
+      convRate: sess > 0 ? (conv / sess) * 100 : 0
+    };
+  });
 
   // --- Camada 5: Campaigns & Landing Pages ---
   const campRaw = data.campaignsData?.rows || [];
-  const campList = campRaw.map((r: any) => ({
-    campaign: r.dimensionValues[0].value,
-    source: r.dimensionValues[1].value,
-    medium: r.dimensionValues[2].value,
-    sessions: parseInt(r.metricValues[0].value || '0'),
-    conversions: parseInt(r.metricValues[1].value || '0'),
-    convRate: parseInt(r.metricValues[0].value || '0') > 0 ? (parseInt(r.metricValues[1].value || '0') / parseInt(r.metricValues[0].value || '0')) * 100 : 0,
-    revenue: parseFloat(r.metricValues[2].value || '0')
-  }));
+  const campList = campRaw.map((r: any) => {
+    const sess = parseInt(r.metricValues?.[0]?.value || '0');
+    const conv = parseInt(r.metricValues?.[1]?.value || '0');
+    return {
+      campaign: r.dimensionValues?.[0]?.value || '(not set)',
+      source: r.dimensionValues?.[1]?.value || '(not set)',
+      medium: r.dimensionValues?.[2]?.value || '(not set)',
+      sessions: sess,
+      conversions: conv,
+      convRate: sess > 0 ? (conv / sess) * 100 : 0,
+      revenue: parseFloat(r.metricValues?.[2]?.value || '0')
+    };
+  });
   
   let campMaxSessions = 0;
   const filteredCamp = campList.filter((c: any) => 
-    c.campaign.toLowerCase().includes(campaignSearch.toLowerCase()) ||
-    c.source.toLowerCase().includes(campaignSearch.toLowerCase())
+    (c.campaign || '').toLowerCase().includes(campaignSearch.toLowerCase()) ||
+    (c.source || '').toLowerCase().includes(campaignSearch.toLowerCase())
   ).sort((a: any, b: any) => {
-    const vA = a[campaignSortField];
-    const vB = b[campaignSortField];
+    const vA = a[campaignSortField] || 0;
+    const vB = b[campaignSortField] || 0;
     if (vA < vB) return campaignSortDir === 'asc' ? -1 : 1;
     if (vA > vB) return campaignSortDir === 'asc' ? 1 : -1;
     return 0;
@@ -194,10 +203,10 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
 
   const lpRaw = data.landingPagesData?.rows || [];
   const lpList = lpRaw.map((r: any) => ({
-    path: r.dimensionValues[0].value,
-    sessions: parseInt(r.metricValues[0].value || '0'),
-    conversions: parseInt(r.metricValues[1].value || '0'),
-    bounce: parseFloat(r.metricValues[2].value || '0') * 100
+    path: r.dimensionValues?.[0]?.value || '(not set)',
+    sessions: parseInt(r.metricValues?.[0]?.value || '0'),
+    conversions: parseInt(r.metricValues?.[1]?.value || '0'),
+    bounce: parseFloat(r.metricValues?.[2]?.value || '0') * 100
   })).sort((a: any, b: any) => b.sessions - a.sessions).slice(0, 10);
   
   let lpMaxSessions = 0;
@@ -206,16 +215,16 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
   // --- Camada 6: Granularidade ---
   const granRaw = data.granularityData?.rows || [];
   const granList = granRaw.map((r: any) => {
-    const rev = parseFloat(r.metricValues[2].value || '0');
-    const cost = parseFloat(r.metricValues[3].value || '0');
+    const rev = parseFloat(r.metricValues?.[2]?.value || '0');
+    const cost = parseFloat(r.metricValues?.[3]?.value || '0');
     return {
-      source: r.dimensionValues[0].value,
-      medium: r.dimensionValues[1].value,
-      campaign: r.dimensionValues[2].value,
-      term: r.dimensionValues[3]?.value || '-',
-      content: r.dimensionValues[4]?.value || '-',
-      sessions: parseInt(r.metricValues[0].value || '0'),
-      conversions: parseInt(r.metricValues[1].value || '0'),
+      source: r.dimensionValues?.[0]?.value || '(not set)',
+      medium: r.dimensionValues?.[1]?.value || '(not set)',
+      campaign: r.dimensionValues?.[2]?.value || '(not set)',
+      term: r.dimensionValues?.[3]?.value || '-',
+      content: r.dimensionValues?.[4]?.value || '-',
+      sessions: parseInt(r.metricValues?.[0]?.value || '0'),
+      conversions: parseInt(r.metricValues?.[1]?.value || '0'),
       revenue: rev,
       cost: cost,
       roas: cost > 0 ? (rev / cost) : null
@@ -224,9 +233,9 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
   
   let granMaxSessions = 0;
   const filteredGran = granList.filter((c: any) => 
-    c.source.toLowerCase().includes(granularitySearch.toLowerCase()) ||
-    c.medium.toLowerCase().includes(granularitySearch.toLowerCase()) ||
-    c.campaign.toLowerCase().includes(granularitySearch.toLowerCase())
+    (c.source || '').toLowerCase().includes(granularitySearch.toLowerCase()) ||
+    (c.medium || '').toLowerCase().includes(granularitySearch.toLowerCase()) ||
+    (c.campaign || '').toLowerCase().includes(granularitySearch.toLowerCase())
   ).sort((a: any, b: any) => b.sessions - a.sessions);
   
   filteredGran.forEach((c: any) => { if (c.sessions > granMaxSessions) granMaxSessions = c.sessions; });
@@ -471,7 +480,7 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
                     <td className="py-3 px-4 font-medium text-slate-800 max-w-[200px] truncate" title={c.campaign}>{c.campaign === '(not set)' ? '-' : c.campaign}</td>
                     <td className="py-3 px-4 text-slate-600 truncate max-w-[150px]">{c.source} / {c.medium}</td>
                     <td className="py-3 px-4 text-right relative">
-                      <div className="absolute inset-y-0 right-0 bg-slate-100 opacity-50 z-0" style={{ width: `${(c.sessions / campMaxSessions) * 100}%` }}></div>
+                      <div className="absolute inset-y-0 right-0 bg-slate-100 opacity-50 z-0" style={{ width: `${(c.sessions / (campMaxSessions || 1)) * 100}%` }}></div>
                       <span className="relative z-10 font-mono">{c.sessions.toLocaleString('pt-BR')}</span>
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-slate-600">{c.conversions.toLocaleString('pt-BR')}</td>
@@ -503,7 +512,7 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
                   <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50">
                     <td className="py-3 px-4 max-w-[140px] truncate text-slate-700 font-medium" title={lp.path}>{lp.path}</td>
                     <td className="py-3 px-2 text-right relative">
-                      <div className="absolute inset-y-1 right-2 bg-blue-100 rounded-sm z-0" style={{ width: `${(lp.sessions / lpMaxSessions) * 100}%` }}></div>
+                      <div className="absolute inset-y-1 right-2 bg-blue-100 rounded-sm z-0" style={{ width: `${(lp.sessions / (lpMaxSessions || 1)) * 100}%` }}></div>
                       <span className="relative z-10 font-mono text-[12px]">{lp.sessions.toLocaleString('pt-BR')}</span>
                     </td>
                     <td className="py-3 px-2 text-right font-mono text-[12px] text-slate-500">{lp.bounce.toFixed(1)}%</td>
@@ -556,7 +565,7 @@ export default function TrafficDashboard({ data, filters }: TrafficDashboardProp
                   <td className="py-3 px-4 text-slate-500 max-w-[120px] truncate">{g.term === '(not set)' ? '-' : g.term}</td>
                   <td className="py-3 px-4 text-slate-500 max-w-[120px] truncate">{g.content === '(not set)' ? '-' : g.content}</td>
                   <td className="py-3 px-4 text-right relative">
-                    <div className="absolute inset-y-0 right-0 bg-slate-100 opacity-50 z-0" style={{ width: `${(g.sessions / granMaxSessions) * 100}%` }}></div>
+                    <div className="absolute inset-y-0 right-0 bg-slate-100 opacity-50 z-0" style={{ width: `${(g.sessions / (granMaxSessions || 1)) * 100}%` }}></div>
                     <span className="relative z-10 font-mono">{g.sessions.toLocaleString('pt-BR')}</span>
                   </td>
                   <td className="py-3 px-4 text-right font-mono text-slate-600">{g.conversions.toLocaleString('pt-BR')}</td>
