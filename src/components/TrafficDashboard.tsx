@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Legend, LineChart, Line,
   CartesianAxis
 } from 'recharts';
@@ -124,23 +123,6 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
     return { list, maxSessions };
   }, [channelsRaw]);
 
-  const areaData = useMemo(() => {
-    const dateMap: Record<string, any> = {};
-    channelsRaw.forEach((r: any) => {
-      const date = r.dimensionValues?.[0]?.value;
-      const ch = r.dimensionValues?.[1]?.value || '(not set)';
-      const val = parseInt(r.metricValues?.[0]?.value || '0');
-      
-      if (date && date.length >= 8) {
-        const formattedDate = `${date.substring(6,8)}/${date.substring(4,6)}`;
-        if (!dateMap[date]) dateMap[date] = { date: formattedDate, rawDate: date };
-        dateMap[date][ch] = (dateMap[date][ch] || 0) + val;
-      }
-    });
-    return Object.values(dateMap).sort((a: any, b: any) => a.rawDate.localeCompare(b.rawDate));
-  }, [channelsRaw]);
-
-  const uniqueChannels = useMemo(() => Array.from(new Set(channelsRaw.map((r: any) => r.dimensionValues?.[1]?.value || '(not set)'))), [channelsRaw]);
 
   // --- Camada 3: Tabela Canais ---
   const sortedChannels = [...channelAgg.list].sort((a, b) => {
