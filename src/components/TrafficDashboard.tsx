@@ -393,13 +393,11 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                         <div 
                           className="h-full rounded-[4px] transition-all duration-500 flex items-center justify-end px-2"
                           style={{ 
-                            width: `${Math.max(percentageOverall, 5)}%`,
+                            width: `${Math.max(percentageOverall, 8)}%`,
                             backgroundColor: stepColors[idx]
                           }}
                         >
-                          {percentageOverall > 10 && (
-                            <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
-                          )}
+                          <span className="text-[9px] font-bold text-white/90">{percentageOverall.toFixed(0)}%</span>
                         </div>
                       </div>
                     </div>
