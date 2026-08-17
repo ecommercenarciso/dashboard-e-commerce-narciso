@@ -499,6 +499,7 @@ app.post('/api/ga4/traffic', async (c) => {
         dateRanges: [{ startDate: prevStartDate, endDate: prevEndDate }],
         metrics: [
           { name: 'sessions' },
+          { name: 'totalUsers' },
           { name: 'engagementRate' },
           { name: 'conversions' },
           { name: 'screenPageViews' }

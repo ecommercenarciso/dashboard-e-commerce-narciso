@@ -81,16 +81,27 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   const sessionVar = prevSessions > 0 ? ((sessions - prevSessions) / prevSessions) * 100 : 0;
 
   const totalUsers = parseInt(overview[1]?.value || '0');
+  const prevTotalUsers = parseInt(prevOverview[1]?.value || '0');
+  const totalUsersVar = prevTotalUsers > 0 ? ((totalUsers - prevTotalUsers) / prevTotalUsers) * 100 : 0;
+  
   const newUsers = parseInt(overview[2]?.value || '0');
   const returnUsers = totalUsers - newUsers;
 
   const pageViews = parseInt(overview[7]?.value || '0');
-  const prevPageViews = parseInt(prevOverview[3]?.value || '0');
+  const prevPageViews = parseInt(prevOverview[4]?.value || '0');
   const pageViewsVar = prevPageViews > 0 ? ((pageViews - prevPageViews) / prevPageViews) * 100 : 0;
 
   const sessionsPerUser = totalUsers > 0 ? sessions / totalUsers : 0;
+  const prevSessionsPerUser = prevTotalUsers > 0 ? prevSessions / prevTotalUsers : 0;
+  const sessionsPerUserVar = prevSessionsPerUser > 0 ? ((sessionsPerUser - prevSessionsPerUser) / prevSessionsPerUser) * 100 : 0;
+
   const viewsPerVisitor = totalUsers > 0 ? pageViews / totalUsers : 0;
+  const prevViewsPerVisitor = prevTotalUsers > 0 ? prevPageViews / prevTotalUsers : 0;
+  const viewsPerVisitorVar = prevViewsPerVisitor > 0 ? ((viewsPerVisitor - prevViewsPerVisitor) / prevViewsPerVisitor) * 100 : 0;
+
   const viewsPerSession = sessions > 0 ? pageViews / sessions : 0;
+  const prevViewsPerSession = prevSessions > 0 ? prevPageViews / prevSessions : 0;
+  const viewsPerSessionVar = prevViewsPerSession > 0 ? ((viewsPerSession - prevViewsPerSession) / prevViewsPerSession) * 100 : 0;
 
   // --- Camada 2: Mix de Canais ---
   const channelsRaw = data.channelsData?.rows || [];
@@ -227,13 +238,18 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   const granPages = Math.ceil(filteredGran.length / itemsPerPage);
   const currentGranData = filteredGran.slice((granularityPage - 1) * itemsPerPage, granularityPage * itemsPerPage);
 
-  const renderBadge = (val: number) => {
+  const renderBadge = (val: number, prevVal?: string | number) => {
     const isPos = val >= 0;
     return (
-      <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium ${isPos ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-        {isPos ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-        {Math.abs(val).toFixed(1)}%
-      </span>
+      <div className="flex flex-col items-end">
+        <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${isPos ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+          {isPos ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+          {Math.abs(val).toFixed(1)}%
+        </span>
+        {prevVal !== undefined && (
+          <span className="text-[9px] text-slate-400 font-medium mt-0.5 text-right whitespace-nowrap">vs {prevVal}</span>
+        )}
+      </div>
     );
   };
 
@@ -244,7 +260,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões Totais</span>
-            {renderBadge(sessionVar)}
+            {renderBadge(sessionVar, prevSessions.toLocaleString('pt-BR'))}
           </div>
           <div className="text-2xl font-bold text-slate-900">{sessions.toLocaleString('pt-BR')}</div>
         </div>
@@ -252,14 +268,16 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Usuários Únicos</span>
+            {renderBadge(totalUsersVar, prevTotalUsers.toLocaleString('pt-BR'))}
           </div>
           <div className="text-2xl font-bold text-slate-900">{totalUsers.toLocaleString('pt-BR')}</div>
-          <div className="text-xs text-slate-500 font-medium">Novos: {newUsers.toLocaleString('pt-BR')} | Rec: {returnUsers.toLocaleString('pt-BR')}</div>
+          <div className="text-[10px] text-slate-500 font-medium">Novos: {newUsers.toLocaleString('pt-BR')} | Rec: {returnUsers.toLocaleString('pt-BR')}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Sessões / Usuário</span>
+            {renderBadge(sessionsPerUserVar, prevSessionsPerUser.toFixed(2))}
           </div>
           <div className="text-2xl font-bold text-slate-900">{sessionsPerUser.toFixed(2)}</div>
         </div>
@@ -267,7 +285,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Vis. de Páginas</span>
-            {renderBadge(pageViewsVar)}
+            {renderBadge(pageViewsVar, prevPageViews.toLocaleString('pt-BR'))}
           </div>
           <div className="text-2xl font-bold text-slate-900">{pageViews.toLocaleString('pt-BR')}</div>
         </div>
@@ -275,6 +293,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">PVs / Visitante</span>
+            {renderBadge(viewsPerVisitorVar, prevViewsPerVisitor.toFixed(2))}
           </div>
           <div className="text-2xl font-bold text-slate-900">{viewsPerVisitor.toFixed(2)}</div>
         </div>
@@ -282,6 +301,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">PVs / Sessão</span>
+            {renderBadge(viewsPerSessionVar, prevViewsPerSession.toFixed(2))}
           </div>
           <div className="text-2xl font-bold text-slate-900">{viewsPerSession.toFixed(2)}</div>
         </div>
