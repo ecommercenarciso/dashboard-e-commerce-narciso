@@ -2274,7 +2274,23 @@ export default function Dashboard() {
                 <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
                   {/* Tendência do Funil - Linhas */}
                   <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Tendência do Funil de Vendas (GA4)</h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider m-0">Tendência do Funil de Vendas (GA4)</h3>
+                      <div className="flex bg-slate-100 p-1 rounded-md shrink-0">
+                        <button 
+                          onClick={() => setExecFunnelBase('users')}
+                          className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${execFunnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Visitantes Únicos
+                        </button>
+                        <button 
+                          onClick={() => setExecFunnelBase('sessions')}
+                          className={`px-3 py-1 text-xs font-semibold rounded-sm transition-all ${execFunnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Sessões
+                        </button>
+                      </div>
+                    </div>
                     <div className="flex-1 w-full min-h-0">
                       {finalChartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
@@ -2301,23 +2317,7 @@ export default function Dashboard() {
 
                   {/* Funil de Conversão - Barras horizontais */}
                   <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider m-0">Etapas do Funil</h3>
-                      <div className="flex bg-slate-100 p-1 rounded-md shrink-0">
-                        <button 
-                          onClick={() => setExecFunnelBase('users')}
-                          className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${execFunnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                          Visitantes Únicos
-                        </button>
-                        <button 
-                          onClick={() => setExecFunnelBase('sessions')}
-                          className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${execFunnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                          Sessões
-                        </button>
-                      </div>
-                    </div>
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Etapas do Funil</h3>
                     
                     {!funnelData ? (
                       <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
