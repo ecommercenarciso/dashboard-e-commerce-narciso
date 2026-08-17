@@ -2362,7 +2362,7 @@ export default function Dashboard() {
                                 <div className="w-32 pl-1 flex flex-col justify-center min-w-0 shrink-0">
                                   <span className="text-sm font-bold text-slate-800 truncate leading-none mb-0.5">{step.value.toLocaleString('pt-BR')}</span>
                                   <span className="text-[10px] font-medium text-slate-400 leading-tight">
-                                    {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toFixed(1)}%`}
+                                    {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`}
                                   </span>
                                 </div>
                               </div>
