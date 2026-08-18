@@ -38,6 +38,13 @@ export default function Dashboard() {
   const [stateSortDirection, setStateSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isCumulative, setIsCumulative] = useState(false);
   const [execFunnelBase, setExecFunnelBase] = useState<'users' | 'sessions'>('users');
+  const [activeFunnelLines, setActiveFunnelLines] = useState<string[]>([]);
+  
+  const handleFunnelLegendClick = (e: any) => {
+    const dataKey = e.dataKey;
+    if (!dataKey) return;
+    setActiveFunnelLines(prev => prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]);
+  };
   const [salesChartTab, setSalesChartTab] = useState<'revenue' | 'orders' | 'ticket'>('revenue');
   const [citiesTableTab, setCitiesTableTab] = useState<'delivery' | 'pickup'>('delivery');
 
@@ -2314,12 +2321,12 @@ export default function Dashboard() {
                             <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                             <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                             <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions'} stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={execFunnelBase === 'users' ? "1. Visitantes Únicos" : "1. Sessões Iniciais"} />
-                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions'} stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" />
-                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'cart' : 'cartSessions'} stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" />
-                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'checkout' : 'checkoutSessions'} stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Checkout" />
-                            <Line type="linear" dataKey="vtexOrders" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Compras VTEX" />
+                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleFunnelLegendClick} />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions'} stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={execFunnelBase === 'users' ? "1. Visitantes Únicos" : "1. Sessões Iniciais"} strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions' })} />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions'} stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions' })} />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'cart' : 'cartSessions'} stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="3. Carrinho" strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(execFunnelBase === 'users' ? 'cart' : 'cartSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: execFunnelBase === 'users' ? 'cart' : 'cartSessions' })} />
+                            <Line type="linear" dataKey={execFunnelBase === 'users' ? 'checkout' : 'checkoutSessions'} stroke="#06B6D4" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="4. Checkout" strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(execFunnelBase === 'users' ? 'checkout' : 'checkoutSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: execFunnelBase === 'users' ? 'checkout' : 'checkoutSessions' })} />
+                            <Line type="linear" dataKey="vtexOrders" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} name="5. Compras VTEX" strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes('vtexOrders') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: 'vtexOrders' })} />
                           </LineChart>
                         </ResponsiveContainer>
                       ) : (
