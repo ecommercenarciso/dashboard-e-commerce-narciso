@@ -2070,10 +2070,7 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Agrupamento, Modo & Actions */}
-            <div className="flex items-center flex-wrap gap-4">
               {/* Agrupamento */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Agrupar:</span>
@@ -2122,7 +2119,6 @@ export default function Dashboard() {
                 <FileDown className="w-4 h-4" />
                 <span>PDF</span>
               </button>
-            </div>
           </div>
         </header>
 
