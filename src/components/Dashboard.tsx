@@ -140,6 +140,8 @@ export default function Dashboard() {
         setChartInterval('hour');
       } else if (diffDays > 90) {
         setChartInterval('month');
+      } else {
+        setChartInterval('day');
       }
     }
   }, [filters.startDate, filters.endDate]);
