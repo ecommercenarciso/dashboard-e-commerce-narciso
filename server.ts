@@ -297,7 +297,7 @@ app.post('/api/ga4/metrics', async (c) => {
           filter: {
             fieldName: 'eventName',
             inListFilter: {
-              values: ['view_item', 'add_to_cart', 'Checkout Carrinho', 'Checkout Entrega', 'Checkout Pagamento', 'begin_checkout']
+              values: ['view_item', 'add_to_cart', 'Checkout Carrinho', 'Checkout Entrega', 'Checkout Pagamento', 'Checkout Identificação', 'begin_checkout', 'add_payment_info', 'add_shipping_info']
             }
           }
         }
