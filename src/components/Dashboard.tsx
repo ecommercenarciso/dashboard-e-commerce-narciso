@@ -1945,9 +1945,10 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Divider */}
-            <div className="hidden md:block w-px h-6 bg-slate-200 mx-1"></div>
+          {/* Divider */}
+          <div className="hidden md:block w-px h-6 bg-slate-200 mx-1"></div>
 
             {/* Status Dropdown */}
             <div className="flex items-center gap-1.5 relative" ref={statusDropdownRef}>
