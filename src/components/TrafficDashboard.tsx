@@ -58,6 +58,15 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   };
   const itemsPerPage = 10;
 
+  const totalDays = React.useMemo(() => {
+    if (!filters?.startDate || !filters?.endDate) return 1;
+    const start = new Date(filters.startDate);
+    const end = new Date(filters.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // 0 diff = 1 day
+  }, [filters]);
+
   const handleChannelSort = (field: string) => {
     if (channelSortField === field) setChannelSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setChannelSortField(field); setChannelSortDir('desc'); }
@@ -476,6 +485,31 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
             </div>
           )}
         </div>
+      </div>
+
+      {/* CAMADA 2.5: Médias Diárias do Funil */}
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+        <h3 className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Média Diária do Funil ({totalDays} {totalDays === 1 ? 'dia' : 'dias'})</h3>
+        {funnelData ? (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: funnelBase === 'users' ? 'Visitantes / Dia' : 'Sessões / Dia', value: (funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors)) / totalDays, color: '#3B82F6' },
+              { label: 'Viu Produto / Dia', value: (funnelBase === 'users' ? funnelData.viewItem : (funnelData.viewItemSessions || funnelData.viewItem)) / totalDays, color: '#8B5CF6' },
+              { label: 'Carrinho / Dia', value: (funnelBase === 'users' ? funnelData.cart : (funnelData.cartSessions || funnelData.cart)) / totalDays, color: '#F59E0B' },
+              { label: 'Checkout / Dia', value: (funnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout)) / totalDays, color: '#06B6D4' },
+              { label: 'Compras / Dia', value: (vtexOrders || 0) / totalDays, color: '#10B981' },
+            ].map((card, idx) => (
+              <div key={idx} className="bg-slate-50 rounded-md border border-slate-100 p-3 flex flex-col justify-center">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">{card.label}</span>
+                <span className="text-xl font-bold" style={{ color: card.color }}>
+                  {Math.round(card.value).toLocaleString('pt-BR')}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-slate-400 py-2">Sem dados para calcular médias</div>
+        )}
       </div>
 
       {/* CAMADA 3: Tabela Qualidade */}
