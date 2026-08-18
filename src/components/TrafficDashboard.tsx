@@ -83,15 +83,15 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
       
       return {
         ...item,
-        visitors: item.visitors ? item.visitors / divisor : 0,
-        visitorsSessions: item.visitorsSessions ? item.visitorsSessions / divisor : 0,
-        viewItem: item.viewItem ? item.viewItem / divisor : 0,
-        viewItemSessions: item.viewItemSessions ? item.viewItemSessions / divisor : 0,
-        cart: item.cart ? item.cart / divisor : 0,
-        cartSessions: item.cartSessions ? item.cartSessions / divisor : 0,
-        checkout: item.checkout ? item.checkout / divisor : 0,
-        checkoutSessions: item.checkoutSessions ? item.checkoutSessions / divisor : 0,
-        vtexOrders: item.vtexOrders ? item.vtexOrders / divisor : 0,
+        visitors: item.visitors ? Math.round(item.visitors / divisor) : 0,
+        visitorsSessions: item.visitorsSessions ? Math.round(item.visitorsSessions / divisor) : 0,
+        viewItem: item.viewItem ? Math.round(item.viewItem / divisor) : 0,
+        viewItemSessions: item.viewItemSessions ? Math.round(item.viewItemSessions / divisor) : 0,
+        cart: item.cart ? Math.round(item.cart / divisor) : 0,
+        cartSessions: item.cartSessions ? Math.round(item.cartSessions / divisor) : 0,
+        checkout: item.checkout ? Math.round(item.checkout / divisor) : 0,
+        checkoutSessions: item.checkoutSessions ? Math.round(item.checkoutSessions / divisor) : 0,
+        vtexOrders: item.vtexOrders ? Math.round(item.vtexOrders / divisor) : 0,
       };
     });
   }, [finalChartData, isAverageView, chartInterval]);
