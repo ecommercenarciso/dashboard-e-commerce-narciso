@@ -498,14 +498,17 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
               { label: 'Carrinho / Dia', value: (funnelBase === 'users' ? funnelData.cart : (funnelData.cartSessions || funnelData.cart)) / totalDays, color: '#F59E0B' },
               { label: 'Checkout / Dia', value: (funnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout)) / totalDays, color: '#06B6D4' },
               { label: 'Compras / Dia', value: (vtexOrders || 0) / totalDays, color: '#10B981' },
-            ].map((card, idx) => (
-              <div key={idx} className="bg-slate-50 rounded-md border border-slate-100 p-3 flex flex-col justify-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">{card.label}</span>
-                <span className="text-xl font-bold" style={{ color: card.color }}>
-                  {Math.round(card.value).toLocaleString('pt-BR')}
-                </span>
-              </div>
-            ))}
+            ].map((card, idx) => {
+              const safeVal = Number(card.value) || 0;
+              return (
+                <div key={idx} className="bg-slate-50 rounded-md border border-slate-100 p-3 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">{card.label}</span>
+                  <span className="text-xl font-bold" style={{ color: card.color }}>
+                    {Math.round(safeVal).toLocaleString('pt-BR')}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-xs text-slate-400 py-2">Sem dados para calcular médias</div>
