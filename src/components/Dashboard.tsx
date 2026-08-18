@@ -4647,6 +4647,7 @@ export default function Dashboard() {
               finalChartData={finalChartData}
               loading={loading}
               vtexOrders={totalVtexOrders}
+              chartInterval={chartInterval}
             />
           )}
 

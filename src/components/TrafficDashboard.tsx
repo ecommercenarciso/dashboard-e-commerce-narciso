@@ -13,6 +13,7 @@ interface TrafficDashboardProps {
   finalChartData?: any[];
   loading?: boolean;
   vtexOrders?: number;
+  chartInterval?: 'hour' | 'day' | 'week' | 'month';
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -40,7 +41,7 @@ function formatDuration(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function TrafficDashboard({ data, filters, funnelData, finalChartData, loading, vtexOrders }: TrafficDashboardProps) {
+export default function TrafficDashboard({ data, filters, funnelData, finalChartData, loading, vtexOrders, chartInterval }: TrafficDashboardProps) {
   const [campaignSearch, setCampaignSearch] = useState('');
   const [granularitySearch, setGranularitySearch] = useState('');
   const [granularityPage, setGranularityPage] = useState(1);
@@ -50,6 +51,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   const [campaignSortDir, setCampaignSortDir] = useState<'asc' | 'desc'>('desc');
   const [funnelBase, setFunnelBase] = useState<'users' | 'sessions'>('users');
   const [activeFunnelLines, setActiveFunnelLines] = useState<string[]>([]);
+  const [isAverageView, setIsAverageView] = useState(false);
   
   const handleFunnelLegendClick = (e: any) => {
     const dataKey = e.dataKey;
@@ -66,6 +68,33 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays + 1; // 0 diff = 1 day
   }, [filters]);
+
+  const averagedChartData = React.useMemo(() => {
+    if (!finalChartData) return [];
+    if (!isAverageView) return finalChartData;
+    
+    return finalChartData.map(item => {
+      let divisor = 1;
+      if (chartInterval === 'week') divisor = 7;
+      else if (chartInterval === 'month') {
+        const d = item.rawDate ? new Date(item.rawDate) : new Date();
+        divisor = !isNaN(d.getTime()) ? new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() : 30;
+      }
+      
+      return {
+        ...item,
+        visitors: item.visitors ? item.visitors / divisor : 0,
+        visitorsSessions: item.visitorsSessions ? item.visitorsSessions / divisor : 0,
+        viewItem: item.viewItem ? item.viewItem / divisor : 0,
+        viewItemSessions: item.viewItemSessions ? item.viewItemSessions / divisor : 0,
+        cart: item.cart ? item.cart / divisor : 0,
+        cartSessions: item.cartSessions ? item.cartSessions / divisor : 0,
+        checkout: item.checkout ? item.checkout / divisor : 0,
+        checkoutSessions: item.checkoutSessions ? item.checkoutSessions / divisor : 0,
+        vtexOrders: item.vtexOrders ? item.vtexOrders / divisor : 0,
+      };
+    });
+  }, [finalChartData, isAverageView, chartInterval]);
 
   const handleChannelSort = (field: string) => {
     if (channelSortField === field) setChannelSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -384,19 +413,35 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
       {/* CAMADA 2: Funil GA4 */}
       <div className="w-full flex justify-between items-end mb-2">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Funil de Conversão do E-commerce</h2>
-        <div className="flex bg-slate-100 p-1 rounded-md shrink-0">
-          <button 
-            onClick={() => setFunnelBase('users')}
-            className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${funnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Visitantes Únicos
-          </button>
-          <button 
-            onClick={() => setFunnelBase('sessions')}
-            className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${funnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Sessões
-          </button>
+        <div className="flex gap-2">
+          <div className="flex bg-slate-100 p-1 rounded-md shrink-0">
+            <button 
+              onClick={() => setIsAverageView(false)}
+              className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${!isAverageView ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Totais Absolutos
+            </button>
+            <button 
+              onClick={() => setIsAverageView(true)}
+              className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all flex items-center gap-1 ${isAverageView ? 'bg-indigo-50 shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Média Diária
+            </button>
+          </div>
+          <div className="flex bg-slate-100 p-1 rounded-md shrink-0">
+            <button 
+              onClick={() => setFunnelBase('users')}
+              className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${funnelBase === 'users' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Visitantes Únicos
+            </button>
+            <button 
+              onClick={() => setFunnelBase('sessions')}
+              className={`px-2 py-1 text-[11px] sm:text-xs whitespace-nowrap font-semibold rounded-sm transition-all ${funnelBase === 'sessions' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Sessões
+            </button>
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mb-2">
@@ -406,7 +451,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
           <div className="flex-1 w-full min-h-0">
             {finalChartData && finalChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={finalChartData} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
+                <LineChart data={averagedChartData} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
@@ -443,10 +488,11 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                 { label: 'Checkout', value: funnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout), max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
                 { label: 'Compras VTEX', value: vtexOrders || 0, max: funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors) },
               ].map((step, idx, arr) => {
-                const safeMax = step.max || 0;
-                const safeValue = step.value || 0;
+                const divisor = isAverageView ? totalDays : 1;
+                const safeMax = (step.max || 0) / divisor;
+                const safeValue = (step.value || 0) / divisor;
                 const percentageOverall = safeMax > 0 ? (safeValue / safeMax) * 100 : 0;
-                const prevValue = idx === 0 ? safeMax : (arr[idx - 1].value || 0);
+                const prevValue = idx === 0 ? safeMax : ((arr[idx - 1].value || 0) / divisor);
                 const stepConversion = prevValue > 0 ? (safeValue / prevValue) * 100 : 0;
                 const stepColors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#06B6D4', '#10B981'];
                 const rateLabels = ['', 'Taxa de Produto: ', 'Taxa de Carrinho: ', 'Taxa de Checkout: ', 'Taxa de Conversão: '];
@@ -462,7 +508,10 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
                           </span>
                         </div>
                         <div className="text-right flex flex-col items-end">
-                          <span className="text-sm font-bold text-slate-800 leading-none mb-1">{safeValue.toLocaleString('pt-BR')}</span>
+                          <span className="text-sm font-bold text-slate-800 leading-none mb-1">
+                            {Math.round(safeValue).toLocaleString('pt-BR')}
+                            {isAverageView && <span className="text-[10px] text-slate-400 ml-1 font-normal">/dia</span>}
+                          </span>
                           <span className="text-[10px] font-medium text-slate-400 leading-none">
                             {idx === 0 ? '100% (Base)' : `${rateLabels[idx]} ${stepConversion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`}
                           </span>
@@ -487,33 +536,7 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
         </div>
       </div>
 
-      {/* CAMADA 2.5: Médias Diárias do Funil */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
-        <h3 className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Média Diária do Funil ({totalDays} {totalDays === 1 ? 'dia' : 'dias'})</h3>
-        {funnelData ? (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {[
-              { label: funnelBase === 'users' ? 'Visitantes / Dia' : 'Sessões / Dia', value: (funnelBase === 'users' ? funnelData.visitors : (funnelData.visitorsSessions || funnelData.visitors)) / totalDays, color: '#3B82F6' },
-              { label: 'Viu Produto / Dia', value: (funnelBase === 'users' ? funnelData.viewItem : (funnelData.viewItemSessions || funnelData.viewItem)) / totalDays, color: '#8B5CF6' },
-              { label: 'Carrinho / Dia', value: (funnelBase === 'users' ? funnelData.cart : (funnelData.cartSessions || funnelData.cart)) / totalDays, color: '#F59E0B' },
-              { label: 'Checkout / Dia', value: (funnelBase === 'users' ? funnelData.checkout : (funnelData.checkoutSessions || funnelData.checkout)) / totalDays, color: '#06B6D4' },
-              { label: 'Compras / Dia', value: (vtexOrders || 0) / totalDays, color: '#10B981' },
-            ].map((card, idx) => {
-              const safeVal = Number(card.value) || 0;
-              return (
-                <div key={idx} className="bg-slate-50 rounded-md border border-slate-100 p-3 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">{card.label}</span>
-                  <span className="text-xl font-bold" style={{ color: card.color }}>
-                    {Math.round(safeVal).toLocaleString('pt-BR')}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-xs text-slate-400 py-2">Sem dados para calcular médias</div>
-        )}
-      </div>
+      {/* REMOVED: CAMADA 2.5: Médias Diárias do Funil */}
 
       {/* CAMADA 3: Tabela Qualidade */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col">
