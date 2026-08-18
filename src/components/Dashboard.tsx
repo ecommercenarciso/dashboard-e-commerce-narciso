@@ -1719,33 +1719,34 @@ export default function Dashboard() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white border-b border-slate-200 px-8 py-4 shrink-0 flex flex-col gap-3">
-          {/* Row 1: Title and Date Range */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden text-slate-600 hover:text-slate-900 p-1.5 rounded-lg hover:bg-slate-100 shrink-0 border border-slate-200"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <h1 className="text-lg font-bold text-slate-950 tracking-tight">
-                {activeTab === 'executive' 
-                  ? 'Dashboard de Operações' 
-                  : activeTab === 'sales' 
-                    ? 'Análise de Vendas' 
-                    : activeTab === 'products'
-                      ? 'Análise de Vendas por Produtos e Categorias'
-                      : activeTab === 'goals' 
-                        ? 'Acompanhamento de Metas' 
-                        : activeTab === 'traffic'
-                          ? 'Visão Geral de Tráfego'
-                          : 'Calculadora de Metas DRE'}
-              </h1>
-            </div>
+        <header className="bg-white border-b border-slate-200 px-6 py-3 shrink-0 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          {/* Left: Title */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden text-slate-600 hover:text-slate-900 p-1.5 rounded-lg hover:bg-slate-100 shrink-0 border border-slate-200"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-bold text-slate-950 tracking-tight">
+              {activeTab === 'executive' 
+                ? 'Dashboard de Operações' 
+                : activeTab === 'sales' 
+                  ? 'Análise de Vendas' 
+                  : activeTab === 'products'
+                    ? 'Análise de Vendas por Produtos e Categorias'
+                    : activeTab === 'goals' 
+                      ? 'Acompanhamento de Metas' 
+                      : activeTab === 'traffic'
+                        ? 'Visão Geral de Tráfego'
+                        : 'Calculadora de Metas DRE'}
+            </h1>
+          </div>
 
-            {/* VTEX-style period selector button & shortcuts */}
-            <div className="flex flex-wrap items-center gap-2">
+          {/* Right: All Controls inline */}
+          <div className="flex flex-wrap items-center justify-end flex-1 gap-3 text-slate-700">
+            {/* Period selector */}
+            <div className="flex items-center gap-2">
               <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                 <button
                   type="button"
@@ -1944,17 +1945,15 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-            </div>
-          </div>
 
-          {/* Row 2: Secondary Filters (Status, Grouping, Mode, Actions) */}
-          <div className="border-t border-slate-100 pt-3 flex flex-wrap items-center justify-between gap-3 text-slate-700">
+            {/* Divider */}
+            <div className="hidden md:block w-px h-6 bg-slate-200 mx-1"></div>
+
             {/* Status Dropdown */}
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col gap-0.5 relative" ref={statusDropdownRef}>
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Status do Pedido</span>
-                <button 
-                  type="button"
+            <div className="flex items-center gap-1.5 relative" ref={statusDropdownRef}>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Status:</span>
+              <button 
+                type="button"
                   onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                   className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-indigo-500 focus:bg-white transition-all outline-none w-44 flex items-center justify-between gap-1 text-left cursor-pointer"
                 >
@@ -2011,14 +2010,14 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Month Dropdown Filter */}
-              <div className="flex flex-col gap-0.5 relative" ref={monthDropdownRef}>
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Filtrar por Mês</span>
-                <button 
-                  type="button"
-                  onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
-                  className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-indigo-500 focus:bg-white transition-all outline-none w-44 flex items-center justify-between gap-1 text-left cursor-pointer"
-                >
+            {/* Month Dropdown Filter */}
+            <div className="flex items-center gap-1.5 relative" ref={monthDropdownRef}>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Mês:</span>
+              <button 
+                type="button"
+                onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
+                className="bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 h-9 text-slate-700 focus:border-indigo-500 focus:bg-white transition-all outline-none w-36 flex items-center justify-between gap-1 text-left cursor-pointer"
+              >
                   <span className="truncate">
                     {selectedMonthsRange 
                       ? (selectedMonthsRange.start === selectedMonthsRange.end 
@@ -2074,10 +2073,10 @@ export default function Dashboard() {
             </div>
 
             {/* Agrupamento, Modo & Actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center flex-wrap gap-4">
               {/* Agrupamento */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Agrupamento</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Agrupar:</span>
                 <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 h-9 items-center">
                   {(['hour', 'day', 'week', 'month'] as const).map((interval) => (
                     <button
@@ -2094,8 +2093,8 @@ export default function Dashboard() {
               </div>
 
               {/* Modo */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Modo</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Modo:</span>
                 <button
                   onClick={() => setIsCumulative(!isCumulative)}
                   className={`px-3 h-9 text-[10px] font-bold rounded-lg border transition-all ${
@@ -2107,24 +2106,22 @@ export default function Dashboard() {
               </div>
 
               {/* Refresh Button */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
-                <button onClick={fetchData} className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 h-9 w-9 shrink-0 cursor-pointer" title="Atualizar dados">
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-
+              <button
+                onClick={fetchData}
+                className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-slate-50 hover:border-indigo-200 transition-all ml-1 h-9 flex items-center justify-center cursor-pointer"
+                title="Atualizar dados"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
+              </button>
+              
               {/* Export PDF Button */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider select-none opacity-0">.</span>
-                <button 
-                  onClick={() => window.print()}
-                  className="flex items-center gap-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 h-9 shrink-0 cursor-pointer"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>PDF</span>
-                </button>
-              </div>
+              <button
+                className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 hover:border-indigo-200 rounded-lg h-9 px-3 text-[10px] font-bold tracking-wide uppercase transition-all shadow-sm cursor-pointer"
+                onClick={() => window.print()}
+              >
+                <FileDown className="w-4 h-4" />
+                <span>PDF</span>
+              </button>
             </div>
           </div>
         </header>
