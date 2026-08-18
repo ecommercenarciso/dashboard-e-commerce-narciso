@@ -128,6 +128,22 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Auto-adjust chart interval based on selected period
+  useEffect(() => {
+    if (filters.startDate && filters.endDate) {
+      const start = new Date(filters.startDate);
+      const end = new Date(filters.endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) {
+        setChartInterval('hour');
+      } else if (diffDays > 90) {
+        setChartInterval('month');
+      }
+    }
+  }, [filters.startDate, filters.endDate]);
+
   // One-time cache migration: clear order detail cache if it doesn't have the updated category logic
   useEffect(() => {
     const migrated = localStorage.getItem('vtex_cache_migrated_v5');
