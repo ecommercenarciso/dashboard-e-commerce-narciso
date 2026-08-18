@@ -150,33 +150,31 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   // --- Camada 2: Mix de Canais ---
   const channelsRaw = data.channelsData?.rows || [];
   
-  const channelAgg = useMemo(() => {
-    const agg: Record<string, any> = {};
-    let maxSessions = 0;
-    channelsRaw.forEach((r: any) => {
-      const ch = r.dimensionValues?.[1]?.value || '(not set)';
-      if (!agg[ch]) {
-        agg[ch] = { name: ch, sessions: 0, users: 0, conversions: 0, revenue: 0, engTimeSum: 0, engRateSum: 0, count: 0 };
-      }
-      agg[ch].sessions += parseInt(r.metricValues?.[0]?.value || '0');
-      agg[ch].users += parseInt(r.metricValues?.[1]?.value || '0');
-      agg[ch].engRateSum += parseFloat(r.metricValues?.[2]?.value || '0');
-      agg[ch].engTimeSum += parseFloat(r.metricValues?.[3]?.value || '0');
-      agg[ch].conversions += parseInt(r.metricValues?.[4]?.value || '0');
-      agg[ch].revenue += parseFloat(r.metricValues?.[5]?.value || '0');
-      agg[ch].count += 1;
-    });
+  const agg: Record<string, any> = {};
+  let maxSessions = 0;
+  channelsRaw.forEach((r: any) => {
+    const ch = r.dimensionValues?.[1]?.value || '(not set)';
+    if (!agg[ch]) {
+      agg[ch] = { name: ch, sessions: 0, users: 0, conversions: 0, revenue: 0, engTimeSum: 0, engRateSum: 0, count: 0 };
+    }
+    agg[ch].sessions += parseInt(r.metricValues?.[0]?.value || '0');
+    agg[ch].users += parseInt(r.metricValues?.[1]?.value || '0');
+    agg[ch].engRateSum += parseFloat(r.metricValues?.[2]?.value || '0');
+    agg[ch].engTimeSum += parseFloat(r.metricValues?.[3]?.value || '0');
+    agg[ch].conversions += parseInt(r.metricValues?.[4]?.value || '0');
+    agg[ch].revenue += parseFloat(r.metricValues?.[5]?.value || '0');
+    agg[ch].count += 1;
+  });
 
-    const list = Object.values(agg).map(c => {
-      c.engRate = c.count > 0 ? (c.engRateSum / c.count) * 100 : 0;
-      c.avgTime = c.count > 0 ? (c.engTimeSum / c.count) : 0;
-      c.convRate = c.sessions > 0 ? (c.conversions / c.sessions) * 100 : 0;
-      if (c.sessions > maxSessions) maxSessions = c.sessions;
-      return c;
-    });
-    
-    return { list, maxSessions };
-  }, [channelsRaw]);
+  const list = Object.values(agg).map((c: any) => {
+    c.engRate = c.count > 0 ? (c.engRateSum / c.count) * 100 : 0;
+    c.avgTime = c.count > 0 ? (c.engTimeSum / c.count) : 0;
+    c.convRate = c.sessions > 0 ? (c.conversions / c.sessions) * 100 : 0;
+    if (c.sessions > maxSessions) maxSessions = c.sessions;
+    return c;
+  });
+  
+  const channelAgg = { list, maxSessions };
 
 
   // --- Camada 3: Tabela Canais ---
