@@ -5,6 +5,31 @@ import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, star
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 import TrafficDashboard from './TrafficDashboard';
 
+class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-10 bg-red-50 text-red-600 rounded-lg border border-red-200">
+          <h2 className="text-xl font-bold mb-4">Erro na renderização da aba!</h2>
+          <details className="whitespace-pre-wrap text-sm font-mono">
+            {this.state.error && this.state.error.toString()}
+            <br />
+            {this.state.error && this.state.error.stack}
+          </details>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Dashboard() {
   const [ga4Data, setGa4Data] = useState<GA4DataRow[]>([]);
   const [vtexOrders, setVtexOrders] = useState<any[]>([]); // simplified type for response
@@ -4640,15 +4665,17 @@ export default function Dashboard() {
           })()}
 
           {activeTab === 'traffic' && (
-            <TrafficDashboard 
-              data={trafficData} 
-              filters={filters} 
-              funnelData={funnelData}
-              finalChartData={finalChartData}
-              loading={loading}
-              vtexOrders={totalVtexOrders}
-              chartInterval={chartInterval}
-            />
+            <ErrorBoundary>
+              <TrafficDashboard 
+                data={trafficData} 
+                filters={filters} 
+                funnelData={funnelData}
+                finalChartData={finalChartData}
+                loading={loading}
+                vtexOrders={totalVtexOrders}
+                chartInterval={chartInterval}
+              />
+            </ErrorBoundary>
           )}
 
           </div>
