@@ -1467,6 +1467,8 @@ export default function Dashboard() {
           viewItemSessions: 0,
           cart: 0,
           cartSessions: 0,
+          checkout: 0,
+          checkoutSessions: 0,
           shipping: 0,
           shippingSessions: 0,
           payment: 0,
@@ -1485,6 +1487,8 @@ export default function Dashboard() {
       groups[key].viewItemSessions += row.viewItemSessions || 0;
       groups[key].cart += row.cart || 0;
       groups[key].cartSessions += row.cartSessions || 0;
+      groups[key].checkout += row.checkout || 0;
+      groups[key].checkoutSessions += row.checkoutSessions || 0;
       groups[key].shipping += row.shipping || 0;
       groups[key].shippingSessions += row.shippingSessions || 0;
       groups[key].payment += row.payment || 0;
@@ -1516,6 +1520,8 @@ export default function Dashboard() {
     let runningViewItemSessions = 0;
     let runningCart = 0;
     let runningCartSessions = 0;
+    let runningCheckout = 0;
+    let runningCheckoutSessions = 0;
     let runningShipping = 0;
     let runningShippingSessions = 0;
     let runningPayment = 0;
@@ -1533,6 +1539,8 @@ export default function Dashboard() {
       runningViewItemSessions += item.viewItemSessions || 0;
       runningCart += item.cart || 0;
       runningCartSessions += item.cartSessions || 0;
+      runningCheckout += item.checkout || 0;
+      runningCheckoutSessions += item.checkoutSessions || 0;
       runningShipping += item.shipping || 0;
       runningShippingSessions += item.shippingSessions || 0;
       runningPayment += item.payment || 0;
@@ -1553,6 +1561,8 @@ export default function Dashboard() {
         viewItemSessions: runningViewItemSessions,
         cart: runningCart,
         cartSessions: runningCartSessions,
+        checkout: runningCheckout,
+        checkoutSessions: runningCheckoutSessions,
         shipping: runningShipping,
         shippingSessions: runningShippingSessions,
         payment: runningPayment,
