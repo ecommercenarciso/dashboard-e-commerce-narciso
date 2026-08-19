@@ -1032,6 +1032,18 @@ export default function Dashboard() {
     }
   };
 
+  const getDayOfWeekSuffix = (ddMmStr: string) => {
+    try {
+      const [day, month] = ddMmStr.split('/').map(Number);
+      const year = new Date(filters.endDate + 'T12:00:00').getFullYear();
+      const date = new Date(year, month - 1, day);
+      const daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+      return daysOfWeek[date.getDay()];
+    } catch (e) {
+      return '';
+    }
+  };
+
   // Split VTEX Orders by period
   const currentVtexOrders = dashboardFilteredVtexOrders.filter(order => {
     const orderDate = getLocalDateStr(order.creationDate);
@@ -3121,7 +3133,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                   <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
                     <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center justify-between">
                       <span>Origem & Mídia (Evolução Diária)</span>
-                      <span className="text-[10px] text-slate-400 font-normal normal-case">{execFunnelBase === 'users' ? 'Visitantes Únicos' : 'Sessões'} • Top 5 no Gráfico</span>
+                      <span className="text-[10px] text-slate-400 font-normal normal-case">{execFunnelBase === 'users' ? 'Primeira Origem / Mídia' : 'Sessões'} • Top 5 no Gráfico</span>
                     </h3>
                     <div className="flex-1 w-full min-h-0">
                       {channelsChartData.length > 0 ? (
@@ -3132,13 +3144,17 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                             <Tooltip 
                               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value) => [Number(value).toLocaleString('pt-BR'), execFunnelBase === 'users' ? 'Visitantes' : 'Sessões']}
+                              labelFormatter={(label) => {
+                                const dow = getDayOfWeekSuffix(label);
+                                return dow ? `${label} (${dow})` : label;
+                              }}
+                              formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
                             />
                             <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
                             {top5ChannelsList.map((name, idx) => (
                               <Line 
                                 key={name}
-                                type="monotone"
+                                type="linear"
                                 dataKey={name}
                                 stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
                                 strokeWidth={2}
@@ -3215,13 +3231,17 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                             <Tooltip 
                               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value) => [Number(value).toLocaleString('pt-BR'), execFunnelBase === 'users' ? 'Visitantes' : 'Sessões']}
+                              labelFormatter={(label) => {
+                                const dow = getDayOfWeekSuffix(label);
+                                return dow ? `${label} (${dow})` : label;
+                              }}
+                              formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
                             />
                             <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
                             {top5GeoList.map((name, idx) => (
                               <Line 
                                 key={name}
-                                type="monotone"
+                                type="linear"
                                 dataKey={name}
                                 stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
                                 strokeWidth={2}
@@ -3298,13 +3318,17 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                             <Tooltip 
                               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value) => [Number(value).toLocaleString('pt-BR'), execFunnelBase === 'users' ? 'Visitantes' : 'Sessões']}
+                              labelFormatter={(label) => {
+                                const dow = getDayOfWeekSuffix(label);
+                                return dow ? `${label} (${dow})` : label;
+                              }}
+                              formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
                             />
                             <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
                             {top5OsList.map((name, idx) => (
                               <Line 
                                 key={name}
-                                type="monotone"
+                                type="linear"
                                 dataKey={name}
                                 stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
                                 strokeWidth={2}

@@ -583,7 +583,7 @@ app.post('/api/ga4/traffic', async (c) => {
       }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'date' }, { name: 'sessionDefaultChannelGroup' }],
+        dimensions: [{ name: 'date' }, { name: 'firstUserSourceMedium' }],
         metrics: [
           { name: 'sessions' },
           { name: 'totalUsers' },
