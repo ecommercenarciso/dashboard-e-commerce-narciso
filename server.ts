@@ -905,7 +905,13 @@ app.post('/api/vtex/orders', async (c) => {
     }));
 
     const list = [...formattedCurrent, ...formattedPrev];
-    return c.json({ list });
+    const seenAll = new Set();
+    const uniqueList = list.filter(o => {
+      if (!o.orderId || seenAll.has(o.orderId)) return false;
+      seenAll.add(o.orderId);
+      return true;
+    });
+    return c.json({ list: uniqueList });
   } catch (error: any) {
     console.error('VTEX Error:', error.response?.data || error.message);
     return c.json({ error: error.response?.data || error.message || 'Failed to fetch VTEX data' }, 500);

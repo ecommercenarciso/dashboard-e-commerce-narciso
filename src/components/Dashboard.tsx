@@ -320,8 +320,8 @@ export default function Dashboard() {
         prevStart = new Date(filters.customCompareStart + 'T00:00:00');
         prevEnd = new Date(filters.customCompareEnd + 'T00:00:00');
       } else if (comparisonType === 'days') {
-        prevStart.setDate(prevStart.getDate() - diffDays);
-        prevEnd.setDate(prevEnd.getDate() - diffDays);
+        prevStart.setDate(prevStart.getDate() - (diffDays + 1));
+        prevEnd.setDate(prevEnd.getDate() - (diffDays + 1));
       } else {
         const p = periodType;
         if (p === 'Hoje' || p === 'Ontem') {
@@ -359,8 +359,8 @@ export default function Dashboard() {
             prevStart = subYears(start, 1);
             prevEnd = subYears(end, 1);
           } else {
-            prevStart.setDate(prevStart.getDate() - diffDays);
-            prevEnd.setDate(prevEnd.getDate() - diffDays);
+            prevStart.setDate(prevStart.getDate() - (diffDays + 1));
+            prevEnd.setDate(prevEnd.getDate() - (diffDays + 1));
           }
         }
       }
@@ -729,8 +729,8 @@ export default function Dashboard() {
     let prevEnd = new Date(end);
 
     if (compType === 'days') {
-      prevStart.setDate(prevStart.getDate() - diffDays);
-      prevEnd.setDate(prevEnd.getDate() - diffDays);
+      prevStart.setDate(prevStart.getDate() - (diffDays + 1));
+      prevEnd.setDate(prevEnd.getDate() - (diffDays + 1));
     } else {
       const p = pType;
       if (p === 'Hoje' || p === 'Ontem') {
@@ -768,8 +768,8 @@ export default function Dashboard() {
           prevStart = subYears(start, 1);
           prevEnd = subYears(end, 1);
         } else {
-          prevStart.setDate(prevStart.getDate() - diffDays);
-          prevEnd.setDate(prevEnd.getDate() - diffDays);
+          prevStart.setDate(prevStart.getDate() - (diffDays + 1));
+          prevEnd.setDate(prevEnd.getDate() - (diffDays + 1));
         }
       }
     }
@@ -965,8 +965,8 @@ export default function Dashboard() {
     prevStart = new Date(filters.customCompareStart + 'T00:00:00');
     prevEnd = new Date(filters.customCompareEnd + 'T00:00:00');
   } else if (comparisonType === 'days') {
-    prevStart.setDate(prevStart.getDate() - diffDays);
-    prevEnd.setDate(prevEnd.getDate() - diffDays);
+    prevStart.setDate(prevStart.getDate() - (diffDays + 1));
+    prevEnd.setDate(prevEnd.getDate() - (diffDays + 1));
   } else {
     const p = periodType;
     if (p === 'Hoje' || p === 'Ontem') {
@@ -1004,8 +1004,8 @@ export default function Dashboard() {
         prevStart = subYears(start, 1);
         prevEnd = subYears(end, 1);
       } else {
-        prevStart.setDate(prevStart.getDate() - diffDays);
-        prevEnd.setDate(prevEnd.getDate() - diffDays);
+        prevStart.setDate(prevStart.getDate() - (diffDays + 1));
+        prevEnd.setDate(prevEnd.getDate() - (diffDays + 1));
       }
     }
   }
