@@ -14,6 +14,18 @@ interface TrafficDashboardProps {
   loading?: boolean;
   vtexOrders?: number;
   chartInterval?: 'hour' | 'day' | 'week' | 'month';
+  ga4Origins?: string[];
+  setGa4Origins?: (val: string[]) => void;
+  ga4States?: string[];
+  setGa4States?: (val: string[]) => void;
+  ga4Cities?: string[];
+  setGa4Cities?: (val: string[]) => void;
+  ga4Os?: string[];
+  setGa4Os?: (val: string[]) => void;
+  ga4OriginOptions?: string[];
+  ga4StateOptions?: string[];
+  ga4CityOptions?: string[];
+  ga4OsOptions?: string[];
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -41,7 +53,54 @@ function formatDuration(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function TrafficDashboard({ data, filters, funnelData, finalChartData, loading, vtexOrders, chartInterval }: TrafficDashboardProps) {
+const FilterDropdown = ({ title, options, selected, onChange, isOpen, setIsOpen }: any) => {
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded text-[13px] font-medium flex items-center gap-2 hover:bg-slate-50 transition-colors"
+      >
+        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{title}:</span>
+        {selected?.length === 0 || selected?.length === options?.length ? 'Todos' : `${selected?.length} selecionados`}
+        <span className="text-[10px]">▼</span>
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="flex border-b border-slate-100">
+            <button className="flex-1 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-50" onClick={() => onChange(options)}>Marcar Todos</button>
+            <div className="w-px bg-slate-100"></div>
+            <button className="flex-1 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-50" onClick={() => onChange([])}>Limpar Todos</button>
+          </div>
+          <div className="max-h-60 overflow-y-auto p-2">
+            {(options || []).map((opt: string) => {
+              const isChecked = selected?.includes(opt);
+              return (
+                <label key={opt} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={isChecked}
+                    onChange={() => {
+                      if (isChecked) onChange(selected.filter((s: string) => s !== opt));
+                      else onChange([...(selected || []), opt]);
+                    }}
+                    className="rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-[13px] text-slate-700 truncate">{opt}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function TrafficDashboard({ 
+  data, filters, funnelData, finalChartData, loading, vtexOrders, chartInterval,
+  ga4Origins, setGa4Origins, ga4States, setGa4States, ga4Cities, setGa4Cities, ga4Os, setGa4Os,
+  ga4OriginOptions, ga4StateOptions, ga4CityOptions, ga4OsOptions
+}: TrafficDashboardProps) {
   const [campaignSearch, setCampaignSearch] = useState('');
   const [granularitySearch, setGranularitySearch] = useState('');
   const [granularityPage, setGranularityPage] = useState(1);
@@ -52,6 +111,11 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
   const [funnelBase, setFunnelBase] = useState<'users' | 'sessions'>('users');
   const [activeFunnelLines, setActiveFunnelLines] = useState<string[]>([]);
   const [isAverageView, setIsAverageView] = useState(false);
+  
+  const [isOriginOpen, setIsOriginOpen] = useState(false);
+  const [isStateOpen, setIsStateOpen] = useState(false);
+  const [isCityOpen, setIsCityOpen] = useState(false);
+  const [isOsOpen, setIsOsOpen] = useState(false);
   
   const handleFunnelLegendClick = (e: any) => {
     const dataKey = e.dataKey;
@@ -298,6 +362,14 @@ export default function TrafficDashboard({ data, filters, funnelData, finalChart
 
   return (
     <div className="p-6 bg-slate-50 min-h-full flex flex-col gap-6">
+      {/* FILTROS AVANÇADOS DE TRÁFEGO */}
+      <div className="flex flex-wrap items-center gap-3">
+        <FilterDropdown title="Origem / Mídia" options={ga4OriginOptions} selected={ga4Origins} onChange={setGa4Origins} isOpen={isOriginOpen} setIsOpen={setIsOriginOpen} />
+        <FilterDropdown title="Estado" options={ga4StateOptions} selected={ga4States} onChange={setGa4States} isOpen={isStateOpen} setIsOpen={setIsStateOpen} />
+        <FilterDropdown title="Cidade" options={ga4CityOptions} selected={ga4Cities} onChange={setGa4Cities} isOpen={isCityOpen} setIsOpen={setIsCityOpen} />
+        <FilterDropdown title="Sistema" options={ga4OsOptions} selected={ga4Os} onChange={setGa4Os} isOpen={isOsOpen} setIsOpen={setIsOsOpen} />
+      </div>
+
       {/* CAMADA 1: KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm flex flex-col gap-2">

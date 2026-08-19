@@ -178,8 +178,17 @@ function cleanEnvString(val: string | undefined): string | undefined {
   return clean;
 }
 
+function buildExtraFilters(origins: any[], states: any[], cities: any[], os: any[]) {
+  const filters: any[] = [];
+  if (origins && origins.length > 0) filters.push({ filter: { fieldName: 'sessionSourceMedium', inListFilter: { values: origins } } });
+  if (states && states.length > 0) filters.push({ filter: { fieldName: 'region', inListFilter: { values: states } } });
+  if (cities && cities.length > 0) filters.push({ filter: { fieldName: 'city', inListFilter: { values: cities } } });
+  if (os && os.length > 0) filters.push({ filter: { fieldName: 'operatingSystem', inListFilter: { values: os } } });
+  return filters;
+}
+
 // Helper to query GA4 Data API via REST
-async function runGa4Report(accessToken: string, propertyId: string, reportBody: any) {
+async function runGa4Report(accessToken: string, propertyId: string, reportBody: any, extraFilters: any[] = []) {
   const hasIncompatibleMetrics = reportBody.metrics?.some((m: any) => m.name === 'advertiserAdCost');
 
   if (!hasIncompatibleMetrics) {
@@ -189,18 +198,29 @@ async function runGa4Report(accessToken: string, propertyId: string, reportBody:
         stringFilter: { matchType: 'EXACT', value: 'Brazil' }
       }
     };
+    extraFilters.push(countryFilter);
+  }
 
+  if (extraFilters.length > 0) {
     if (reportBody.dimensionFilter) {
       reportBody.dimensionFilter = {
         andGroup: {
           expressions: [
             reportBody.dimensionFilter,
-            countryFilter
+            ...extraFilters
           ]
         }
       };
     } else {
-      reportBody.dimensionFilter = countryFilter;
+      if (extraFilters.length === 1) {
+        reportBody.dimensionFilter = extraFilters[0];
+      } else {
+        reportBody.dimensionFilter = {
+          andGroup: {
+            expressions: extraFilters
+          }
+        };
+      }
     }
   }
 
@@ -226,7 +246,8 @@ async function runGa4Report(accessToken: string, propertyId: string, reportBody:
 // GA4 API Route
 app.post('/api/ga4/metrics', async (c) => {
   try {
-    const { startDate, endDate } = await c.req.json();
+    const { startDate, endDate, origins, states, cities, os } = await c.req.json();
+    const extraFilters = buildExtraFilters(origins, states, cities, os);
     
     const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
     const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
@@ -397,7 +418,8 @@ app.post('/api/ga4/metrics', async (c) => {
 // GA4 Funnel API Route
 app.post('/api/ga4/funnel', async (c) => {
   try {
-    const { startDate, endDate } = await c.req.json();
+    const { startDate, endDate, origins, states, cities, os } = await c.req.json();
+    const extraFilters = buildExtraFilters(origins, states, cities, os);
     
     const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
     const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
@@ -437,7 +459,7 @@ app.post('/api/ga4/funnel', async (c) => {
           { name: 'totalUsers' },
           { name: 'sessions' },
         ],
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [
           {
@@ -462,7 +484,7 @@ app.post('/api/ga4/funnel', async (c) => {
             }
           }
         }
-      })
+      }, extraFilters)
     ]);
 
     const funnel = {
@@ -515,11 +537,12 @@ app.post('/api/ga4/funnel', async (c) => {
   }
 });
 
-// GA4 Traffic API Route
+// GA4 Dashboard Overview Route
 app.post('/api/ga4/traffic', async (c) => {
   try {
-    const { startDate, endDate, prevStartDate, prevEndDate } = await c.req.json();
-
+    const { startDate, endDate, prevStartDate, prevEndDate, origins, states, cities, os } = await c.req.json();
+    const extraFilters = buildExtraFilters(origins, states, cities, os);
+    
     const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
     const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
     if (missing.length > 0 || !credentialsJson) {
@@ -545,7 +568,7 @@ app.post('/api/ga4/traffic', async (c) => {
           { name: 'totalRevenue' },
           { name: 'screenPageViews' }
         ]
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate: prevStartDate, endDate: prevEndDate }],
         metrics: [
@@ -555,7 +578,7 @@ app.post('/api/ga4/traffic', async (c) => {
           { name: 'conversions' },
           { name: 'screenPageViews' }
         ]
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'date' }, { name: 'sessionDefaultChannelGroup' }],
@@ -567,32 +590,32 @@ app.post('/api/ga4/traffic', async (c) => {
           { name: 'conversions' },
           { name: 'totalRevenue' }
         ]
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'region' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'deviceCategory' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'sessionCampaignName' }, { name: 'sessionSource' }, { name: 'sessionMedium' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'landingPage' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'bounceRate' }]
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }, { name: 'advertiserAdCost' }]
-      })
+      }, extraFilters)
     ]);
 
     return c.json({
@@ -611,6 +634,49 @@ app.post('/api/ga4/traffic', async (c) => {
   }
 });
 
+// GA4 Dimensions Route for Filters
+app.post('/api/ga4/dimensions', async (c) => {
+  try {
+    const { startDate, endDate } = await c.req.json();
+    
+    const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
+    const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
+    
+    if (missing.length > 0 || !credentialsJson) {
+      return c.json({ origins: [], states: [], cities: [], os: [] });
+    }
+
+    const credentials = parseCredentialsJson(credentialsJson);
+    const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
+    const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
+
+    const startStr = startDate || '28daysAgo';
+    const endStr = clampEndDate(endDate);
+
+    const getDim = async (dimName: string) => {
+      const res = await runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate: startStr, endDate: endStr }],
+        dimensions: [{ name: dimName }],
+        metrics: [{ name: 'sessions' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 50,
+      });
+      return (res.rows || []).map((r: any) => r.dimensionValues?.[0]?.value).filter((v: string) => v && v !== '(not set)');
+    };
+
+    const [origins, states, cities, os] = await Promise.all([
+      getDim('sessionSourceMedium'),
+      getDim('region'),
+      getDim('city'),
+      getDim('operatingSystem')
+    ]);
+
+    return c.json({ origins, states, cities, os });
+  } catch (error: any) {
+    console.error('GA4 Dimensions Error:', error);
+    return c.json({ error: error.message || 'Failed to fetch GA4 dimensions' }, 500);
+  }
+});
 // VTEX API Routes
 app.post('/api/vtex/orders', async (c) => {
   try {

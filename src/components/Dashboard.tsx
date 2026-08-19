@@ -50,6 +50,18 @@ export default function Dashboard() {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
+
+  // GA4 Traffic Filters
+  const [ga4Origins, setGa4Origins] = useState<string[]>([]);
+  const [ga4States, setGa4States] = useState<string[]>([]);
+  const [ga4Cities, setGa4Cities] = useState<string[]>([]);
+  const [ga4Os, setGa4Os] = useState<string[]>([]);
+
+  const [ga4OriginOptions, setGa4OriginOptions] = useState<string[]>([]);
+  const [ga4StateOptions, setGa4StateOptions] = useState<string[]>([]);
+  const [ga4CityOptions, setGa4CityOptions] = useState<string[]>([]);
+  const [ga4OsOptions, setGa4OsOptions] = useState<string[]>([]);
+  
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [buyerSortField, setBuyerSortField] = useState<'name' | 'count' | 'total' | 'avg'>('total');
   const [buyerSortDirection, setBuyerSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -317,7 +329,14 @@ export default function Dashboard() {
       const ga4Response = await fetch('/api/ga4/metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: prevStartDateStr, endDate: filters.endDate }),
+        body: JSON.stringify({ 
+          startDate: prevStartDateStr, 
+          endDate: filters.endDate,
+          origins: ga4Origins,
+          states: ga4States,
+          cities: ga4Cities,
+          os: ga4Os 
+        }),
       });
       
       const ga4Json = await ga4Response.json();
@@ -333,7 +352,14 @@ export default function Dashboard() {
       const funnelResponse = await fetch('/api/ga4/funnel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: filters.startDate, endDate: filters.endDate }),
+        body: JSON.stringify({ 
+          startDate: filters.startDate, 
+          endDate: filters.endDate,
+          origins: ga4Origins,
+          states: ga4States,
+          cities: ga4Cities,
+          os: ga4Os
+        }),
       });
       
       const funnelJson = await funnelResponse.json();
@@ -389,13 +415,33 @@ export default function Dashboard() {
           startDate: filters.startDate, 
           endDate: filters.endDate, 
           prevStartDate: prevStartDateStr,
-          prevEndDate: prevEndDateStr
+          prevEndDate: prevEndDateStr,
+          origins: ga4Origins,
+          states: ga4States,
+          cities: ga4Cities,
+          os: ga4Os
         }),
       });
       
       if (trafficResponse.ok) {
         const trafficJson = await trafficResponse.json();
         setTrafficData(trafficJson);
+      }
+
+      // Fetch GA4 Filter Dimensions (only if options are empty to avoid redundant calls)
+      if (ga4OriginOptions.length === 0) {
+        fetch('/api/ga4/dimensions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate: filters.startDate, endDate: filters.endDate })
+        }).then(res => res.json()).then(data => {
+          if (data && !data.error) {
+            setGa4OriginOptions(data.origins || []);
+            setGa4StateOptions(data.states || []);
+            setGa4CityOptions(data.cities || []);
+            setGa4OsOptions(data.os || []);
+          }
+        }).catch(e => console.error("Error fetching GA4 dimensions:", e));
       }
 
     } catch (err: any) {
@@ -848,7 +894,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [filters, comparisonType]);
+  }, [filters, comparisonType, ga4Origins, ga4States, ga4Cities, ga4Os]);
 
   // Calculate Aggregates
   const dashboardFilteredVtexOrders = vtexOrders.filter(order => filters.status.length === 0 || filters.status.includes(order.status));
@@ -4674,6 +4720,18 @@ export default function Dashboard() {
                 loading={loading}
                 vtexOrders={totalVtexOrders}
                 chartInterval={chartInterval}
+                ga4Origins={ga4Origins}
+                setGa4Origins={setGa4Origins}
+                ga4States={ga4States}
+                setGa4States={setGa4States}
+                ga4Cities={ga4Cities}
+                setGa4Cities={setGa4Cities}
+                ga4Os={ga4Os}
+                setGa4Os={setGa4Os}
+                ga4OriginOptions={ga4OriginOptions}
+                ga4StateOptions={ga4StateOptions}
+                ga4CityOptions={ga4CityOptions}
+                ga4OsOptions={ga4OsOptions}
               />
             </ErrorBoundary>
           )}
