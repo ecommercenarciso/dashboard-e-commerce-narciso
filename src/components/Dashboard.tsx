@@ -97,6 +97,7 @@ export default function Dashboard() {
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const monthDropdownRef = useRef<HTMLDivElement>(null);
 
+  const lastVtexParams = useRef({ startDate: '', endDate: '', category: '' });
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
   const [selectedMonthsRange, setSelectedMonthsRange] = useState<{ start: number; end: number } | null>(null);
 
@@ -265,6 +266,9 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
+      const shouldFetchVtex = lastVtexParams.current.startDate !== filters.startDate ||
+                              lastVtexParams.current.endDate !== filters.endDate ||
+                              lastVtexParams.current.category !== filters.category;
       const start = new Date(filters.startDate + 'T00:00:00');
       const end = new Date(filters.endDate + 'T00:00:00');
       const diffTime = Math.abs(end.getTime() - start.getTime());
@@ -368,44 +372,52 @@ export default function Dashboard() {
         setFunnelData(funnelJson);
       }
 
-      // Fetch VTEX Data (using separate current and previous period date ranges)
-      const vtexResponse = await fetch('/api/vtex/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          startDate: filters.startDate, 
-          endDate: filters.endDate, 
-          prevStartDate: prevStartDateStr,
-          prevEndDate: prevEndDateStr,
-          category: filters.category 
-        }),
-      });
-      
-      const vtexJson = await vtexResponse.json();
-      
-      if (!vtexResponse.ok) {
-        const errMsg = typeof vtexJson.error === 'object' ? JSON.stringify(vtexJson.error) : vtexJson.error;
-        throw new Error(errMsg || 'Failed to fetch VTEX data');
-      }
-      
-      const enrichedList = (vtexJson.list || []).map((order: any) => {
-        const cached = localStorage.getItem(`order_detail_${order.orderId}`);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            const hasOldGuess = parsed.items && parsed.items.some((item: any) => item.category === 'Cama' || item.category === 'Outros' || item.category === 'Não Informado' || !item.category);
-            if (hasOldGuess) {
-              localStorage.removeItem(`order_detail_${order.orderId}`);
-              return order;
-            }
-            return { ...order, ...parsed };
-          } catch (e) {
-            // ignore
-          }
+      if (shouldFetchVtex) {
+        // Fetch VTEX Data (using separate current and previous period date ranges)
+        const vtexResponse = await fetch('/api/vtex/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            startDate: filters.startDate, 
+            endDate: filters.endDate, 
+            prevStartDate: prevStartDateStr,
+            prevEndDate: prevEndDateStr,
+            category: filters.category 
+          }),
+        });
+        
+        const vtexJson = await vtexResponse.json();
+        
+        if (!vtexResponse.ok) {
+          const errMsg = typeof vtexJson.error === 'object' ? JSON.stringify(vtexJson.error) : vtexJson.error;
+          throw new Error(errMsg || 'Failed to fetch VTEX data');
         }
-        return order;
-      });
-      setVtexOrders(enrichedList);
+        
+        const enrichedList = (vtexJson.list || []).map((order: any) => {
+          const cached = localStorage.getItem(`order_detail_${order.orderId}`);
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              const hasOldGuess = parsed.items && parsed.items.some((item: any) => item.category === 'Cama' || item.category === 'Outros' || item.category === 'Não Informado' || !item.category);
+              if (hasOldGuess) {
+                localStorage.removeItem(`order_detail_${order.orderId}`);
+                return order;
+              }
+              return { ...order, ...parsed };
+            } catch (e) {
+              // ignore
+            }
+          }
+          return order;
+        });
+        setVtexOrders(enrichedList);
+
+        lastVtexParams.current = {
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          category: filters.category
+        };
+      }
 
       // Fetch GA4 Traffic Data
       const trafficResponse = await fetch('/api/ga4/traffic', {
