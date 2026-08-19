@@ -99,7 +99,7 @@ const FilterDropdown = ({ title, options, selected, onChange, isOpen, setIsOpen 
 export default function TrafficDashboard({ 
   data, filters, funnelData, finalChartData, loading, vtexOrders, chartInterval,
   ga4Origins, setGa4Origins, ga4States, setGa4States, ga4Cities, setGa4Cities, ga4Os, setGa4Os,
-  ga4OriginOptions, ga4StateOptions, ga4CityOptions, ga4OsOptions
+  ga4OriginOptions, ga4StateOptions, ga4CityOptions, ga4OsOptions, getDayOfWeekSuffix
 }: TrafficDashboardProps) {
   const [campaignSearch, setCampaignSearch] = useState('');
   const [granularitySearch, setGranularitySearch] = useState('');
@@ -525,7 +525,13 @@ export default function TrafficDashboard({
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                    labelFormatter={(label) => {
+                      const dow = getDayOfWeekSuffix ? getDayOfWeekSuffix(label) : '';
+                      return dow ? `${label} (${dow})` : label;
+                    }}
+                  />
                   <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleFunnelLegendClick} />
                   <Line type="linear" dataKey={funnelBase === 'users' ? 'visitors' : 'visitorsSessions'} stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={funnelBase === 'users' ? "1. Visitantes Únicos" : "1. Sessões Iniciais"} strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(funnelBase === 'users' ? 'visitors' : 'visitorsSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: funnelBase === 'users' ? 'visitors' : 'visitorsSessions' })} />
                   <Line type="linear" dataKey={funnelBase === 'users' ? 'viewItem' : 'viewItemSessions'} stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(funnelBase === 'users' ? 'viewItem' : 'viewItemSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: funnelBase === 'users' ? 'viewItem' : 'viewItemSessions' })} />

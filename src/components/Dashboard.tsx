@@ -2975,7 +2975,13 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="displayDate" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
                             <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                              labelFormatter={(label) => {
+                                const dow = getDayOfWeekSuffix(label);
+                                return dow ? `${label} (${dow})` : label;
+                              }}
+                            />
                             <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleFunnelLegendClick} />
                             <Line type="linear" dataKey={execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions'} stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={execFunnelBase === 'users' ? "1. Visitantes Únicos" : "1. Sessões Iniciais"} strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: execFunnelBase === 'users' ? 'visitors' : 'visitorsSessions' })} />
                             <Line type="linear" dataKey={execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions'} stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="2. Viu Produto" strokeOpacity={activeFunnelLines.length === 0 || activeFunnelLines.includes(execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions') ? 1 : 0.2} onClick={(e) => e && handleFunnelLegendClick({ dataKey: execFunnelBase === 'users' ? 'viewItem' : 'viewItemSessions' })} />
@@ -3068,6 +3074,10 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `${val} ped.`} />
                             <Tooltip 
                               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                              labelFormatter={(label) => {
+                                const dow = getDayOfWeekSuffix(label);
+                                return dow ? `${label} (${dow})` : label;
+                              }}
                               formatter={(value: any, name: any) => {
                                 if (name === "Faturamento" || name === "Ticket Médio") return [`R$ ${parseFloat(value).toFixed(2)}`, name];
                                 return [value, name];
@@ -3460,6 +3470,10 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                           <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
                           <Tooltip 
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            labelFormatter={(label) => {
+                              const dow = getDayOfWeekSuffix(label);
+                              return dow ? `${label} (${dow})` : label;
+                            }}
                             formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
                           />
                           <Line type="linear" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
@@ -3483,6 +3497,10 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                           <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
                           <Tooltip 
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            labelFormatter={(label) => {
+                              const dow = getDayOfWeekSuffix(label);
+                              return dow ? `${label} (${dow})` : label;
+                            }}
                             formatter={(value: any) => [value, 'Pedidos']}
                           />
                           <Line type="linear" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
@@ -3506,6 +3524,10 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                           <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
                           <Tooltip 
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            labelFormatter={(label) => {
+                              const dow = getDayOfWeekSuffix(label);
+                              return dow ? `${label} (${dow})` : label;
+                            }}
                             formatter={(value: any) => [`R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Ticket Médio']}
                           />
                           <Line type="linear" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
@@ -5563,6 +5585,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 ga4StateOptions={ga4StateOptions}
                 ga4CityOptions={ga4CityOptions}
                 ga4OsOptions={ga4OsOptions}
+                getDayOfWeekSuffix={getDayOfWeekSuffix}
               />
             </ErrorBoundary>
           )}
