@@ -180,6 +180,26 @@ function cleanEnvString(val: string | undefined): string | undefined {
 
 // Helper to query GA4 Data API via REST
 async function runGa4Report(accessToken: string, propertyId: string, reportBody: any) {
+  const countryFilter = {
+    filter: {
+      fieldName: 'country',
+      stringFilter: { matchType: 'EXACT', value: 'Brazil' }
+    }
+  };
+
+  if (reportBody.dimensionFilter) {
+    reportBody.dimensionFilter = {
+      andGroup: {
+        expressions: [
+          reportBody.dimensionFilter,
+          countryFilter
+        ]
+      }
+    };
+  } else {
+    reportBody.dimensionFilter = countryFilter;
+  }
+
   const response = await fetch(
     `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
     {
