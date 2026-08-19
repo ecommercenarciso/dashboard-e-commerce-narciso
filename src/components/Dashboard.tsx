@@ -1046,9 +1046,13 @@ export default function Dashboard() {
     }
   };
 
-  const getGA4GroupKey = (rawDate: string, interval: string) => {
+  const getGA4GroupKey = (rawDate: string, interval: string, rawHour?: string) => {
     if (!rawDate || rawDate.length !== 8) return rawDate;
     try {
+      if (interval === 'hour') {
+        const hr = rawHour || '00';
+        return `${rawDate}_${hr}`;
+      }
       const year = parseInt(rawDate.substring(0, 4), 10);
       const month = parseInt(rawDate.substring(4, 6), 10) - 1;
       const day = parseInt(rawDate.substring(6, 8), 10);
@@ -1067,6 +1071,14 @@ export default function Dashboard() {
 
   const getGA4GroupDisplay = (key: string, interval: string) => {
     try {
+      if (interval === 'hour') {
+        const [dStr, hr] = key.split('_');
+        const isSingleDay = filters.startDate === filters.endDate;
+        if (isSingleDay) {
+          return `${hr}:00`;
+        }
+        return `${dStr.substring(6, 8)}/${dStr.substring(4, 6)} ${hr}:00`;
+      }
       if (interval === 'week') {
         const [year, month, day] = key.split('-').map(Number);
         const dateObj = new Date(year, month - 1, day);
@@ -1370,17 +1382,18 @@ export default function Dashboard() {
       .map(entry => entry[0]);
   }, [trafficData, execFunnelBase]);
 
-  // Daily/Weekly/Monthly trends chart datasets (grouped by formatted interval)
+  // Daily/Weekly/Monthly/Hourly trends chart datasets (grouped by formatted interval)
   const channelsChartData = React.useMemo(() => {
     if (!trafficData?.channelsData?.rows) return [];
     const dateMap: Record<string, Record<string, number>> = {};
     trafficData.channelsData.rows.forEach((r: any) => {
       const rawDate = r.dimensionValues?.[0]?.value || ''; // YYYYMMDD
       const name = r.dimensionValues?.[1]?.value || '(not set)';
+      const rawHour = r.dimensionValues?.[2]?.value || '00';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
       
-      const key = getGA4GroupKey(rawDate, chartInterval);
+      const key = getGA4GroupKey(rawDate, chartInterval, rawHour);
       if (!dateMap[key]) {
         dateMap[key] = {};
         top5ChannelsList.forEach(ch => {
@@ -1405,10 +1418,11 @@ export default function Dashboard() {
     trafficData.geoData.rows.forEach((r: any) => {
       const rawDate = r.dimensionValues?.[0]?.value || '';
       const name = r.dimensionValues?.[1]?.value || '(não setado)';
+      const rawHour = r.dimensionValues?.[2]?.value || '00';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
       
-      const key = getGA4GroupKey(rawDate, chartInterval);
+      const key = getGA4GroupKey(rawDate, chartInterval, rawHour);
       if (!dateMap[key]) {
         dateMap[key] = {};
         top5GeoList.forEach(g => {
@@ -1433,10 +1447,11 @@ export default function Dashboard() {
     trafficData.deviceData.rows.forEach((r: any) => {
       const rawDate = r.dimensionValues?.[0]?.value || '';
       const name = r.dimensionValues?.[1]?.value || '(not set)';
+      const rawHour = r.dimensionValues?.[2]?.value || '00';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
       
-      const key = getGA4GroupKey(rawDate, chartInterval);
+      const key = getGA4GroupKey(rawDate, chartInterval, rawHour);
       if (!dateMap[key]) {
         dateMap[key] = {};
         top5OsList.forEach(o => {

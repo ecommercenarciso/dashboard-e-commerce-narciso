@@ -583,7 +583,7 @@ app.post('/api/ga4/traffic', async (c) => {
       }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'date' }, { name: 'firstUserSourceMedium' }],
+        dimensions: [{ name: 'date' }, { name: 'firstUserSourceMedium' }, { name: 'hour' }],
         metrics: [
           { name: 'sessions' },
           { name: 'totalUsers' },
@@ -595,12 +595,12 @@ app.post('/api/ga4/traffic', async (c) => {
       }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'date' }, { name: 'region' }],
+        dimensions: [{ name: 'date' }, { name: 'region' }, { name: 'hour' }],
         metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'conversions' }, { name: 'totalRevenue' }]
       }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'date' }, { name: 'operatingSystem' }],
+        dimensions: [{ name: 'date' }, { name: 'operatingSystem' }, { name: 'hour' }],
         metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'conversions' }, { name: 'totalRevenue' }]
       }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
