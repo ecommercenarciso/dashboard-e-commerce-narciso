@@ -1174,6 +1174,67 @@ export default function Dashboard() {
     return Object.values(stats).sort((a, b) => b.revenue - a.revenue);
   }, [currentVtexOrders]);
 
+  // Component-level Category and Brand stats calculation
+  const categoryAndBrandStats = React.useMemo(() => {
+    const catStats: Record<string, { name: string, itemsQuantity: number, orders: Set<string> }> = {};
+    const brandStats: Record<string, { name: string, itemsQuantity: number, orders: Set<string> }> = {};
+
+    currentVtexOrders.forEach(order => {
+      const orderId = order.orderId;
+      if (order.items) {
+        order.items.forEach((item: any) => {
+          // Category
+          let category = item.category && item.category !== 'Não Informado' ? item.category : 'Outros';
+          if (category === 'Outros') {
+            const lowerName = (item.name || '').toLowerCase();
+            if (lowerName.includes('lençol') || lowerName.includes('cama') || lowerName.includes('travesseiro') || lowerName.includes('fronha') || lowerName.includes('cobreleito') || lowerName.includes('edredom') || lowerName.includes('manta') || lowerName.includes('pillow') || lowerName.includes('colchão')) {
+              category = 'Cama';
+            } else if (lowerName.includes('toalha') || lowerName.includes('banho') || lowerName.includes('rosto') || lowerName.includes('piso') || lowerName.includes('robe') || lowerName.includes('touca')) {
+              category = 'Banho';
+            } else if (lowerName.includes('mesa') || lowerName.includes('copa') || lowerName.includes('jantar') || lowerName.includes('guardanapo') || lowerName.includes('americano') || lowerName.includes('prato') || lowerName.includes('copo')) {
+              category = 'Mesa';
+            } else if (lowerName.includes('almofada') || lowerName.includes('cortina') || lowerName.includes('tapete') || lowerName.includes('decoração') || lowerName.includes('difusor') || lowerName.includes('vela') || lowerName.includes('quadro')) {
+              category = 'Decoração';
+            }
+          }
+
+          // Brand
+          const brand = item.brand || 'Sem Marca';
+
+          // Accumulate Category
+          if (!catStats[category]) {
+            catStats[category] = { name: category, itemsQuantity: 0, orders: new Set() };
+          }
+          catStats[category].itemsQuantity += item.quantity || 0;
+          catStats[category].orders.add(orderId);
+
+          // Accumulate Brand
+          if (!brandStats[brand]) {
+            brandStats[brand] = { name: brand, itemsQuantity: 0, orders: new Set() };
+          }
+          brandStats[brand].itemsQuantity += item.quantity || 0;
+          brandStats[brand].orders.add(orderId);
+        });
+      }
+    });
+
+    const categoryList = Object.values(catStats).map(c => ({
+      name: c.name,
+      itemsQuantity: c.itemsQuantity,
+      ordersCount: c.orders.size,
+      itemsPerOrder: c.orders.size > 0 ? (c.itemsQuantity / c.orders.size).toFixed(2) : '0'
+    })).sort((a, b) => b.itemsQuantity - a.itemsQuantity);
+
+    const brandList = Object.values(brandStats).map(b => ({
+      name: b.name,
+      itemsQuantity: b.itemsQuantity,
+      ordersCount: b.orders.size,
+      itemsPerOrder: b.orders.size > 0 ? (b.itemsQuantity / b.orders.size).toFixed(2) : '0'
+    })).sort((a, b) => b.itemsQuantity - a.itemsQuantity);
+
+    return { categoryList, brandList };
+  }, [currentVtexOrders]);
+
   let items1Count = 0;
   let items2Count = 0;
   let items3PlusCount = 0;
@@ -2193,7 +2254,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
 
                         setFilters({
                           ...filters,
-                          startDate: tempStartDate,
+                          startDate: format(startOfMonth(new Date(tempStartDate + 'T12:00:00')), 'yyyy-MM-dd'),
                           endDate: tempEndDate,
                           customCompareStart: finalCompStart,
                           customCompareEnd: finalCompEnd
@@ -5046,9 +5107,9 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
         </table>
       </div>
 
-      {/* PAGE 2: FUNIL E TRÁFEGO */}
+      {/* PAGE 2: FUNIL, TRÁFEGO E AUDIÊNCIA (GA4) */}
       <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
-        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Tráfego, Canais & Funil de Conversão (GA4)</h2>
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Tráfego, Canais, Origens & Audiência (GA4)</h2>
         
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
@@ -5058,8 +5119,8 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
                   <th className="pb-1">Etapa</th>
                   <th className="pb-1 text-right">Usuários</th>
-                  <th className="pb-1 text-right">Taxa Base (Visitantes)</th>
-                  <th className="pb-1 text-right">Taxa de Etapa</th>
+                  <th className="pb-1 text-right">Taxa Base</th>
+                  <th className="pb-1 text-right">Taxa Etapa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -5141,33 +5202,88 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
           </div>
         </div>
 
-        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
-          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Campanhas de Tráfego Mais Ativas</h3>
-          <table className="w-full text-left text-[10px]">
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Tráfego por Estado (GA4)</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Estado (Região)</th>
+                  <th className="pb-1 text-right">Sessões</th>
+                  <th className="pb-1 text-right">Receita</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(trafficData?.geoData?.rows || []).slice(0, 8).map((r: any, idx: number) => {
+                  const state = r.dimensionValues?.[0]?.value || '(não setado)';
+                  const sess = parseInt(r.metricValues?.[0]?.value || '0');
+                  const rev = parseFloat(r.metricValues?.[2]?.value || '0');
+                  return (
+                    <tr key={idx} className="h-6">
+                      <td className="font-medium">{state}</td>
+                      <td className="text-right font-mono text-slate-600">{sess?.toLocaleString('pt-BR')}</td>
+                      <td className="text-right font-semibold text-slate-900">R$ {rev?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Tráfego por Dispositivo (GA4)</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Dispositivo</th>
+                  <th className="pb-1 text-right">Sessões</th>
+                  <th className="pb-1 text-right">Conversões</th>
+                  <th className="pb-1 text-right">Receita</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(trafficData?.deviceData?.rows || []).map((r: any, idx: number) => {
+                  const device = r.dimensionValues?.[0]?.value || '(not set)';
+                  const sess = parseInt(r.metricValues?.[0]?.value || '0');
+                  const conv = parseInt(r.metricValues?.[1]?.value || '0');
+                  const rev = parseFloat(r.metricValues?.[2]?.value || '0');
+                  return (
+                    <tr key={idx} className="h-6">
+                      <td className="font-medium capitalize">{device}</td>
+                      <td className="text-right font-mono text-slate-600">{sess?.toLocaleString('pt-BR')}</td>
+                      <td className="text-right font-mono text-slate-600">{conv}</td>
+                      <td className="text-right font-semibold text-slate-900">R$ {rev?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30 mb-6">
+          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Páginas mais Visitadas (Top Landing Pages)</h3>
+          <table className="w-full text-left text-[9px]">
             <thead>
               <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
-                <th className="pb-1">Campanha</th>
-                <th className="pb-1">Origem / Mídia</th>
+                <th className="pb-1">Página de Destino (Path)</th>
                 <th className="pb-1 text-right">Sessões</th>
-                <th className="pb-1 text-right">Conversões</th>
-                <th className="pb-1 text-right">Receita</th>
+                <th className="pb-1 text-right">Conversões (GA4)</th>
+                <th className="pb-1 text-right">Taxa de Rejeição</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {trafficData?.campaignsData?.rows?.slice(0, 15).map((r: any, idx: number) => {
-                const camp = r.dimensionValues?.[0]?.value || '(not set)';
-                const src = r.dimensionValues?.[1]?.value || '';
-                const med = r.dimensionValues?.[2]?.value || '';
+              {(trafficData?.landingPagesData?.rows || []).slice(0, 10).map((r: any, idx: number) => {
+                const path = r.dimensionValues?.[0]?.value || '(not set)';
                 const sess = parseInt(r.metricValues?.[0]?.value || '0');
                 const conv = parseInt(r.metricValues?.[1]?.value || '0');
-                const rev = parseFloat(r.metricValues?.[2]?.value || '0');
+                const bounce = parseFloat(r.metricValues?.[2]?.value || '0') * 100;
                 return (
                   <tr key={idx} className="h-6">
-                    <td className="font-medium truncate max-w-[150px]" title={camp}>{camp}</td>
-                    <td className="text-slate-500 truncate max-w-[100px]">{src} / {med}</td>
+                    <td className="font-medium truncate max-w-[420px]" title={path}>{path}</td>
                     <td className="text-right font-mono text-slate-600">{sess?.toLocaleString('pt-BR')}</td>
                     <td className="text-right font-mono text-slate-600">{conv}</td>
-                    <td className="text-right font-semibold text-slate-900">R$ {rev?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td className="text-right text-slate-500">{bounce.toFixed(1)}%</td>
                   </tr>
                 );
               })}
@@ -5284,111 +5400,103 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
         </div>
       </div>
 
-      {/* PAGE 4: PRODUTOS E CATEGORIAS */}
+      {/* PAGE 4: VENDAS POR CATEGORIAS E MARCAS */}
       <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
-        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Detalhamento de Vendas por Produtos</h2>
-        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
-          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Produtos Mais Faturados no Período (Ordenado por Receita)</h3>
-          <table className="w-full text-left text-[9px] border-collapse">
-            <thead>
-              <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6 select-none">
-                <th className="pb-1">Ranking / Nome do Produto</th>
-                <th className="pb-1 text-right">Qtd Vendida</th>
-                <th className="pb-1 text-right">Receita Bruta</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {generalProductList.slice(0, 45).map((p: any, idx: number) => (
-                <tr key={idx} className="h-6 hover:bg-slate-50">
-                  <td className="font-semibold text-slate-800 pr-2 truncate max-w-[420px]" title={p.name}>#{idx + 1} - {p.name}</td>
-                  <td className="text-right text-slate-500 font-semibold font-mono pr-2">{p.quantity} un.</td>
-                  <td className="text-right font-bold text-slate-900 font-mono">
-                    R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </td>
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Vendas por Categorias & Marcas (VTEX)</h2>
+        
+        <div className="grid grid-cols-2 gap-6">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Desempenho por Categoria</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Categoria</th>
+                  <th className="pb-1 text-right">Qtd Itens</th>
+                  <th className="pb-1 text-right">Pedidos</th>
+                  <th className="pb-1 text-right">Itens / Pedido</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {categoryAndBrandStats.categoryList.map((c, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium">{c.name}</td>
+                    <td className="text-right font-semibold text-slate-900">{c.itemsQuantity} un.</td>
+                    <td className="text-right text-slate-600">{c.ordersCount} ped.</td>
+                    <td className="text-right text-slate-600 font-mono">{c.itemsPerOrder}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Desempenho por Marca</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Marca</th>
+                  <th className="pb-1 text-right">Qtd Itens</th>
+                  <th className="pb-1 text-right">Pedidos</th>
+                  <th className="pb-1 text-right">Itens / Pedido</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {categoryAndBrandStats.brandList.slice(0, 15).map((b, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium">{b.name}</td>
+                    <td className="text-right font-semibold text-slate-900">{b.itemsQuantity} un.</td>
+                    <td className="text-right text-slate-600">{b.ordersCount} ped.</td>
+                    <td className="text-right text-slate-600 font-mono">{b.itemsPerOrder}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* PAGE 5: CLIENTES & DRE */}
+      {/* PAGE 5: PRODUTOS & CLIENTES */}
       <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
-        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Análise Financeira (DRE) & Perfil de Clientes</h2>
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Detalhamento de Vendas & Clientes</h2>
         
-        <div className="grid grid-cols-2 gap-6 mb-6">
-          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Simulação de DRE Financeiro</h3>
-            
-            {(() => {
-              const cPct = dreCancel / 100;
-              const tPct = dreTax / 100;
-              const cmvPct = dreCmv / 100;
-              const gPct = dreGateway / 100;
-              const pPct = drePlatform / 100;
-              const sPct = dreShipping / 100;
-              const mPct = dreMarketing / 100;
-
-              const varCostsRatio = cPct + tPct + cmvPct + gPct + pPct + sPct + mPct;
-              const marginRatio = 1 - varCostsRatio;
-
-              let netProfitVal = 0;
-              let grossRevenueVal = 0;
-              if (dreCalcMode === 'target_profit') {
-                netProfitVal = dreTargetProfit;
-                grossRevenueVal = marginRatio > 0 ? (dreTargetProfit + dreFixedCosts) / marginRatio : 0;
-              } else {
-                grossRevenueVal = dreTargetRevenue;
-                netProfitVal = (dreTargetRevenue * marginRatio) - dreFixedCosts;
-              }
-              const breakEvenVal = marginRatio > 0 ? dreFixedCosts / marginRatio : 0;
-
-              return (
-                <div className="flex flex-col gap-2.5 text-[10px]">
-                  <div className="flex justify-between border-b border-slate-100 py-1">
-                    <span className="text-slate-500 font-medium">Margem de Contribuição:</span>
-                    <span className="font-bold text-slate-900">{(marginRatio * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 py-1">
-                    <span className="text-slate-500 font-medium">Ponto de Equilíbrio (Break-even):</span>
-                    <span className="font-bold text-slate-900">R$ {breakEvenVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 py-1">
-                    <span className="text-slate-500 font-medium">Faturamento Necessário:</span>
-                    <span className="font-bold text-slate-950">R$ {grossRevenueVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 py-1">
-                    <span className="text-slate-500 font-medium">Custos Fixos Calculados:</span>
-                    <span className="font-bold text-slate-900">R$ {dreFixedCosts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 py-1">
-                    <span className="text-slate-500 font-medium">Lucro Líquido Estimado:</span>
-                    <span className={`font-bold ${netProfitVal >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>R$ {netProfitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 py-1">
-                    <span className="text-slate-500 font-medium">Custo de Marketing ({dreMarketing}%):</span>
-                    <span className="font-bold text-slate-900">R$ {(grossRevenueVal * mPct).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              );
-            })()}
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-2 border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Produtos Mais Faturados no Período</h3>
+            <table className="w-full text-left text-[9px] border-collapse">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6 select-none">
+                  <th className="pb-1">Ranking / Nome do Produto</th>
+                  <th className="pb-1 text-right">Qtd Vendida</th>
+                  <th className="pb-1 text-right">Receita Bruta</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {generalProductList.slice(0, 35).map((p: any, idx: number) => (
+                  <tr key={idx} className="h-6 hover:bg-slate-50">
+                    <td className="font-semibold text-slate-800 pr-2 truncate max-w-[280px]" title={p.name}>#{idx + 1} - {p.name}</td>
+                    <td className="text-right text-slate-500 font-semibold font-mono pr-2">{p.quantity} un.</td>
+                    <td className="text-right font-bold text-slate-900 font-mono">
+                      R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
             <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Maiores Clientes Compradores</h3>
-            <table className="w-full text-left text-[10px]">
+            <table className="w-full text-left text-[9px]">
               <thead>
                 <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
                   <th className="pb-1">Cliente</th>
-                  <th className="pb-1 text-right">Compras</th>
-                  <th className="pb-1 text-right">Valor Consolidado</th>
+                  <th className="pb-1 text-right">Valor Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {topClients.slice(0, 10).map((client, idx) => (
+                {topClients.slice(0, 20).map((client, idx) => (
                   <tr key={idx} className="h-6">
-                    <td className="font-medium truncate max-w-[120px]">#{idx + 1} - {client.name}</td>
-                    <td className="text-right text-slate-500 font-mono">{client.count} comp.</td>
+                    <td className="font-medium truncate max-w-[100px]">#{idx + 1} - {client.name}</td>
                     <td className="text-right font-bold text-slate-900">R$ {client.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 ))}
