@@ -1853,7 +1853,8 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
+    <>
+      <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden print:hidden">
       {/* Backdrop for mobile */}
       {isSidebarOpen && (
         <div 
@@ -4958,26 +4959,447 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               </details>
             </div>
 
-            {/* AI analysis prompt print-only section */}
-            <div className="hidden print:block border-t border-slate-300 mt-12 pt-8" style={{ pageBreakBefore: 'always', breakBefore: 'page' }}>
-              <div className="border-2 border-indigo-200 bg-indigo-50/30 rounded-xl p-8 mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center font-bold text-white text-sm">🤖</div>
-                  <div>
-                    <h2 className="text-base font-bold text-indigo-950 uppercase tracking-wide">PROMPT PARA ANÁLISE DE INTELIGÊNCIA ARTIFICIAL</h2>
-                    <p className="text-[11px] text-indigo-700 mt-0.5">Copie o conteúdo abaixo e cole no ChatGPT, Gemini ou Claude para obter uma análise estratégica completa e plano de ação.</p>
-                  </div>
-                </div>
-                <div className="bg-slate-900 text-slate-100 rounded-lg p-6 font-mono text-[9px] whitespace-pre-wrap leading-relaxed border border-slate-800 shadow-inner select-all">
-                  {aiPromptText}
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </main>
 
+    </div> {/* Closes the print:hidden container */}
+
+    {/* PDF Printable Report layout: Visible ONLY during print/PDF generation */}
+    <div className="hidden print:block bg-white text-slate-900 p-8 font-sans leading-relaxed text-[11px]">
+      {/* PAGE 1: CAPA & VISÃO EXECUTIVA */}
+      <div className="border-b-2 border-slate-900 pb-4 mb-6">
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Narciso Enxovais</h1>
+            <p className="text-xs text-indigo-600 font-bold tracking-wider uppercase mt-1">Relatório Executivo de Performance de E-commerce</p>
+          </div>
+          <div className="text-right text-xs text-slate-600">
+            <p className="font-bold">Período:</p>
+            <p className="font-semibold text-slate-800">{filters.startDate ? `${new Date(filters.startDate).toLocaleDateString('pt-BR')} a ${new Date(filters.endDate).toLocaleDateString('pt-BR')}` : periodType}</p>
+            <p className="text-[10px] text-slate-400 mt-1">Filtro de Status: {filters.status.length === 0 ? 'Todos' : filters.status.join(', ')}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Faturamento Total (VTEX)</p>
+          <p className="text-lg font-extrabold text-slate-950 mt-1">R$ {totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+        </div>
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Pedidos Totais</p>
+          <p className="text-lg font-extrabold text-slate-950 mt-1">{totalVtexOrders}</p>
+        </div>
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Ticket Médio (VTEX)</p>
+          <p className="text-lg font-extrabold text-slate-950 mt-1">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+        </div>
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Conversão de Tráfego (GA4)</p>
+          <p className="text-lg font-extrabold text-slate-950 mt-1">{avgConversionRate}%</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Sessões Totais (GA4)</p>
+          <p className="text-lg font-bold text-slate-900 mt-1">{totalSessions.toLocaleString('pt-BR')}</p>
+        </div>
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Usuários Únicos (GA4)</p>
+          <p className="text-lg font-bold text-slate-900 mt-1">{currentGa4Data.reduce((acc, row) => acc + (row.visitors || 0), 0).toLocaleString('pt-BR')}</p>
+        </div>
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Pageviews Totais (GA4)</p>
+          <p className="text-lg font-bold text-slate-900 mt-1">{currentGa4Data.reduce((acc, row) => acc + (row.pageViews || 0), 0).toLocaleString('pt-BR')}</p>
+        </div>
+        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Tempo Médio de Sessão</p>
+          <p className="text-lg font-bold text-slate-900 mt-1">{(currentGa4Data.reduce((acc, row) => acc + (row.averageSessionDuration || 0), 0) / (currentGa4Data.length || 1)).toFixed(0)}s</p>
+        </div>
+      </div>
+
+      <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30 mb-8">
+        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Evolução do Faturamento & Pedidos</h3>
+        <table className="w-full text-left text-[10px]">
+          <thead>
+            <tr className="border-b border-slate-300 text-slate-500 font-bold uppercase h-6">
+              <th className="pb-1">Data / Intervalo</th>
+              <th className="pb-1 text-right">Faturamento</th>
+              <th className="pb-1 text-right">Pedidos VTEX</th>
+              <th className="pb-1 text-right">Ticket Médio</th>
+              <th className="pb-1 text-right">Sessões (GA4)</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {aggregatedChartData.slice(0, 31).map((row: any, idx: number) => (
+              <tr key={idx} className="h-6">
+                <td className="font-medium text-slate-700">{row.displayDate || row.date}</td>
+                <td className="text-right font-semibold text-slate-900">R$ {row.vtexRevenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                <td className="text-right text-slate-600 font-mono">{row.vtexOrders} ped.</td>
+                <td className="text-right text-slate-600">R$ {row.vtexTicket?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                <td className="text-right text-slate-600 font-mono">{row.sessions?.toLocaleString('pt-BR')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* PAGE 2: FUNIL E TRÁFEGO */}
+      <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Tráfego, Canais & Funil de Conversão (GA4)</h2>
+        
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Funil de Conversão do E-commerce</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-300 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Etapa</th>
+                  <th className="pb-1 text-right">Usuários</th>
+                  <th className="pb-1 text-right">Taxa de Conversão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="h-6">
+                  <td className="font-medium">1. Visitantes do Site</td>
+                  <td className="text-right font-mono">{funnelData?.visitors?.toLocaleString('pt-BR') || 0}</td>
+                  <td className="text-right text-slate-500">100%</td>
+                </tr>
+                <tr className="h-6">
+                  <td className="font-medium">2. Visualização de Produtos</td>
+                  <td className="text-right font-mono">{funnelData?.viewItem?.toLocaleString('pt-BR') || 0}</td>
+                  <td className="text-right text-slate-500">
+                    {funnelData?.visitors ? ((funnelData.viewItem / funnelData.visitors) * 100).toFixed(1) : 0}%
+                  </td>
+                </tr>
+                <tr className="h-6">
+                  <td className="font-medium">3. Adição ao Carrinho</td>
+                  <td className="text-right font-mono">{funnelData?.cart?.toLocaleString('pt-BR') || 0}</td>
+                  <td className="text-right text-slate-500">
+                    {funnelData?.viewItem ? ((funnelData.cart / funnelData.viewItem) * 100).toFixed(1) : 0}%
+                  </td>
+                </tr>
+                <tr className="h-6">
+                  <td className="font-medium">4. Início de Checkout</td>
+                  <td className="text-right font-mono">{funnelData?.shipping?.toLocaleString('pt-BR') || 0}</td>
+                  <td className="text-right text-slate-500">
+                    {funnelData?.cart ? ((funnelData.shipping / funnelData.cart) * 100).toFixed(1) : 0}%
+                  </td>
+                </tr>
+                <tr className="h-6">
+                  <td className="font-medium">5. Compras Aprovadas</td>
+                  <td className="text-right font-mono">{funnelData?.payment?.toLocaleString('pt-BR') || 0}</td>
+                  <td className="text-right font-semibold text-emerald-700">
+                    {funnelData?.visitors ? ((funnelData.payment / funnelData.visitors) * 100).toFixed(2) : 0}%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Mix de Canais (Source/Medium)</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Canal de Origem</th>
+                  <th className="pb-1 text-right">Sessões</th>
+                  <th className="pb-1 text-right">Receita</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {trafficData?.channelsData?.rows?.slice(0, 10).map((r: any, idx: number) => {
+                  const channel = r.dimensionValues?.[1]?.value || '(not set)';
+                  const sess = parseInt(r.metricValues?.[0]?.value || '0');
+                  const rev = parseFloat(r.metricValues?.[5]?.value || '0');
+                  return (
+                    <tr key={idx} className="h-6">
+                      <td className="font-medium truncate max-w-[120px]">{channel}</td>
+                      <td className="text-right font-mono text-slate-600">{sess?.toLocaleString('pt-BR')}</td>
+                      <td className="text-right font-semibold text-slate-900">R$ {rev?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Campanhas de Tráfego Mais Ativas</h3>
+          <table className="w-full text-left text-[10px]">
+            <thead>
+              <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                <th className="pb-1">Campanha</th>
+                <th className="pb-1">Origem / Mídia</th>
+                <th className="pb-1 text-right">Sessões</th>
+                <th className="pb-1 text-right">Conversões</th>
+                <th className="pb-1 text-right">Receita</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {trafficData?.campaignsData?.rows?.slice(0, 15).map((r: any, idx: number) => {
+                const camp = r.dimensionValues?.[0]?.value || '(not set)';
+                const src = r.dimensionValues?.[1]?.value || '';
+                const med = r.dimensionValues?.[2]?.value || '';
+                const sess = parseInt(r.metricValues?.[0]?.value || '0');
+                const conv = parseInt(r.metricValues?.[1]?.value || '0');
+                const rev = parseFloat(r.metricValues?.[2]?.value || '0');
+                return (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium truncate max-w-[150px]" title={camp}>{camp}</td>
+                    <td className="text-slate-500 truncate max-w-[100px]">{src} / {med}</td>
+                    <td className="text-right font-mono text-slate-600">{sess?.toLocaleString('pt-BR')}</td>
+                    <td className="text-right font-mono text-slate-600">{conv}</td>
+                    <td className="text-right font-semibold text-slate-900">R$ {rev?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* PAGE 3: LOGÍSTICA E TRANSPORTADORAS */}
+      <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Logística, Transportadoras e Destinos de Envio</h2>
+        
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Destinos de Entrega (Cidades)</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Cidade</th>
+                  <th className="pb-1 text-right">Pedidos</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {topDeliveryCities.map((item, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium">{item.city}</td>
+                    <td className="text-right font-semibold text-slate-700">{item.count} ped.</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Cidades com Retirada (Pickup)</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Cidade</th>
+                  <th className="pb-1 text-right">Pedidos</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {topPickupCities.map((item, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium">{item.city}</td>
+                    <td className="text-right font-semibold text-slate-700">{item.count} ped.</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Performance de Transportadoras (VTEX)</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Parceiro / Courier</th>
+                  <th className="pb-1 text-right">Pedidos</th>
+                  <th className="pb-1 text-right">Faturamento</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {carriersList.map((item, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium">{item.name}</td>
+                    <td className="text-right font-mono text-slate-600">{item.count} ped.</td>
+                    <td className="text-right font-semibold text-slate-900">R$ {item.revenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Métodos de Pagamento e Parcelamento</h3>
+            <table className="w-full text-left text-[10px] mb-4">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Meio de Pagamento</th>
+                  <th className="pb-1 text-right">Pedidos</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paymentMethodsData.map((item, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium">{item.name}</td>
+                    <td className="text-right font-semibold text-slate-700">{item.value} ped.</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Parcelamento</th>
+                  <th className="pb-1 text-right">Pedidos</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {installmentsData.map((item, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium">{item.name}</td>
+                    <td className="text-right font-semibold text-slate-700">{item.value} ped.</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* PAGE 4: PRODUTOS E CATEGORIAS */}
+      <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Detalhamento de Vendas por Produtos</h2>
+        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Produtos Mais Faturados no Período (Ordenado por Receita)</h3>
+          <table className="w-full text-left text-[9px] border-collapse">
+            <thead>
+              <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6 select-none">
+                <th className="pb-1">Ranking / Nome do Produto</th>
+                <th className="pb-1 text-right">Qtd Vendida</th>
+                <th className="pb-1 text-right">Receita Bruta</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {generalProductList.slice(0, 45).map((p: any, idx: number) => (
+                <tr key={idx} className="h-6 hover:bg-slate-50">
+                  <td className="font-semibold text-slate-800 pr-2 truncate max-w-[420px]" title={p.name}>#{idx + 1} - {p.name}</td>
+                  <td className="text-right text-slate-500 font-semibold font-mono pr-2">{p.quantity} un.</td>
+                  <td className="text-right font-bold text-slate-900 font-mono">
+                    R$ {p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* PAGE 5: CLIENTES & DRE */}
+      <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wide border-b-2 border-slate-900 pb-2 mb-4">Análise Financeira (DRE) & Perfil de Clientes</h2>
+        
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Simulação de DRE Financeiro</h3>
+            
+            {(() => {
+              const cPct = dreCancel / 100;
+              const tPct = dreTax / 100;
+              const cmvPct = dreCmv / 100;
+              const gPct = dreGateway / 100;
+              const pPct = drePlatform / 100;
+              const sPct = dreShipping / 100;
+              const mPct = dreMarketing / 100;
+
+              const varCostsRatio = cPct + tPct + cmvPct + gPct + pPct + sPct + mPct;
+              const marginRatio = 1 - varCostsRatio;
+
+              let netProfitVal = 0;
+              let grossRevenueVal = 0;
+              if (dreCalcMode === 'target_profit') {
+                netProfitVal = dreTargetProfit;
+                grossRevenueVal = marginRatio > 0 ? (dreTargetProfit + dreFixedCosts) / marginRatio : 0;
+              } else {
+                grossRevenueVal = dreTargetRevenue;
+                netProfitVal = (dreTargetRevenue * marginRatio) - dreFixedCosts;
+              }
+              const breakEvenVal = marginRatio > 0 ? dreFixedCosts / marginRatio : 0;
+
+              return (
+                <div className="flex flex-col gap-2.5 text-[10px]">
+                  <div className="flex justify-between border-b border-slate-100 py-1">
+                    <span className="text-slate-500 font-medium">Margem de Contribuição:</span>
+                    <span className="font-bold text-slate-900">{(marginRatio * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 py-1">
+                    <span className="text-slate-500 font-medium">Ponto de Equilíbrio (Break-even):</span>
+                    <span className="font-bold text-slate-900">R$ {breakEvenVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 py-1">
+                    <span className="text-slate-500 font-medium">Faturamento Necessário:</span>
+                    <span className="font-bold text-slate-950">R$ {grossRevenueVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 py-1">
+                    <span className="text-slate-500 font-medium">Custos Fixos Calculados:</span>
+                    <span className="font-bold text-slate-900">R$ {dreFixedCosts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 py-1">
+                    <span className="text-slate-500 font-medium">Lucro Líquido Estimado:</span>
+                    <span className={`font-bold ${netProfitVal >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>R$ {netProfitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 py-1">
+                    <span className="text-slate-500 font-medium">Custo de Marketing ({dreMarketing}%):</span>
+                    <span className="font-bold text-slate-900">R$ {(grossRevenueVal * mPct).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Maiores Clientes Compradores</h3>
+            <table className="w-full text-left text-[10px]">
+              <thead>
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
+                  <th className="pb-1">Cliente</th>
+                  <th className="pb-1 text-right">Compras</th>
+                  <th className="pb-1 text-right">Valor Consolidado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {topClients.slice(0, 10).map((client, idx) => (
+                  <tr key={idx} className="h-6">
+                    <td className="font-medium truncate max-w-[120px]">#{idx + 1} - {client.name}</td>
+                    <td className="text-right text-slate-500 font-mono">{client.count} comp.</td>
+                    <td className="text-right font-bold text-slate-900">R$ {client.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* PAGE 6: PROMPT DE IA CONSOLIDADO */}
+      <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-4">
+        <div className="border-2 border-indigo-200 bg-indigo-50/30 rounded-xl p-8 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center font-bold text-white text-sm">🤖</div>
+            <div>
+              <h2 className="text-base font-bold text-indigo-950 uppercase tracking-wide">PROMPT PARA ANÁLISE DE INTELIGÊNCIA ARTIFICIAL</h2>
+              <p className="text-[11px] text-indigo-700 mt-0.5">Copie o conteúdo abaixo e cole no ChatGPT, Gemini ou Claude para obter uma análise estratégica completa e plano de ação.</p>
+            </div>
+          </div>
+          <div className="bg-slate-900 text-slate-100 rounded-lg p-6 font-mono text-[9px] whitespace-pre-wrap leading-relaxed border border-slate-800 shadow-inner select-all">
+            {aiPromptText}
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  </>
+);
 }
