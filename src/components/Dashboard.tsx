@@ -1751,8 +1751,8 @@ export default function Dashboard() {
 | 1. Visitantes do Site | ${funnelData.visitors?.toLocaleString('pt-BR') || 0} | ${funnelData.visitorsSessions?.toLocaleString('pt-BR') || 0} |
 | 2. Visualização de Produtos (View Item) | ${funnelData.viewItem?.toLocaleString('pt-BR') || 0} | ${funnelData.viewItemSessions?.toLocaleString('pt-BR') || 0} |
 | 3. Adição ao Carrinho (Add to Cart) | ${funnelData.cart?.toLocaleString('pt-BR') || 0} | ${funnelData.cartSessions?.toLocaleString('pt-BR') || 0} |
-| 4. Início de Checkout | ${funnelData.shipping?.toLocaleString('pt-BR') || 0} | ${funnelData.shippingSessions?.toLocaleString('pt-BR') || 0} |
-| 5. Compras Aprovadas (Conversions) | ${funnelData.payment?.toLocaleString('pt-BR') || 0} | ${funnelData.paymentSessions?.toLocaleString('pt-BR') || 0} |
+| 4. Início de Checkout | ${funnelData.checkout?.toLocaleString('pt-BR') || 0} | ${funnelData.checkoutSessions?.toLocaleString('pt-BR') || 0} |
+| 5. Compras Aprovadas (Conversions) | ${totalVtexOrders?.toLocaleString('pt-BR') || 0} | ${totalVtexOrders?.toLocaleString('pt-BR') || 0} |
 ` : 'Dados do funil não disponíveis.';
 
     // Format GA4 Traffic sources
@@ -5083,16 +5083,16 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 </tr>
                 <tr className="h-6">
                   <td className="font-medium">4. Início de Checkout</td>
-                  <td className="text-right font-mono">{funnelData?.shipping?.toLocaleString('pt-BR') || 0}</td>
+                  <td className="text-right font-mono">{funnelData?.checkout?.toLocaleString('pt-BR') || 0}</td>
                   <td className="text-right text-slate-500">
-                    {funnelData?.cart ? ((funnelData.shipping / funnelData.cart) * 100).toFixed(1) : 0}%
+                    {funnelData?.cart ? ((funnelData.checkout / funnelData.cart) * 100).toFixed(1) : 0}%
                   </td>
                 </tr>
                 <tr className="h-6">
                   <td className="font-medium">5. Compras Aprovadas</td>
-                  <td className="text-right font-mono">{funnelData?.payment?.toLocaleString('pt-BR') || 0}</td>
+                  <td className="text-right font-mono">{totalVtexOrders?.toLocaleString('pt-BR') || 0}</td>
                   <td className="text-right font-semibold text-emerald-700">
-                    {funnelData?.visitors ? ((funnelData.payment / funnelData.visitors) * 100).toFixed(2) : 0}%
+                    {funnelData?.visitors ? ((totalVtexOrders / funnelData.visitors) * 100).toFixed(2) : 0}%
                   </td>
                 </tr>
               </tbody>
