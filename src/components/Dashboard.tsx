@@ -56,6 +56,7 @@ export default function Dashboard() {
   const [ga4States, setGa4States] = useState<string[]>([]);
   const [ga4Cities, setGa4Cities] = useState<string[]>([]);
   const [ga4Os, setGa4Os] = useState<string[]>([]);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
   const [ga4OriginOptions, setGa4OriginOptions] = useState<string[]>([]);
   const [ga4StateOptions, setGa4StateOptions] = useState<string[]>([]);
@@ -1155,6 +1156,24 @@ export default function Dashboard() {
       return buyerSortDirection === 'desc' ? -comparison : comparison;
     });
 
+  // Component-level product stats calculation for general summaries (including AI prompt)
+  const generalProductList = React.useMemo(() => {
+    const stats: Record<string, { name: string, quantity: number, revenue: number }> = {};
+    currentVtexOrders.forEach(o => {
+      if (o.items) {
+        o.items.forEach((item: any) => {
+          const name = item.name || 'Produto Sem Nome';
+          if (!stats[name]) {
+            stats[name] = { name, quantity: 0, revenue: 0 };
+          }
+          stats[name].quantity += item.quantity || 0;
+          stats[name].revenue += ((item.sellingPrice || 0) * (item.quantity || 0)) / 100;
+        });
+      }
+    });
+    return Object.values(stats).sort((a, b) => b.revenue - a.revenue);
+  }, [currentVtexOrders]);
+
   let items1Count = 0;
   let items2Count = 0;
   let items3PlusCount = 0;
@@ -1693,6 +1712,146 @@ export default function Dashboard() {
     return matchesSearch && matchesStatus;
   });
 
+  // Generate the AI Prompt text dynamically compiling all VTEX & GA4 metrics
+  const aiPromptText = React.useMemo(() => {
+    // Format products list
+    const productsText = generalProductList?.slice(0, 30).map((p: any, idx: number) => 
+      `| ${idx + 1} | ${p.name} | ${p.quantity} | R$ ${p.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} |`
+    ).join('\n') || '';
+
+    // Format delivery cities
+    const deliveryCitiesText = topDeliveryCities?.map((c: any, idx: number) => 
+      `| ${idx + 1} | ${c.city} | ${c.count} pedidos |`
+    ).join('\n') || '';
+
+    // Format pickup cities
+    const pickupCitiesText = topPickupCities?.map((c: any, idx: number) => 
+      `| ${idx + 1} | ${c.city} | ${c.count} pedidos |`
+    ).join('\n') || '';
+
+    // Format carriers
+    const carriersText = carriersList?.map((c: any) => 
+      `| ${c.name} | ${c.count} pedidos | R$ ${c.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} |`
+    ).join('\n') || '';
+
+    // Format payment methods
+    const paymentsText = paymentMethodsData?.map((p: any) => 
+      `| ${p.name} | ${p.value} pedidos |`
+    ).join('\n') || '';
+
+    // Format installments
+    const installmentsText = installmentsData?.map((i: any) => 
+      `| ${i.name} | ${i.value} pedidos |`
+    ).join('\n') || '';
+
+    // Format GA4 funnel steps
+    const funnelStepsText = funnelData ? `
+| Etapa do Funil | Usuários Únicos | Sessões |
+| --- | --- | --- |
+| 1. Visitantes do Site | ${funnelData.visitors?.toLocaleString('pt-BR') || 0} | ${funnelData.visitorsSessions?.toLocaleString('pt-BR') || 0} |
+| 2. Visualização de Produtos (View Item) | ${funnelData.viewItem?.toLocaleString('pt-BR') || 0} | ${funnelData.viewItemSessions?.toLocaleString('pt-BR') || 0} |
+| 3. Adição ao Carrinho (Add to Cart) | ${funnelData.cart?.toLocaleString('pt-BR') || 0} | ${funnelData.cartSessions?.toLocaleString('pt-BR') || 0} |
+| 4. Início de Checkout | ${funnelData.shipping?.toLocaleString('pt-BR') || 0} | ${funnelData.shippingSessions?.toLocaleString('pt-BR') || 0} |
+| 5. Compras Aprovadas (Conversions) | ${funnelData.payment?.toLocaleString('pt-BR') || 0} | ${funnelData.paymentSessions?.toLocaleString('pt-BR') || 0} |
+` : 'Dados do funil não disponíveis.';
+
+    // Format GA4 Traffic sources
+    const ga4TrafficSources = trafficData?.channelsData?.rows?.map((r: any) => {
+      const channel = r.dimensionValues?.[1]?.value || '(not set)';
+      const sess = parseInt(r.metricValues?.[0]?.value || '0');
+      const rev = parseFloat(r.metricValues?.[5]?.value || '0');
+      return `| ${channel} | ${sess} sessões | R$ ${rev.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} |`;
+    }).join('\n') || '';
+
+    return `Você é um consultor estratégico de e-commerce e especialista em growth marketing. Analise o relatório de desempenho da loja virtual Narciso Enxovais e crie um plano de ação para melhorar os resultados.
+
+---
+### DADOS DE CADASTRO E CONTEXTO:
+- **Período Analisado:** ${filters.startDate} a ${filters.endDate}
+- **Filtros Aplicados:** Categoria: ${filters.category || 'Todas'} | Status: ${filters.status.length === 0 ? 'Todos' : filters.status.join(', ')}
+
+---
+### DESEMPENHO DE VENDAS (VTEX):
+- **Receita Total (Faturamento):** R$ ${totalVtexRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+- **Pedidos Totais:** ${totalVtexOrders}
+- **Ticket Médio:** R$ ${avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+- **Pedidos Aprovados:** ${approvedCount} (R$ ${approvedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+- **Pedidos Cancelados:** ${canceledOrders.length} (R$ ${canceledRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+- **Taxa de Conversão Geral:** ${avgConversionRate}%
+- **Pedidos via Entrega (Delivery):** ${deliveryOrdersCount}
+- **Pedidos via Retirada (Pickup):** ${pickupOrdersCount}
+- **Frete Cobrado:** R$ ${totalShippingValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+- **Tempo Médio de Faturamento (SLA):** ${avgInvoiceTimeHours} horas
+
+---
+### TRÁFEGO E FUNIL (GOOGLE ANALYTICS 4):
+- **Sessões:** ${totalSessions.toLocaleString('pt-BR')}
+- **Usuários Únicos:** ${currentGa4Data.reduce((acc, row) => acc + (row.visitors || 0), 0).toLocaleString('pt-BR')}
+- **Visualizações de Página:** ${currentGa4Data.reduce((acc, row) => acc + (row.pageViews || 0), 0).toLocaleString('pt-BR')}
+- **Taxa de Conversão do Funil (GA4):**
+${funnelStepsText}
+
+---
+### DETALHAMENTO DE CANAIS E ORIGENS DE TRÁFEGO (GA4):
+| Canal | Sessões | Receita |
+| --- | --- | --- |
+${ga4TrafficSources}
+
+---
+### PRODUTOS MAIS VENDIDOS (TOP 30):
+| Ranking | Produto | Qtd Vendida | Receita |
+| --- | --- | --- | --- |
+${productsText}
+
+---
+### DESTINOS DE ENTREGA (Cidades):
+| Ranking | Cidade de Entrega | Qtd Pedidos |
+| --- | --- | --- |
+${deliveryCitiesText}
+
+---
+### CIDADES DE RETIRADA (Pickup):
+| Ranking | Cidade de Retirada | Qtd Pedidos |
+| --- | --- | --- |
+${pickupCitiesText}
+
+---
+### DESEMPENHO DE TRANSPORTADORAS:
+| Transportadora | Qtd Pedidos | Faturamento Total |
+| --- | --- | --- |
+${carriersText}
+
+---
+### MEIOS DE PAGAMENTO E PARCELAMENTO:
+| Meio de Pagamento | Qtd Pedidos |
+| --- | --- |
+${paymentsText}
+
+| Parcelamento | Qtd Pedidos |
+| --- | --- |
+${installmentsText}
+
+---
+### MAIORES COMPRADORES (Clientes):
+| Cliente | Qtd Compras | Valor Total |
+| --- | --- | --- |
+${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} |`).join('\n')}
+
+---
+**INSTRUÇÕES PARA A ANÁLISE DE IA:**
+1. Apresente um **Diagnóstico de Performance** detalhando os pontos fortes e os pontos críticos (ex: taxa de cancelamento, frete médio cobrado, SLA de faturamento).
+2. Analise o **Gargalo do Funil** (identifique em qual etapa do funil de GA4 há a maior perda de conversão e recomende melhorias de UX/UI).
+3. Faça uma **Análise Logística e Regional** focando no equilíbrio entre entrega vs retirada e na performance de cada transportadora.
+4. Identifique o perfil dos **Top Produtos** e recomende estratégias de cross-selling ou kits.
+5. Crie um **Plano de Ação Estratégico (Passo a Passo)** prático, dividido em ações de curto prazo (correções rápidas) e médio prazo (investimento/otimização).`;
+  }, [filters, totalVtexRevenue, totalVtexOrders, avgOrderValue, approvedRevenue, approvedCount, canceledRevenue, canceledOrders, avgConversionRate, deliveryOrdersCount, pickupOrdersCount, totalShippingValue, avgInvoiceTimeHours, totalSessions, currentGa4Data, funnelData, trafficData, generalProductList, topDeliveryCities, topPickupCities, carriersList, paymentMethodsData, installmentsData, topClients]);
+
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(aiPromptText);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2500);
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
       {/* Backdrop for mobile */}
@@ -2215,6 +2374,20 @@ export default function Dashboard() {
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
               </button>
               
+              {/* Copy AI Prompt Button */}
+              <button
+                className={`flex items-center justify-center gap-1.5 border rounded-lg h-9 px-3 text-[10px] font-bold tracking-wide uppercase transition-all shadow-sm cursor-pointer ${
+                  copiedPrompt 
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                    : 'bg-white border-slate-200 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 hover:border-indigo-200'
+                }`}
+                onClick={handleCopyPrompt}
+                title="Copiar prompt completo para outra IA analisar"
+              >
+                <Sparkles className={`w-4 h-4 ${copiedPrompt ? 'text-emerald-600' : 'text-indigo-500'}`} />
+                <span>{copiedPrompt ? 'Copiado!' : 'Prompt IA'}</span>
+              </button>
+
               {/* Export PDF Button */}
               <button
                 className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 hover:border-indigo-200 rounded-lg h-9 px-3 text-[10px] font-bold tracking-wide uppercase transition-all shadow-sm cursor-pointer"
@@ -4747,6 +4920,59 @@ export default function Dashboard() {
               />
             </ErrorBoundary>
           )}
+
+            {/* Collapsible AI Prompt container for copy-paste on screen */}
+            <div className="print:hidden bg-slate-900 text-slate-100 rounded-xl border border-slate-800 p-6 mt-8 shadow-lg flex flex-col gap-4">
+              <div className="flex justify-between items-center flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center font-extrabold text-white text-base animate-pulse">🤖</div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      Análise Inteligente e Plano de Ação com IA
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Copie o prompt estruturado com todos os dados tratados para enviar à sua IA favorita.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCopyPrompt}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    copiedPrompt 
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/30'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {copiedPrompt ? 'Prompt Copiado!' : 'Copiar Prompt para IA'}
+                </button>
+              </div>
+              <details className="group border border-slate-800 bg-slate-950/60 rounded-lg overflow-hidden transition-all duration-300">
+                <summary className="px-4 py-3 text-xs text-slate-400 font-semibold cursor-pointer hover:bg-slate-800 hover:text-white select-none list-none flex justify-between items-center">
+                  <span>Visualizar dados consolidados do prompt estruturado</span>
+                  <span className="transition-transform group-open:rotate-180 text-xs">▼</span>
+                </summary>
+                <div className="p-4 border-t border-slate-850 max-h-[300px] overflow-y-auto font-mono text-[10px] text-slate-300 whitespace-pre-wrap select-all leading-relaxed bg-slate-950/30">
+                  {aiPromptText}
+                </div>
+              </details>
+            </div>
+
+            {/* AI analysis prompt print-only section */}
+            <div className="hidden print:block border-t border-slate-300 mt-12 pt-8" style={{ pageBreakBefore: 'always', breakBefore: 'page' }}>
+              <div className="border-2 border-indigo-200 bg-indigo-50/30 rounded-xl p-8 mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center font-bold text-white text-sm">🤖</div>
+                  <div>
+                    <h2 className="text-base font-bold text-indigo-950 uppercase tracking-wide">PROMPT PARA ANÁLISE DE INTELIGÊNCIA ARTIFICIAL</h2>
+                    <p className="text-[11px] text-indigo-700 mt-0.5">Copie o conteúdo abaixo e cole no ChatGPT, Gemini ou Claude para obter uma análise estratégica completa e plano de ação.</p>
+                  </div>
+                </div>
+                <div className="bg-slate-900 text-slate-100 rounded-lg p-6 font-mono text-[9px] whitespace-pre-wrap leading-relaxed border border-slate-800 shadow-inner select-all">
+                  {aiPromptText}
+                </div>
+              </div>
+            </div>
 
           </div>
         </div>
