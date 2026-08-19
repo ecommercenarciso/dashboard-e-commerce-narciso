@@ -596,12 +596,12 @@ app.post('/api/ga4/traffic', async (c) => {
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'region' }],
-        metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'conversions' }, { name: 'totalRevenue' }]
       }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'deviceCategory' }],
-        metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
+        dimensions: [{ name: 'operatingSystem' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'conversions' }, { name: 'totalRevenue' }]
       }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],

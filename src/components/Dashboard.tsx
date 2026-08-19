@@ -1241,6 +1241,102 @@ export default function Dashboard() {
     return { categoryList, brandList };
   }, [currentVtexOrders]);
 
+  // Executive tab Channels data source
+  const execChannelsList = React.useMemo(() => {
+    if (!trafficData?.channelsData?.rows) return [];
+    const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
+    let totalVis = 0;
+    let totalSess = 0;
+    
+    trafficData.channelsData.rows.forEach((r: any) => {
+      const name = r.dimensionValues?.[1]?.value || '(not set)';
+      const sess = parseInt(r.metricValues?.[0]?.value || '0');
+      const vis = parseInt(r.metricValues?.[1]?.value || '0');
+      
+      if (!map[name]) {
+        map[name] = { name, visitors: 0, sessions: 0 };
+      }
+      map[name].visitors += vis;
+      map[name].sessions += sess;
+      totalVis += vis;
+      totalSess += sess;
+    });
+
+    return Object.values(map).map(item => ({
+      ...item,
+      pct: execFunnelBase === 'users' 
+        ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
+        : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
+      avgDaily: execFunnelBase === 'users'
+        ? (item.visitors / daysCount)
+        : (item.sessions / daysCount)
+    })).sort((a, b) => execFunnelBase === 'users' ? b.visitors - a.visitors : b.sessions - a.sessions);
+  }, [trafficData, execFunnelBase, daysCount]);
+
+  // Executive tab Geo data source
+  const execGeoList = React.useMemo(() => {
+    if (!trafficData?.geoData?.rows) return [];
+    const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
+    let totalVis = 0;
+    let totalSess = 0;
+
+    trafficData.geoData.rows.forEach((r: any) => {
+      const name = r.dimensionValues?.[0]?.value || '(não setado)';
+      const sess = parseInt(r.metricValues?.[0]?.value || '0');
+      const vis = parseInt(r.metricValues?.[1]?.value || '0');
+
+      if (!map[name]) {
+        map[name] = { name, visitors: 0, sessions: 0 };
+      }
+      map[name].visitors += vis;
+      map[name].sessions += sess;
+      totalVis += vis;
+      totalSess += sess;
+    });
+
+    return Object.values(map).map(item => ({
+      ...item,
+      pct: execFunnelBase === 'users'
+        ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
+        : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
+      avgDaily: execFunnelBase === 'users'
+        ? (item.visitors / daysCount)
+        : (item.sessions / daysCount)
+    })).sort((a, b) => execFunnelBase === 'users' ? b.visitors - a.visitors : b.sessions - a.sessions);
+  }, [trafficData, execFunnelBase, daysCount]);
+
+  // Executive tab Operating System data source
+  const execOsList = React.useMemo(() => {
+    if (!trafficData?.deviceData?.rows) return [];
+    const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
+    let totalVis = 0;
+    let totalSess = 0;
+
+    trafficData.deviceData.rows.forEach((r: any) => {
+      const name = r.dimensionValues?.[0]?.value || '(not set)';
+      const sess = parseInt(r.metricValues?.[0]?.value || '0');
+      const vis = parseInt(r.metricValues?.[1]?.value || '0');
+
+      if (!map[name]) {
+        map[name] = { name, visitors: 0, sessions: 0 };
+      }
+      map[name].visitors += vis;
+      map[name].sessions += sess;
+      totalVis += vis;
+      totalSess += sess;
+    });
+
+    return Object.values(map).map(item => ({
+      ...item,
+      pct: execFunnelBase === 'users'
+        ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
+        : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
+      avgDaily: execFunnelBase === 'users'
+        ? (item.visitors / daysCount)
+        : (item.sessions / daysCount)
+    })).sort((a, b) => execFunnelBase === 'users' ? b.visitors - a.visitors : b.sessions - a.sessions);
+  }, [trafficData, execFunnelBase, daysCount]);
+
   let items1Count = 0;
   let items2Count = 0;
   let items3PlusCount = 0;
@@ -2804,6 +2900,192 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <td className="py-4 font-bold text-indigo-600 text-right">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             <td className="py-4 font-bold text-indigo-600 text-right">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                           </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Linha 5: Origem e Mídia */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mt-4">
+                  {/* Gráfico Origem e Mídia */}
+                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                      Origem & Mídia ({execFunnelBase === 'users' ? 'Visitantes' : 'Sessões'})
+                    </h3>
+                    <div className="flex-1 w-full min-h-0">
+                      {execChannelsList.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={execChannelsList.slice(0, 7)} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                              formatter={(value) => [Number(value).toLocaleString('pt-BR'), execFunnelBase === 'users' ? 'Visitantes' : 'Sessões']}
+                            />
+                            <Bar dataKey={execFunnelBase === 'users' ? 'visitors' : 'sessions'} fill="#6366f1" radius={[4, 4, 0, 0]} barSize={25} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tabela Origem e Mídia */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px] justify-between">
+                    <div>
+                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2 flex items-center justify-between">
+                        <span>Origem & Mídia</span>
+                        <span className="text-[10px] text-slate-400 font-normal normal-case">Top 5</span>
+                      </h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      <table className="w-full text-left text-[11px] text-slate-600">
+                        <thead>
+                          <tr className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                            <th className="pb-2 font-bold text-left">Canal</th>
+                            <th className="pb-2 font-bold text-right">Soma</th>
+                            <th className="pb-2 font-bold text-right">Part.</th>
+                            <th className="pb-2 font-bold text-right">Média/Dia</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {execChannelsList.slice(0, 5).map((item: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-slate-50/50">
+                              <td className="py-2.5 font-medium text-slate-800 text-left truncate max-w-[90px]">{item.name}</td>
+                              <td className="py-2.5 font-bold text-slate-900 text-right">{(execFunnelBase === 'users' ? item.visitors : item.sessions).toLocaleString('pt-BR')}</td>
+                              <td className="py-2.5 text-slate-500 text-right">{item.pct.toFixed(1)}%</td>
+                              <td className="py-2.5 text-slate-600 text-right">{item.avgDaily.toFixed(1)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Linha 6: Cidades */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mt-4">
+                  {/* Gráfico Cidades */}
+                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                      Cidades ({execFunnelBase === 'users' ? 'Visitantes' : 'Sessões'})
+                    </h3>
+                    <div className="flex-1 w-full min-h-0">
+                      {execGeoList.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={execGeoList.slice(0, 7)} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                              formatter={(value) => [Number(value).toLocaleString('pt-BR'), execFunnelBase === 'users' ? 'Visitantes' : 'Sessões']}
+                            />
+                            <Bar dataKey={execFunnelBase === 'users' ? 'visitors' : 'sessions'} fill="#10B981" radius={[4, 4, 0, 0]} barSize={25} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tabela Cidades */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px] justify-between">
+                    <div>
+                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2 flex items-center justify-between">
+                        <span>Cidades</span>
+                        <span className="text-[10px] text-slate-400 font-normal normal-case">Top 5</span>
+                      </h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      <table className="w-full text-left text-[11px] text-slate-600">
+                        <thead>
+                          <tr className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                            <th className="pb-2 font-bold text-left">Cidade</th>
+                            <th className="pb-2 font-bold text-right">Soma</th>
+                            <th className="pb-2 font-bold text-right">Part.</th>
+                            <th className="pb-2 font-bold text-right">Média/Dia</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {execGeoList.slice(0, 5).map((item: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-slate-50/50">
+                              <td className="py-2.5 font-medium text-slate-800 text-left truncate max-w-[90px]">{item.name}</td>
+                              <td className="py-2.5 font-bold text-slate-900 text-right">{(execFunnelBase === 'users' ? item.visitors : item.sessions).toLocaleString('pt-BR')}</td>
+                              <td className="py-2.5 text-slate-500 text-right">{item.pct.toFixed(1)}%</td>
+                              <td className="py-2.5 text-slate-600 text-right">{item.avgDaily.toFixed(1)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Linha 7: Sistema Operacional */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mt-4">
+                  {/* Gráfico Sistema Operacional */}
+                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
+                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                      Sistema Operacional ({execFunnelBase === 'users' ? 'Visitantes' : 'Sessões'})
+                    </h3>
+                    <div className="flex-1 w-full min-h-0">
+                      {execOsList.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={execOsList.slice(0, 7)} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                              formatter={(value) => [Number(value).toLocaleString('pt-BR'), execFunnelBase === 'users' ? 'Visitantes' : 'Sessões']}
+                            />
+                            <Bar dataKey={execFunnelBase === 'users' ? 'visitors' : 'sessions'} fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={25} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tabela Sistema Operacional */}
+                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px] justify-between">
+                    <div>
+                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2 flex items-center justify-between">
+                        <span>Sistema Operacional</span>
+                        <span className="text-[10px] text-slate-400 font-normal normal-case">Top 5</span>
+                      </h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      <table className="w-full text-left text-[11px] text-slate-600">
+                        <thead>
+                          <tr className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                            <th className="pb-2 font-bold text-left">SO</th>
+                            <th className="pb-2 font-bold text-right">Soma</th>
+                            <th className="pb-2 font-bold text-right">Part.</th>
+                            <th className="pb-2 font-bold text-right">Média/Dia</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {execOsList.slice(0, 5).map((item: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-slate-50/50">
+                              <td className="py-2.5 font-medium text-slate-800 text-left truncate max-w-[90px]">{item.name}</td>
+                              <td className="py-2.5 font-bold text-slate-900 text-right">{(execFunnelBase === 'users' ? item.visitors : item.sessions).toLocaleString('pt-BR')}</td>
+                              <td className="py-2.5 text-slate-500 text-right">{item.pct.toFixed(1)}%</td>
+                              <td className="py-2.5 text-slate-600 text-right">{item.avgDaily.toFixed(1)}</td>
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>

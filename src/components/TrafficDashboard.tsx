@@ -677,7 +677,7 @@ export default function TrafficDashboard({
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm h-[400px] flex flex-col">
-          <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Comportamento por Dispositivo</span>
+          <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Comportamento por Sistema Operacional</span>
           <div className="flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={deviceData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
