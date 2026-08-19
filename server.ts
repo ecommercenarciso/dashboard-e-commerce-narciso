@@ -330,7 +330,7 @@ app.post('/api/ga4/metrics', async (c) => {
           { name: 'totalUsers' },
           { name: 'screenPageViews' },
         ],
-      }),
+      }, extraFilters),
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [
           {
@@ -348,7 +348,7 @@ app.post('/api/ga4/metrics', async (c) => {
             }
           }
         }
-      })
+      }, extraFilters)
     ]);
 
     const dateMap: { [key: string]: any } = {};
