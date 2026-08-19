@@ -189,6 +189,8 @@ function buildExtraFilters(origins: any[], states: any[], cities: any[], os: any
 
 // Helper to query GA4 Data API via REST
 async function runGa4Report(accessToken: string, propertyId: string, reportBody: any, extraFilters: any[] = []) {
+  const localFilters = [...extraFilters];
+  
   const hasIncompatibleMetrics = reportBody.metrics?.some((m: any) => m.name === 'advertiserAdCost');
 
   if (!hasIncompatibleMetrics) {
@@ -198,26 +200,26 @@ async function runGa4Report(accessToken: string, propertyId: string, reportBody:
         stringFilter: { matchType: 'EXACT', value: 'Brazil' }
       }
     };
-    extraFilters.push(countryFilter);
+    localFilters.push(countryFilter);
   }
 
-  if (extraFilters.length > 0) {
+  if (localFilters.length > 0) {
     if (reportBody.dimensionFilter) {
       reportBody.dimensionFilter = {
         andGroup: {
           expressions: [
             reportBody.dimensionFilter,
-            ...extraFilters
+            ...localFilters
           ]
         }
       };
     } else {
-      if (extraFilters.length === 1) {
-        reportBody.dimensionFilter = extraFilters[0];
+      if (localFilters.length === 1) {
+        reportBody.dimensionFilter = localFilters[0];
       } else {
         reportBody.dimensionFilter = {
           andGroup: {
-            expressions: extraFilters
+            expressions: localFilters
           }
         };
       }
