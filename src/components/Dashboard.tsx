@@ -5055,44 +5055,58 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
             <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Funil de Conversão do E-commerce</h3>
             <table className="w-full text-left text-[10px]">
               <thead>
-                <tr className="border-b border-slate-300 text-slate-500 font-bold uppercase h-6">
+                <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
                   <th className="pb-1">Etapa</th>
                   <th className="pb-1 text-right">Usuários</th>
-                  <th className="pb-1 text-right">Taxa de Conversão</th>
+                  <th className="pb-1 text-right">Taxa Base (Visitantes)</th>
+                  <th className="pb-1 text-right">Taxa de Etapa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 <tr className="h-6">
                   <td className="font-medium">1. Visitantes do Site</td>
                   <td className="text-right font-mono">{funnelData?.visitors?.toLocaleString('pt-BR') || 0}</td>
-                  <td className="text-right text-slate-500">100%</td>
+                  <td className="text-right text-slate-500 font-mono">100%</td>
+                  <td className="text-right text-slate-500 font-mono">100%</td>
                 </tr>
                 <tr className="h-6">
                   <td className="font-medium">2. Visualização de Produtos</td>
                   <td className="text-right font-mono">{funnelData?.viewItem?.toLocaleString('pt-BR') || 0}</td>
-                  <td className="text-right text-slate-500">
-                    {funnelData?.visitors ? ((funnelData.viewItem / funnelData.visitors) * 100).toFixed(1) : 0}%
+                  <td className="text-right text-slate-500 font-mono">
+                    {funnelData?.visitors ? ((funnelData.viewItem / funnelData.visitors) * 100).toFixed(2) : 0}%
+                  </td>
+                  <td className="text-right text-slate-500 font-mono">
+                    {funnelData?.visitors ? ((funnelData.viewItem / funnelData.visitors) * 100).toFixed(2) : 0}%
                   </td>
                 </tr>
                 <tr className="h-6">
                   <td className="font-medium">3. Adição ao Carrinho</td>
                   <td className="text-right font-mono">{funnelData?.cart?.toLocaleString('pt-BR') || 0}</td>
-                  <td className="text-right text-slate-500">
-                    {funnelData?.viewItem ? ((funnelData.cart / funnelData.viewItem) * 100).toFixed(1) : 0}%
+                  <td className="text-right text-slate-500 font-mono">
+                    {funnelData?.visitors ? ((funnelData.cart / funnelData.visitors) * 100).toFixed(2) : 0}%
+                  </td>
+                  <td className="text-right text-slate-500 font-mono">
+                    {funnelData?.viewItem ? ((funnelData.cart / funnelData.viewItem) * 100).toFixed(2) : 0}%
                   </td>
                 </tr>
                 <tr className="h-6">
                   <td className="font-medium">4. Início de Checkout</td>
                   <td className="text-right font-mono">{funnelData?.checkout?.toLocaleString('pt-BR') || 0}</td>
-                  <td className="text-right text-slate-500">
-                    {funnelData?.cart ? ((funnelData.checkout / funnelData.cart) * 100).toFixed(1) : 0}%
+                  <td className="text-right text-slate-500 font-mono">
+                    {funnelData?.visitors ? ((funnelData.checkout / funnelData.visitors) * 100).toFixed(2) : 0}%
+                  </td>
+                  <td className="text-right text-slate-500 font-mono">
+                    {funnelData?.cart ? ((funnelData.checkout / funnelData.cart) * 100).toFixed(2) : 0}%
                   </td>
                 </tr>
                 <tr className="h-6">
                   <td className="font-medium">5. Compras Aprovadas</td>
                   <td className="text-right font-mono">{totalVtexOrders?.toLocaleString('pt-BR') || 0}</td>
-                  <td className="text-right font-semibold text-emerald-700">
+                  <td className="text-right text-slate-500 font-mono">
                     {funnelData?.visitors ? ((totalVtexOrders / funnelData.visitors) * 100).toFixed(2) : 0}%
+                  </td>
+                  <td className="text-right font-semibold text-emerald-700 font-mono">
+                    {funnelData?.checkout ? ((totalVtexOrders / funnelData.checkout) * 100).toFixed(2) : 0}%
                   </td>
                 </tr>
               </tbody>
