@@ -266,10 +266,16 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
+    setGa4Data([]);
+    setFunnelData(null);
+    setTrafficData(null);
+    const shouldFetchVtex = lastVtexParams.current.startDate !== filters.startDate ||
+                            lastVtexParams.current.endDate !== filters.endDate ||
+                            lastVtexParams.current.category !== filters.category;
+    if (shouldFetchVtex) {
+      setVtexOrders([]);
+    }
     try {
-      const shouldFetchVtex = lastVtexParams.current.startDate !== filters.startDate ||
-                              lastVtexParams.current.endDate !== filters.endDate ||
-                              lastVtexParams.current.category !== filters.category;
       const start = new Date(filters.startDate + 'T00:00:00');
       const end = new Date(filters.endDate + 'T00:00:00');
       const diffTime = Math.abs(end.getTime() - start.getTime());
@@ -2254,7 +2260,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
 
                         setFilters({
                           ...filters,
-                          startDate: format(startOfMonth(new Date(tempStartDate + 'T12:00:00')), 'yyyy-MM-dd'),
+                          startDate: tempStartDate,
                           endDate: tempEndDate,
                           customCompareStart: finalCompStart,
                           customCompareEnd: finalCompEnd
