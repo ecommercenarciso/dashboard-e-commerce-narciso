@@ -1034,7 +1034,9 @@ export default function Dashboard() {
 
   const getDayOfWeekSuffix = (ddMmStr: string) => {
     try {
+      if (!ddMmStr || ddMmStr.includes('Sem') || ddMmStr.length > 5 || !ddMmStr.includes('/')) return '';
       const [day, month] = ddMmStr.split('/').map(Number);
+      if (isNaN(day) || isNaN(month)) return '';
       const year = new Date(filters.endDate + 'T12:00:00').getFullYear();
       const date = new Date(year, month - 1, day);
       const daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -1042,6 +1044,43 @@ export default function Dashboard() {
     } catch (e) {
       return '';
     }
+  };
+
+  const getGA4GroupKey = (rawDate: string, interval: string) => {
+    if (!rawDate || rawDate.length !== 8) return rawDate;
+    try {
+      const year = parseInt(rawDate.substring(0, 4), 10);
+      const month = parseInt(rawDate.substring(4, 6), 10) - 1;
+      const day = parseInt(rawDate.substring(6, 8), 10);
+      const dateObj = new Date(year, month, day);
+
+      if (interval === 'week') {
+        const startOfWeekDate = startOfWeek(dateObj, { weekStartsOn: 1 });
+        return format(startOfWeekDate, 'yyyy-MM-dd');
+      } else if (interval === 'month') {
+        const startOfMonthDate = startOfMonth(dateObj);
+        return format(startOfMonthDate, 'yyyy-MM');
+      }
+    } catch (e) {}
+    return rawDate; // daily 'YYYYMMDD'
+  };
+
+  const getGA4GroupDisplay = (key: string, interval: string) => {
+    try {
+      if (interval === 'week') {
+        const [year, month, day] = key.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, day);
+        return `Sem ${format(dateObj, 'dd/MM')}`;
+      } else if (interval === 'month') {
+        const [year, month] = key.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, 1);
+        return format(dateObj, 'MM/yyyy');
+      }
+      if (key.length === 8) {
+        return `${key.substring(6, 8)}/${key.substring(4, 6)}`;
+      }
+    } catch (e) {}
+    return key;
   };
 
   // Split VTEX Orders by period
@@ -1331,7 +1370,7 @@ export default function Dashboard() {
       .map(entry => entry[0]);
   }, [trafficData, execFunnelBase]);
 
-  // Daily trends chart datasets (grouped by formatted date)
+  // Daily/Weekly/Monthly trends chart datasets (grouped by formatted interval)
   const channelsChartData = React.useMemo(() => {
     if (!trafficData?.channelsData?.rows) return [];
     const dateMap: Record<string, Record<string, number>> = {};
@@ -1340,31 +1379,25 @@ export default function Dashboard() {
       const name = r.dimensionValues?.[1]?.value || '(not set)';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
-      let displayDate = rawDate;
-      if (rawDate.length === 8) {
-        displayDate = `${rawDate.substring(6, 8)}/${rawDate.substring(4, 6)}`;
-      }
-      if (!dateMap[displayDate]) {
-        dateMap[displayDate] = {};
+      
+      const key = getGA4GroupKey(rawDate, chartInterval);
+      if (!dateMap[key]) {
+        dateMap[key] = {};
         top5ChannelsList.forEach(ch => {
-          dateMap[displayDate][ch] = 0;
+          dateMap[key][ch] = 0;
         });
       }
       if (top5ChannelsList.includes(name)) {
-        dateMap[displayDate][name] = (dateMap[displayDate][name] || 0) + val;
+        dateMap[key][name] = (dateMap[key][name] || 0) + val;
       }
     });
-    const sortedDates = Object.keys(dateMap).sort((a, b) => {
-      const [dayA, monthA] = a.split('/').map(Number);
-      const [dayB, monthB] = b.split('/').map(Number);
-      if (monthA !== monthB) return monthA - monthB;
-      return dayA - dayB;
-    });
-    return sortedDates.map(dateKey => ({
-      date: dateKey,
-      ...dateMap[dateKey]
+
+    const sortedKeys = Object.keys(dateMap).sort();
+    return sortedKeys.map(key => ({
+      date: getGA4GroupDisplay(key, chartInterval),
+      ...dateMap[key]
     }));
-  }, [trafficData, execFunnelBase, top5ChannelsList]);
+  }, [trafficData, execFunnelBase, top5ChannelsList, chartInterval]);
 
   const geoChartData = React.useMemo(() => {
     if (!trafficData?.geoData?.rows) return [];
@@ -1374,31 +1407,25 @@ export default function Dashboard() {
       const name = r.dimensionValues?.[1]?.value || '(não setado)';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
-      let displayDate = rawDate;
-      if (rawDate.length === 8) {
-        displayDate = `${rawDate.substring(6, 8)}/${rawDate.substring(4, 6)}`;
-      }
-      if (!dateMap[displayDate]) {
-        dateMap[displayDate] = {};
+      
+      const key = getGA4GroupKey(rawDate, chartInterval);
+      if (!dateMap[key]) {
+        dateMap[key] = {};
         top5GeoList.forEach(g => {
-          dateMap[displayDate][g] = 0;
+          dateMap[key][g] = 0;
         });
       }
       if (top5GeoList.includes(name)) {
-        dateMap[displayDate][name] = (dateMap[displayDate][name] || 0) + val;
+        dateMap[key][name] = (dateMap[key][name] || 0) + val;
       }
     });
-    const sortedDates = Object.keys(dateMap).sort((a, b) => {
-      const [dayA, monthA] = a.split('/').map(Number);
-      const [dayB, monthB] = b.split('/').map(Number);
-      if (monthA !== monthB) return monthA - monthB;
-      return dayA - dayB;
-    });
-    return sortedDates.map(dateKey => ({
-      date: dateKey,
-      ...dateMap[dateKey]
+
+    const sortedKeys = Object.keys(dateMap).sort();
+    return sortedKeys.map(key => ({
+      date: getGA4GroupDisplay(key, chartInterval),
+      ...dateMap[key]
     }));
-  }, [trafficData, execFunnelBase, top5GeoList]);
+  }, [trafficData, execFunnelBase, top5GeoList, chartInterval]);
 
   const osChartData = React.useMemo(() => {
     if (!trafficData?.deviceData?.rows) return [];
@@ -1408,31 +1435,25 @@ export default function Dashboard() {
       const name = r.dimensionValues?.[1]?.value || '(not set)';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
-      let displayDate = rawDate;
-      if (rawDate.length === 8) {
-        displayDate = `${rawDate.substring(6, 8)}/${rawDate.substring(4, 6)}`;
-      }
-      if (!dateMap[displayDate]) {
-        dateMap[displayDate] = {};
+      
+      const key = getGA4GroupKey(rawDate, chartInterval);
+      if (!dateMap[key]) {
+        dateMap[key] = {};
         top5OsList.forEach(o => {
-          dateMap[displayDate][o] = 0;
+          dateMap[key][o] = 0;
         });
       }
       if (top5OsList.includes(name)) {
-        dateMap[displayDate][name] = (dateMap[displayDate][name] || 0) + val;
+        dateMap[key][name] = (dateMap[key][name] || 0) + val;
       }
     });
-    const sortedDates = Object.keys(dateMap).sort((a, b) => {
-      const [dayA, monthA] = a.split('/').map(Number);
-      const [dayB, monthB] = b.split('/').map(Number);
-      if (monthA !== monthB) return monthA - monthB;
-      return dayA - dayB;
-    });
-    return sortedDates.map(dateKey => ({
-      date: dateKey,
-      ...dateMap[dateKey]
+
+    const sortedKeys = Object.keys(dateMap).sort();
+    return sortedKeys.map(key => ({
+      date: getGA4GroupDisplay(key, chartInterval),
+      ...dateMap[key]
     }));
-  }, [trafficData, execFunnelBase, top5OsList]);
+  }, [trafficData, execFunnelBase, top5OsList, chartInterval]);
 
   // Full table data sources with custom sorting support
   const execChannelsList = React.useMemo(() => {
