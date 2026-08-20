@@ -4917,8 +4917,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
 
             // 1. Média de Itens por Pedido (PPA)
             const totalSubcategoryQty = subcategoryList.reduce((acc, c) => acc + c.quantity, 0);
-            const totalSubcategoryOrders = subcategoryList.reduce((acc, c) => acc + c.orders, 0);
-            const overallPpa = totalSubcategoryOrders > 0 ? totalSubcategoryQty / totalSubcategoryOrders : 0;
+            const overallPpa = totalDetailedOrdersCount > 0 ? totalSubcategoryQty / totalDetailedOrdersCount : 0;
 
             // 2. Receita Média dos Itens
             const avgItemRevenue = totalItemsCount > 0 ? totalProductRevenue / totalItemsCount : 0;
