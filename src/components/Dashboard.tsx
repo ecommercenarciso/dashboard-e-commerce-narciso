@@ -2765,14 +2765,14 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
           {!isSidebarCollapsed && (
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-indigo-600/30">N</div>
-                <span className="text-lg font-bold text-white tracking-tight">Narciso <span className="text-indigo-400">Dashboard</span></span>
+                <div className="w-8 h-8 bg-gradient-to-tr from-[#00a2e8] to-[#00667a] rounded flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-cyan-500/30">N</div>
+                <span className="text-lg font-bold text-white tracking-tight">Narciso <span className="text-cyan-400">Enxovais</span></span>
               </div>
-              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold opacity-80">E-commerce Narciso</p>
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold opacity-80">Dashboard E-commerce</p>
             </div>
           )}
           {isSidebarCollapsed && (
-            <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-indigo-600/30">N</div>
+            <div className="w-8 h-8 bg-gradient-to-tr from-[#00a2e8] to-[#00667a] rounded flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-cyan-500/30">N</div>
           )}
           <button 
             onClick={() => setIsSidebarOpen(false)} 
@@ -2787,79 +2787,79 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
           <nav className="space-y-2">
             <div 
               onClick={() => setActiveTab('executive')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'executive' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'executive' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Visão Executiva"
             >
               <LayoutDashboard className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">1. Visão Executiva</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Visão Executiva</span>}
             </div>
             <div 
               onClick={() => setActiveTab('sales')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'sales' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'sales' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Desempenho de Vendas"
             >
               <TrendingUp className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">2. Desempenho de Vendas</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Desempenho de Vendas</span>}
             </div>
             <div 
               onClick={() => setActiveTab('products')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'products' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'products' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Produtos & Categorias"
             >
               <Package className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">3. Produtos & Categorias</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Produtos & Categorias</span>}
             </div>
             <div 
               onClick={() => setActiveTab('traffic')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'traffic' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'traffic' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Funil & Tráfego"
             >
               <Users className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">4. Funil & Tráfego</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Funil & Tráfego</span>}
             </div>
             <div 
               onClick={() => setActiveTab('marketing')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'marketing' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'marketing' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Marketing & ROAS"
             >
-              <TrendingUp className="w-5 h-5 shrink-0 text-emerald-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">5. Marketing & ROAS</span>}
+              <TrendingUp className="w-5 h-5 shrink-0 text-cyan-400" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Marketing & ROAS</span>}
             </div>
             <div 
               onClick={() => setActiveTab('crm')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'crm' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'crm' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="CRM & Retenção"
             >
-              <Users className="w-5 h-5 shrink-0 text-violet-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">6. CRM & Retenção</span>}
+              <Users className="w-5 h-5 shrink-0 text-cyan-400" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">CRM & Retenção</span>}
             </div>
             <div 
               onClick={() => setActiveTab('logistics')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'logistics' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'logistics' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Logística & Frete"
             >
-              <Truck className="w-5 h-5 shrink-0 text-amber-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">7. Logística & Frete</span>}
+              <Truck className="w-5 h-5 shrink-0 text-cyan-400" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Logística & Frete</span>}
             </div>
             <div 
               onClick={() => setActiveTab('finance')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'finance' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'finance' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Meios de Pagamento"
             >
-              <CreditCard className="w-5 h-5 shrink-0 text-cyan-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">8. Meios de Pagamento</span>}
+              <CreditCard className="w-5 h-5 shrink-0 text-cyan-400" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Meios de Pagamento</span>}
             </div>
             <div 
               onClick={() => setActiveTab('goals')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'goals' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'goals' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Metas & Resultados"
             >
               <Target className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">9. Metas & Resultados</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Metas & Resultados</span>}
             </div>
             <div 
               onClick={() => setActiveTab('dre')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'dre' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'dre' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Calculadora DRE"
             >
               <Calculator className="w-5 h-5 shrink-0" />

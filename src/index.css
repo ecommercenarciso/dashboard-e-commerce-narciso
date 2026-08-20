@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+body, html {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
 @media print {
   /* Hide navigation sidebar, toggle buttons, update actions and popups */
   aside,
