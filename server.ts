@@ -390,7 +390,7 @@ app.post('/api/ga4/metrics', async (c) => {
         } else if (eventName === 'Checkout Carrinho' || eventName === 'add_to_cart') {
           dateMap[key].cart = Math.max(dateMap[key].cart, users);
           dateMap[key].cartSessions = Math.max(dateMap[key].cartSessions, sess);
-        } else if (eventName === 'Checkout Entrega' || eventName === 'Checkout Pagamento' || eventName === 'add_shipping_info' || eventName === 'add_payment_info' || eventName === 'begin_checkout' || eventName === 'Checkout Identificação') {
+        } else if (eventName === 'begin_checkout') {
           dateMap[key].checkout = Math.max(dateMap[key].checkout, users);
           dateMap[key].checkoutSessions = Math.max(dateMap[key].checkoutSessions, sess);
         }
@@ -522,7 +522,7 @@ app.post('/api/ga4/funnel', async (c) => {
               viewCartUsers = Math.max(viewCartUsers, users);
               viewCartSessions = Math.max(viewCartSessions, sess);
             }
-            if (eventName === 'Checkout Entrega' || eventName === 'add_shipping_info' || eventName === 'Checkout Pagamento' || eventName === 'add_payment_info' || eventName === 'Checkout Identificação' || eventName === 'begin_checkout') {
+            if (eventName === 'begin_checkout') {
               funnel.checkout = Math.max(funnel.checkout, users);
               funnel.checkoutSessions = Math.max(funnel.checkoutSessions, sess);
             }
