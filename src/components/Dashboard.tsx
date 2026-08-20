@@ -2863,7 +2863,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               title="Calculadora DRE"
             >
               <Calculator className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">10. Calculadora DRE</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora DRE</span>}
             </div>
           </nav>
         </div>
