@@ -1162,15 +1162,17 @@ export default function Dashboard() {
   let pickupOrdersCount = 0;
   let deliveryOrdersCount = 0;
   let totalShippingValue = 0;
+  let detailedItemsRevenue = 0;
+  let detailedItemsQuantity = 0;
 
   if (totalDetailedOrdersCount > 0) {
     // Calculate sums from detailed orders
-    const detailedItemsRevenue = detailedOrdersList.reduce((acc, order) => {
+    detailedItemsRevenue = detailedOrdersList.reduce((acc, order) => {
       const orderItemsSum = order.items?.reduce((sum: number, item: any) => sum + ((item.sellingPrice || 0) * (item.quantity || 0)), 0) || 0;
       return acc + (orderItemsSum / 100);
     }, 0);
 
-    const detailedItemsQuantity = detailedOrdersList.reduce((acc, order) => {
+    detailedItemsQuantity = detailedOrdersList.reduce((acc, order) => {
       const orderItemsCount = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
       return acc + orderItemsCount;
     }, 0);
@@ -1196,7 +1198,9 @@ export default function Dashboard() {
     totalShippingValue = deliveryOrdersCount * 20;
   }
 
-  const avgValuePerItem = totalItemsQuantity > 0 ? (totalItemsRevenue / totalItemsQuantity) : 0;
+  const avgValuePerItem = totalDetailedOrdersCount > 0 
+    ? (detailedItemsQuantity > 0 ? detailedItemsRevenue / detailedItemsQuantity : 0)
+    : (totalItemsQuantity > 0 ? totalItemsRevenue / totalItemsQuantity : 0);
   const avgItemsPerOrder = totalVtexOrders > 0 ? (totalItemsQuantity / totalVtexOrders) : 0;
   const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
 
@@ -4587,7 +4591,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 order.items.forEach((item: any) => {
                   const pName = item.name || 'Produto Sem Nome';
                   const pPrice = (item.sellingPrice || item.price || 0) / 100;
-                  const pQty = item.quantity || 1;
+                  const pQty = item.quantity || 0;
                   const pRev = pPrice * pQty;
 
                   let category = item.category && item.category !== 'Não Informado' ? item.category : 'Outros';
