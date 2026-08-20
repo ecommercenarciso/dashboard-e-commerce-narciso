@@ -2822,7 +2822,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'marketing' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Marketing & ROAS"
             >
-              <TrendingUp className="w-5 h-5 shrink-0 text-cyan-400" />
+              <TrendingUp className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Marketing & ROAS</span>}
             </div>
             <div 
@@ -2830,7 +2830,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'crm' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="CRM & Retenção"
             >
-              <Users className="w-5 h-5 shrink-0 text-cyan-400" />
+              <Users className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">CRM & Retenção</span>}
             </div>
             <div 
@@ -2838,7 +2838,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'logistics' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Logística & Frete"
             >
-              <Truck className="w-5 h-5 shrink-0 text-cyan-400" />
+              <Truck className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Logística & Frete</span>}
             </div>
             <div 
@@ -2846,7 +2846,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'finance' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Meios de Pagamento"
             >
-              <CreditCard className="w-5 h-5 shrink-0 text-cyan-400" />
+              <CreditCard className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Meios de Pagamento</span>}
             </div>
             <div 
