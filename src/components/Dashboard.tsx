@@ -83,6 +83,34 @@ export default function Dashboard() {
     if (!dataKey) return;
     setActiveFunnelLines(prev => prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]);
   };
+
+  const [activeVtexLines, setActiveVtexLines] = useState<string[]>([]);
+  const handleVtexLegendClick = (e: any) => {
+    const dataKey = e.dataKey;
+    if (!dataKey) return;
+    setActiveVtexLines(prev => prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]);
+  };
+
+  const [activeChannelsLines, setActiveChannelsLines] = useState<string[]>([]);
+  const handleChannelsLegendClick = (e: any) => {
+    const dataKey = e.dataKey;
+    if (!dataKey) return;
+    setActiveChannelsLines(prev => prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]);
+  };
+
+  const [activeGeoLines, setActiveGeoLines] = useState<string[]>([]);
+  const handleGeoLegendClick = (e: any) => {
+    const dataKey = e.dataKey;
+    if (!dataKey) return;
+    setActiveGeoLines(prev => prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]);
+  };
+
+  const [activeOsLines, setActiveOsLines] = useState<string[]>([]);
+  const handleOsLegendClick = (e: any) => {
+    const dataKey = e.dataKey;
+    if (!dataKey) return;
+    setActiveOsLines(prev => prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]);
+  };
   const [salesChartTab, setSalesChartTab] = useState<'revenue' | 'orders' | 'ticket'>('revenue');
   const [citiesTableTab, setCitiesTableTab] = useState<'delivery' | 'pickup'>('delivery');
 
@@ -3119,10 +3147,10 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                 return [value, name];
                               }}
                             />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
-                            <Line type="linear" yAxisId="left" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Faturamento" />
-                            <Line type="linear" yAxisId="left" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Ticket Médio" />
-                            <Line type="linear" yAxisId="right" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Pedidos" />
+                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleVtexLegendClick} />
+                            <Line type="linear" yAxisId="left" dataKey="vtexRevenue" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Faturamento" strokeOpacity={activeVtexLines.length === 0 || activeVtexLines.includes('vtexRevenue') ? 1 : 0.2} onClick={(e) => e && handleVtexLegendClick({ dataKey: 'vtexRevenue' })} />
+                            <Line type="linear" yAxisId="left" dataKey="vtexTicket" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Ticket Médio" strokeOpacity={activeVtexLines.length === 0 || activeVtexLines.includes('vtexTicket') ? 1 : 0.2} onClick={(e) => e && handleVtexLegendClick({ dataKey: 'vtexTicket' })} />
+                            <Line type="linear" yAxisId="right" dataKey="vtexOrders" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name="Pedidos" strokeOpacity={activeVtexLines.length === 0 || activeVtexLines.includes('vtexOrders') ? 1 : 0.2} onClick={(e) => e && handleVtexLegendClick({ dataKey: 'vtexOrders' })} />
                           </LineChart>
                         </ResponsiveContainer>
                       ) : (
@@ -3196,7 +3224,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                               }}
                               formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
                             />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleChannelsLegendClick} />
                             {top5ChannelsList.map((name, idx) => (
                               <Line 
                                 key={name}
@@ -3207,6 +3235,8 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                 dot={{ r: 2 }}
                                 activeDot={{ r: 4 }}
                                 name={name}
+                                strokeOpacity={activeChannelsLines.length === 0 || activeChannelsLines.includes(name) ? 1 : 0.2}
+                                onClick={(e) => e && handleChannelsLegendClick({ dataKey: name })}
                               />
                             ))}
                           </LineChart>
@@ -3283,7 +3313,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                               }}
                               formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
                             />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleGeoLegendClick} />
                             {top5GeoList.map((name, idx) => (
                               <Line 
                                 key={name}
@@ -3294,6 +3324,8 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                 dot={{ r: 2 }}
                                 activeDot={{ r: 4 }}
                                 name={name}
+                                strokeOpacity={activeGeoLines.length === 0 || activeGeoLines.includes(name) ? 1 : 0.2}
+                                onClick={(e) => e && handleGeoLegendClick({ dataKey: name })}
                               />
                             ))}
                           </LineChart>
@@ -3370,7 +3402,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                               }}
                               formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
                             />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleOsLegendClick} />
                             {top5OsList.map((name, idx) => (
                               <Line 
                                 key={name}
@@ -3381,6 +3413,8 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                 dot={{ r: 2 }}
                                 activeDot={{ r: 4 }}
                                 name={name}
+                                strokeOpacity={activeOsLines.length === 0 || activeOsLines.includes(name) ? 1 : 0.2}
+                                onClick={(e) => e && handleOsLegendClick({ dataKey: name })}
                               />
                             ))}
                           </LineChart>
