@@ -160,6 +160,104 @@ export default function TrafficDashboard({
     });
   }, [finalChartData, isAverageView, chartInterval]);
 
+  const [conversionMode, setConversionMode] = useState<'total' | 'step'>('total');
+  const [activeConvLines, setActiveConvLines] = useState<string[]>([]);
+  const handleConvLegendClick = (e: any) => {
+    const dataKey = e.dataKey;
+    if (!dataKey) return;
+    setActiveConvLines(prev => prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]);
+  };
+
+  const conversionChartData = useMemo(() => {
+    if (!averagedChartData || averagedChartData.length === 0) return [];
+    return averagedChartData.map(row => {
+      const baseVal = funnelBase === 'users' ? (row.visitors || 0) : (row.visitorsSessions || 0);
+      const viewItemVal = funnelBase === 'users' ? (row.viewItem || 0) : (row.viewItemSessions || 0);
+      const cartVal = funnelBase === 'users' ? (row.cart || 0) : (row.cartSessions || 0);
+      const checkoutVal = funnelBase === 'users' ? (row.checkout || 0) : (row.checkoutSessions || 0);
+      const ordersVal = row.vtexOrders || 0;
+
+      if (conversionMode === 'total') {
+        return {
+          date: row.displayDate,
+          viewItem: baseVal > 0 ? (viewItemVal / baseVal) * 100 : 0,
+          cart: baseVal > 0 ? (cartVal / baseVal) * 100 : 0,
+          checkout: baseVal > 0 ? (checkoutVal / baseVal) * 100 : 0,
+          purchase: baseVal > 0 ? (ordersVal / baseVal) * 100 : 0
+        };
+      } else {
+        return {
+          date: row.displayDate,
+          viewItem: baseVal > 0 ? (viewItemVal / baseVal) * 100 : 0,
+          cart: viewItemVal > 0 ? (cartVal / viewItemVal) * 100 : 0,
+          checkout: cartVal > 0 ? (checkoutVal / cartVal) * 100 : 0,
+          purchase: checkoutVal > 0 ? (ordersVal / checkoutVal) * 100 : 0
+        };
+      }
+    });
+  }, [averagedChartData, funnelBase, conversionMode]);
+
+  const conversionTableData = useMemo(() => {
+    if (!finalChartData || finalChartData.length === 0) return [];
+    
+    let totalBase = 0;
+    let totalViewItem = 0;
+    let totalCart = 0;
+    let totalCheckout = 0;
+    let totalOrders = 0;
+
+    finalChartData.forEach(row => {
+      totalBase += funnelBase === 'users' ? (row.visitors || 0) : (row.visitorsSessions || 0);
+      totalViewItem += funnelBase === 'users' ? (row.viewItem || 0) : (row.viewItemSessions || 0);
+      totalCart += funnelBase === 'users' ? (row.cart || 0) : (row.cartSessions || 0);
+      totalCheckout += funnelBase === 'users' ? (row.checkout || 0) : (row.checkoutSessions || 0);
+      totalOrders += row.vtexOrders || 0;
+    });
+
+    let viewItemGeral = 0;
+    let cartGeral = 0;
+    let checkoutGeral = 0;
+    let purchaseGeral = 0;
+
+    if (conversionMode === 'total') {
+      viewItemGeral = totalBase > 0 ? (totalViewItem / totalBase) * 100 : 0;
+      cartGeral = totalBase > 0 ? (totalCart / totalBase) * 100 : 0;
+      checkoutGeral = totalBase > 0 ? (totalCheckout / totalBase) * 100 : 0;
+      purchaseGeral = totalBase > 0 ? (totalOrders / totalBase) * 100 : 0;
+    } else {
+      viewItemGeral = totalBase > 0 ? (totalViewItem / totalBase) * 100 : 0;
+      cartGeral = totalViewItem > 0 ? (totalCart / totalViewItem) * 100 : 0;
+      checkoutGeral = totalCart > 0 ? (totalCheckout / totalCart) * 100 : 0;
+      purchaseGeral = totalCheckout > 0 ? (totalOrders / totalCheckout) * 100 : 0;
+    }
+
+    let sumViewItemDaily = 0;
+    let sumCartDaily = 0;
+    let sumCheckoutDaily = 0;
+    let sumPurchaseDaily = 0;
+    let validDaysCount = 0;
+
+    conversionChartData.forEach(day => {
+      sumViewItemDaily += day.viewItem || 0;
+      sumCartDaily += day.cart || 0;
+      sumCheckoutDaily += day.checkout || 0;
+      sumPurchaseDaily += day.purchase || 0;
+      validDaysCount++;
+    });
+
+    const viewItemMedia = validDaysCount > 0 ? sumViewItemDaily / validDaysCount : 0;
+    const cartMedia = validDaysCount > 0 ? sumCartDaily / validDaysCount : 0;
+    const checkoutMedia = validDaysCount > 0 ? sumCheckoutDaily / validDaysCount : 0;
+    const purchaseMedia = validDaysCount > 0 ? sumPurchaseDaily / validDaysCount : 0;
+
+    return [
+      { name: '1. Viu Produto', geral: viewItemGeral, media: viewItemMedia, color: '#8B5CF6' },
+      { name: '2. Carrinho', geral: cartGeral, media: cartMedia, color: '#F59E0B' },
+      { name: '3. Checkout', geral: checkoutGeral, media: checkoutMedia, color: '#06B6D4' },
+      { name: '4. Compras VTEX', geral: purchaseGeral, media: purchaseMedia, color: '#10B981' }
+    ];
+  }, [finalChartData, funnelBase, conversionMode, conversionChartData]);
+
   const handleChannelSort = (field: string) => {
     if (channelSortField === field) setChannelSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setChannelSortField(field); setChannelSortDir('desc'); }
@@ -612,7 +710,83 @@ export default function TrafficDashboard({
         </div>
       </div>
 
-      {/* REMOVED: CAMADA 2.5: Médias Diárias do Funil */}
+      {/* CAMADA 2.5: Taxas de Conversão do Funil */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mb-4">
+        {/* Gráfico - Taxas de Conversão */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider">Taxas de Conversão do Funil (Evolução)</h3>
+            <div className="flex bg-slate-100 p-0.5 rounded-md text-[11px] font-bold border border-slate-200">
+              <button
+                onClick={() => setConversionMode('total')}
+                className={`px-3 py-1 rounded-[4px] transition-all ${conversionMode === 'total' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Base: Total
+              </button>
+              <button
+                onClick={() => setConversionMode('step')}
+                className={`px-3 py-1 rounded-[4px] transition-all ${conversionMode === 'step' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Base: Etapa Anterior
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 w-full min-h-0">
+            {conversionChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={conversionChartData} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v) => `${v.toFixed(1)}%`} />
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    labelFormatter={(label) => {
+                      const dow = getDayOfWeekSuffix ? getDayOfWeekSuffix(label) : '';
+                      return dow ? `${label} (${dow})` : label;
+                    }}
+                    formatter={(value: any, name: string) => [`${parseFloat(value).toFixed(2)}%`, name]}
+                  />
+                  <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleConvLegendClick} />
+                  <Line type="linear" dataKey="viewItem" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} name="1. Viu Produto" strokeOpacity={activeConvLines.length === 0 || activeConvLines.includes('viewItem') ? 1 : 0.2} onClick={(e) => e && handleConvLegendClick({ dataKey: 'viewItem' })} />
+                  <Line type="linear" dataKey="cart" stroke="#F59E0B" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} name="2. Carrinho" strokeOpacity={activeConvLines.length === 0 || activeConvLines.includes('cart') ? 1 : 0.2} onClick={(e) => e && handleConvLegendClick({ dataKey: 'cart' })} />
+                  <Line type="linear" dataKey="checkout" stroke="#06B6D4" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} name="3. Checkout" strokeOpacity={activeConvLines.length === 0 || activeConvLines.includes('checkout') ? 1 : 0.2} onClick={(e) => e && handleConvLegendClick({ dataKey: 'checkout' })} />
+                  <Line type="linear" dataKey="purchase" stroke="#10B981" strokeWidth={2.5} dot={{ r: 2 }} activeDot={{ r: 4 }} name="4. Compras VTEX" strokeOpacity={activeConvLines.length === 0 || activeConvLines.includes('purchase') ? 1 : 0.2} onClick={(e) => e && handleConvLegendClick({ dataKey: 'purchase' })} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
+            )}
+          </div>
+        </div>
+
+        {/* Tabela - Métricas de Taxa de Conversão */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Métricas de Conversão</h3>
+          <div className="flex-1 overflow-x-auto min-h-0">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead>
+                <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                  <th className="pb-3 font-bold text-left">Etapa</th>
+                  <th className="pb-3 font-bold text-right">Taxa Geral</th>
+                  <th className="pb-3 font-bold text-right">Média Diária</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {conversionTableData.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 font-medium text-left flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      {item.name}
+                    </td>
+                    <td className="py-3 font-bold text-slate-900 text-right">{item.geral.toFixed(2)}%</td>
+                    <td className="py-3 font-semibold text-slate-800 text-right">{item.media.toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       {/* CAMADA 3: Tabela Qualidade */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col">
