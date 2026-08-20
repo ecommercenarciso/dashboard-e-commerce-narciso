@@ -2787,51 +2787,43 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
           <nav className="space-y-2">
             <div 
               onClick={() => setActiveTab('executive')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'executive' ? 'text-white bg-slate-800' : 'hover:text-white'}`}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'executive' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
               title="Visão Executiva"
             >
               <LayoutDashboard className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Visão Executiva</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">1. Visão Executiva</span>}
             </div>
             <div 
               onClick={() => setActiveTab('sales')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'sales' ? 'text-white bg-slate-800' : 'hover:text-white'}`}
-              title="Análise de Vendas"
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'sales' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Desempenho de Vendas"
             >
               <TrendingUp className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Análise de Vendas</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">2. Desempenho de Vendas</span>}
             </div>
             <div 
               onClick={() => setActiveTab('products')}
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'products' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
-              title="Análise de Produtos"
+              title="Produtos & Categorias"
             >
               <Package className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Produtos e Categorias</span>}
-            </div>
-             <div 
-              onClick={() => setActiveTab('goals')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'goals' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
-              title="Acompanhamento de Metas"
-            >
-              <Target className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Metas e Resultados</span>}
-            </div>
-            <div 
-              onClick={() => setActiveTab('dre')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'dre' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
-              title="Calculadora DRE"
-            >
-              <Calculator className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora DRE</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">3. Produtos & Categorias</span>}
             </div>
             <div 
               onClick={() => setActiveTab('traffic')}
               className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'traffic' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
-              title="Visão Geral de Tráfego"
+              title="Funil & Tráfego"
             >
               <Users className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Visão Geral de Tráfego</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">4. Funil & Tráfego</span>}
+            </div>
+            <div 
+              onClick={() => setActiveTab('marketing')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'marketing' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Marketing & ROAS"
+            >
+              <TrendingUp className="w-5 h-5 shrink-0 text-emerald-500" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">5. Marketing & ROAS</span>}
             </div>
             <div 
               onClick={() => setActiveTab('crm')}
@@ -2839,7 +2831,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               title="CRM & Retenção"
             >
               <Users className="w-5 h-5 shrink-0 text-violet-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">CRM & Retenção</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">6. CRM & Retenção</span>}
             </div>
             <div 
               onClick={() => setActiveTab('logistics')}
@@ -2847,7 +2839,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               title="Logística & Frete"
             >
               <Truck className="w-5 h-5 shrink-0 text-amber-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Logística & Frete</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">7. Logística & Frete</span>}
             </div>
             <div 
               onClick={() => setActiveTab('finance')}
@@ -2855,15 +2847,23 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               title="Meios de Pagamento"
             >
               <CreditCard className="w-5 h-5 shrink-0 text-cyan-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Meios de Pagamento</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium">8. Meios de Pagamento</span>}
             </div>
             <div 
-              onClick={() => setActiveTab('marketing')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'marketing' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
-              title="ROI de Marketing"
+              onClick={() => setActiveTab('goals')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'goals' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Metas & Resultados"
             >
-              <TrendingUp className="w-5 h-5 shrink-0 text-emerald-500" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">ROI de Marketing</span>}
+              <Target className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">9. Metas & Resultados</span>}
+            </div>
+            <div 
+              onClick={() => setActiveTab('dre')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-colors ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'dre' ? 'text-white bg-slate-800' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Calculadora DRE"
+            >
+              <Calculator className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">10. Calculadora DRE</span>}
             </div>
           </nav>
         </div>
