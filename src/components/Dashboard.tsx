@@ -1473,7 +1473,13 @@ export default function Dashboard() {
       }
     });
 
-    const sortedKeys = Object.keys(dateMap).sort();
+    const sortedKeys = Object.keys(dateMap).sort((a, b) => {
+      const [d1, h1] = a.split('_');
+      const [d2, h2] = b.split('_');
+      if (d1 !== d2) return d1.localeCompare(d2);
+      if (h1 && h2) return parseInt(h1, 10) - parseInt(h2, 10);
+      return a.localeCompare(b);
+    });
     return sortedKeys.map(key => ({
       date: getGA4GroupDisplay(key, chartInterval),
       ...dateMap[key]
@@ -1502,7 +1508,13 @@ export default function Dashboard() {
       }
     });
 
-    const sortedKeys = Object.keys(dateMap).sort();
+    const sortedKeys = Object.keys(dateMap).sort((a, b) => {
+      const [d1, h1] = a.split('_');
+      const [d2, h2] = b.split('_');
+      if (d1 !== d2) return d1.localeCompare(d2);
+      if (h1 && h2) return parseInt(h1, 10) - parseInt(h2, 10);
+      return a.localeCompare(b);
+    });
     return sortedKeys.map(key => ({
       date: getGA4GroupDisplay(key, chartInterval),
       ...dateMap[key]
@@ -1531,7 +1543,13 @@ export default function Dashboard() {
       }
     });
 
-    const sortedKeys = Object.keys(dateMap).sort();
+    const sortedKeys = Object.keys(dateMap).sort((a, b) => {
+      const [d1, h1] = a.split('_');
+      const [d2, h2] = b.split('_');
+      if (d1 !== d2) return d1.localeCompare(d2);
+      if (h1 && h2) return parseInt(h1, 10) - parseInt(h2, 10);
+      return a.localeCompare(b);
+    });
     return sortedKeys.map(key => ({
       date: getGA4GroupDisplay(key, chartInterval),
       ...dateMap[key]
