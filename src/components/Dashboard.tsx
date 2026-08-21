@@ -489,6 +489,10 @@ export default function Dashboard() {
         }
         
         const enrichedList = (vtexJson.list || []).map((order: any) => {
+          let normalizedStatus = order.status;
+          if (order.status === 'ready-for-handling' || order.status === 'window-to-ship') {
+            normalizedStatus = 'handling';
+          }
           const cached = localStorage.getItem(`order_detail_${order.orderId}`);
           if (cached) {
             try {
@@ -496,14 +500,14 @@ export default function Dashboard() {
               const hasOldGuess = parsed.items && parsed.items.some((item: any) => item.category === 'Cama' || item.category === 'Outros' || item.category === 'Não Informado' || !item.category);
               if (hasOldGuess) {
                 localStorage.removeItem(`order_detail_${order.orderId}`);
-                return order;
+                return { ...order, status: normalizedStatus };
               }
-              return { ...order, ...parsed };
+              return { ...order, ...parsed, status: normalizedStatus };
             } catch (e) {
               // ignore
             }
           }
-          return order;
+          return { ...order, status: normalizedStatus };
         });
         setVtexOrders(enrichedList);
 
@@ -620,7 +624,11 @@ export default function Dashboard() {
             prev.map(order => {
               const detail = successful.find(r => r.orderId === order.orderId);
               if (detail) {
-                return { ...order, ...detail };
+                let normalizedStatus = detail.status || order.status;
+                if (normalizedStatus === 'ready-for-handling' || normalizedStatus === 'window-to-ship') {
+                  normalizedStatus = 'handling';
+                }
+                return { ...order, ...detail, status: normalizedStatus };
               }
               return order;
             })
