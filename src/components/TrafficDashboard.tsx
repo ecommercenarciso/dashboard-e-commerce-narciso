@@ -46,6 +46,8 @@ const DEVICE_COLORS: Record<string, string> = {
   'Tablet': '#06B6D4'
 };
 
+const COLOR_PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#14b8a6'];
+
 function formatDuration(seconds: number) {
   if (!seconds || isNaN(seconds)) return '00:00';
   const m = Math.floor(seconds / 60);
@@ -116,6 +118,78 @@ export default function TrafficDashboard({
   const [isStateOpen, setIsStateOpen] = useState(false);
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [isOsOpen, setIsOsOpen] = useState(false);
+
+  const [conversionVar, setConversionVar] = useState<'origin' | 'city' | 'state' | 'device'>('origin');
+
+  const conversionStats = useMemo(() => {
+    const tableDataMap: Record<string, { name: string, conversions: number, revenue: number }> = {};
+    const chartDataMap: Record<string, Record<string, number>> = {};
+
+    let rows: any[] = [];
+    let dimIndex = 1;
+    let convIndex = 2;
+    let revIndex = 3;
+
+    if (conversionVar === 'origin') {
+      rows = data?.channelsData?.rows || [];
+      dimIndex = 1; // firstUserSourceMedium
+      convIndex = 4; // conversions
+      revIndex = 5; // totalRevenue
+    } else if (conversionVar === 'city') {
+      rows = data?.geoData?.rows || [];
+      dimIndex = 2; // city is index 2 (date, region, city, hour)
+      convIndex = 2;
+      revIndex = 3;
+    } else if (conversionVar === 'state') {
+      rows = data?.geoData?.rows || [];
+      dimIndex = 1; // region is index 1
+      convIndex = 2;
+      revIndex = 3;
+    } else if (conversionVar === 'device') {
+      rows = data?.deviceData?.rows || [];
+      dimIndex = 1; // operatingSystem
+      convIndex = 2;
+      revIndex = 3;
+    }
+
+    rows.forEach((r: any) => {
+      const rawDate = r.dimensionValues?.[0]?.value || '';
+      const name = r.dimensionValues?.[dimIndex]?.value || '(não setado)';
+      const convs = parseInt(r.metricValues?.[convIndex]?.value || '0', 10);
+      const rev = parseFloat(r.metricValues?.[revIndex]?.value || '0');
+
+      if (!rawDate) return;
+
+      if (!tableDataMap[name]) {
+        tableDataMap[name] = { name, conversions: 0, revenue: 0 };
+      }
+      tableDataMap[name].conversions += convs;
+      tableDataMap[name].revenue += rev;
+
+      const formattedDate = `${rawDate.substring(6,8)}/${rawDate.substring(4,6)}`;
+      if (!chartDataMap[formattedDate]) {
+        chartDataMap[formattedDate] = {};
+      }
+      chartDataMap[formattedDate][name] = (chartDataMap[formattedDate][name] || 0) + convs;
+    });
+
+    const tableList = Object.values(tableDataMap).sort((a, b) => b.conversions - a.conversions);
+    const topKeys = tableList.slice(0, 5).map(item => item.name);
+
+    const chartList = Object.entries(chartDataMap).map(([date, values]) => {
+      const row: Record<string, any> = { date };
+      topKeys.forEach(k => {
+        row[k] = values[k] || 0;
+      });
+      return row;
+    });
+
+    return {
+      tableList,
+      chartList,
+      topKeys
+    };
+  }, [data, conversionVar]);
   
   const handleFunnelLegendClick = (e: any) => {
     const dataKey = e.dataKey;
@@ -958,6 +1032,109 @@ export default function TrafficDashboard({
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      {/* CAMADA DE ANÁLISE DE CONVERSÃO POR DIMENSÃO (ORIGEM, CIDADE, ESTADO, DISPOSITIVO) */}
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Desempenho de Conversão por Variável</h3>
+            <p className="text-xs text-slate-500 mt-1">Selecione uma variável para ver a tabela de pedidos/faturamento e seu histórico diário de conversões.</p>
+          </div>
+          <div className="flex bg-slate-100 p-1 rounded-lg gap-1">
+            {[
+              { id: 'origin', label: 'Origem/Mídia' },
+              { id: 'city', label: 'Cidade' },
+              { id: 'state', label: 'Estado' },
+              { id: 'device', label: 'Dispositivo' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setConversionVar(tab.id as any)}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                  conversionVar === tab.id 
+                    ? 'bg-white text-slate-900 shadow-xs' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Tabela de Conversão */}
+          <div className="lg:col-span-2 border border-slate-100 rounded-lg overflow-hidden flex flex-col h-[380px]">
+            <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 font-bold text-xs text-slate-700 uppercase tracking-wider">
+              Detalhamento de Conversões
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="sticky top-0 bg-white shadow-xs z-10">
+                  <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8">
+                    <th className="py-2 px-4">Item</th>
+                    <th className="py-2 px-2 text-right">Pedidos (Conv.)</th>
+                    <th className="py-2 px-4 text-right">Faturamento (Receita)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-slate-700">
+                  {conversionStats.tableList.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-slate-900 truncate max-w-[150px]" title={item.name}>{item.name === '(not set)' ? '-' : item.name}</td>
+                      <td className="py-3 px-2 text-right font-mono font-bold text-slate-800">{item.conversions.toLocaleString('pt-BR')}</td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                  ))}
+                  {conversionStats.tableList.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Gráfico Histórico Diário */}
+          <div className="lg:col-span-3 border border-slate-100 rounded-lg p-5 flex flex-col h-[380px]">
+            <div className="font-bold text-xs text-slate-700 uppercase tracking-wider mb-4">
+              Histórico Diário de Conversões (Top 5)
+            </div>
+            <div className="flex-1 w-full min-h-0">
+              {conversionStats.chartList.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={conversionStats.chartList} margin={{ top: 15, right: 10, left: -25, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                    <RechartsTooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      formatter={(value, name) => [`${value} pedidos`, name]}
+                    />
+                    <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                    {conversionStats.topKeys.map((name, idx) => (
+                      <Line 
+                        key={name}
+                        type="linear"
+                        dataKey={name}
+                        stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
+                        strokeWidth={2.5}
+                        dot={{ r: 1 }}
+                        activeDot={{ r: 3 }}
+                        name={name === '(not set)' ? 'Não Informado' : name}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                  Sem dados históricos de conversão para exibir.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
