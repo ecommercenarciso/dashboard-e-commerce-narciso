@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList, ScatterChart, Scatter, ZAxis, ReferenceLine } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileDown, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package, ArrowDownRight, CreditCard, Truck } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileDown, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package, ArrowDownRight, CreditCard, Truck, Search } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 import TrafficDashboard from './TrafficDashboard';
@@ -202,6 +202,8 @@ export default function Dashboard() {
 
   const [entregaSortField, setEntregaSortField] = useState<'name' | 'quantity' | 'revenue'>('revenue');
   const [entregaSortDirection, setEntregaSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const [conversionVar, setConversionVar] = useState<'origin' | 'city' | 'state' | 'device'>('origin');
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -1239,6 +1241,115 @@ export default function Dashboard() {
     : (totalItemsQuantity > 0 ? totalItemsRevenue / totalItemsQuantity : 0);
   const avgItemsPerOrder = totalVtexOrders > 0 ? (totalItemsQuantity / totalVtexOrders) : 0;
   const avgShippingValue = deliveryOrdersCount > 0 ? (totalShippingValue / deliveryOrdersCount) : 0;
+
+  const completedTransactions = useMemo(() => {
+    if (!currentVtexOrders) return [];
+    
+    const ga4Rows = trafficData?.transactionsData?.rows || [];
+
+    return currentVtexOrders
+      .filter(o => o.status !== 'canceled')
+      .map((o: any) => {
+        const matches = ga4Rows.filter((r: any) => {
+          const tid = r.dimensionValues?.[2]?.value || '';
+          return tid && (
+            o.orderId === tid ||
+            o.orderId === `${tid}-01` ||
+            tid === o.orderId ||
+            tid.startsWith(o.orderId) ||
+            o.orderId.startsWith(tid)
+          );
+        });
+
+        // Pick highest revenue match if Data-Driven Attribution splits credit
+        matches.sort((a: any, b: any) => {
+          const revA = parseFloat(a.metricValues?.[0]?.value || '0');
+          const revB = parseFloat(b.metricValues?.[0]?.value || '0');
+          return revB - revA;
+        });
+
+        const primaryMatch = matches[0];
+
+        const rawDate = primaryMatch?.dimensionValues?.[0]?.value || '';
+        const rawHour = primaryMatch?.dimensionValues?.[1]?.value || '00';
+        const firstUserSourceMedium = primaryMatch?.dimensionValues?.[3]?.value || '-';
+        const city = primaryMatch?.dimensionValues?.[4]?.value || '-';
+        const operatingSystem = primaryMatch?.dimensionValues?.[5]?.value || '-';
+        
+        let displayDateTime = '';
+        if (o.creationDate) {
+          try {
+            const dateObj = new Date(o.creationDate);
+            displayDateTime = dateObj.toLocaleDateString('pt-BR') + ' ' + dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          } catch (e) {
+            displayDateTime = 'Data Inválida';
+          }
+        } else {
+          displayDateTime = rawDate ? `${rawDate.substring(6,8)}/${rawDate.substring(4,6)} ${rawHour}:00` : '-';
+        }
+
+        const revenue = o.totalValue ? (o.totalValue / 100) : 0;
+        const region = o.state || '-';
+        const finalCity = o.city || city;
+
+        return {
+          dateTime: displayDateTime,
+          rawDate: rawDate || (o.creationDate ? o.creationDate.split('T')[0].replace(/-/g, '') : ''),
+          orderId: o.orderId,
+          firstUserSourceMedium,
+          region,
+          city: finalCity,
+          operatingSystem,
+          revenue,
+          ga4Revenue: primaryMatch ? parseFloat(primaryMatch.metricValues?.[0]?.value || '0') : 0
+        };
+      });
+  }, [trafficData, currentVtexOrders]);
+
+  const conversionStats = useMemo(() => {
+    const tableDataMap: Record<string, { name: string, conversions: number, revenue: number }> = {};
+    const chartDataMap: Record<string, Record<string, number>> = {};
+
+    completedTransactions.forEach((tx: any) => {
+      let name = '(não setado)';
+      if (conversionVar === 'origin') name = tx.firstUserSourceMedium;
+      else if (conversionVar === 'city') name = tx.city;
+      else if (conversionVar === 'state') name = tx.region;
+      else if (conversionVar === 'device') name = tx.operatingSystem;
+
+      if (!tableDataMap[name]) {
+        tableDataMap[name] = { name, conversions: 0, revenue: 0 };
+      }
+      tableDataMap[name].conversions += 1;
+      tableDataMap[name].revenue += tx.revenue;
+
+      const rawDate = tx.rawDate || '';
+      if (!chartDataMap[rawDate]) {
+        chartDataMap[rawDate] = {};
+      }
+      chartDataMap[rawDate][name] = (chartDataMap[rawDate][name] || 0) + 1;
+    });
+
+    const tableList = Object.values(tableDataMap).sort((a, b) => b.conversions - a.conversions);
+    const topKeys = tableList.slice(0, 5).map(item => item.name);
+
+    const chartList = Object.entries(chartDataMap)
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([rawDate, values]) => {
+        const formattedDate = rawDate.length === 8 ? `${rawDate.substring(6,8)}/${rawDate.substring(4,6)}` : 'Outro';
+        const row: Record<string, any> = { date: formattedDate };
+        topKeys.forEach(k => {
+          row[k] = values[k] || 0;
+        });
+        return row;
+      });
+
+    return {
+      tableList,
+      chartList,
+      topKeys
+    };
+  }, [completedTransactions, conversionVar]);
 
   // Order status distribution data - based on current period only
   const statusMetrics = currentVtexOrders.reduce((acc, order) => {
@@ -3505,6 +3616,111 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                       <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex flex-col justify-between min-h-[85px]">
                         <p className="text-[10px] text-slate-500 uppercase font-semibold leading-tight mb-1">Média Frete</p>
                         <p className="text-[16px] sm:text-[18px] lg:text-[20px] font-bold text-slate-900 whitespace-nowrap">R$ {avgShippingValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                      </div>
+                    </div>
+                  </div>
+                 </section>
+
+                {/* Desempenho de Conversão por Variável */}
+                <section className="w-full">
+                  <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col gap-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Desempenho de Conversão por Variável</h3>
+                        <p className="text-xs text-slate-500 mt-1">Selecione uma variável para ver a tabela de pedidos/faturamento e seu histórico diário de conversões.</p>
+                      </div>
+                      <div className="flex bg-slate-100 p-1 rounded-lg gap-1">
+                        {[
+                          { id: 'origin', label: 'Origem/Mídia' },
+                          { id: 'city', label: 'Cidade' },
+                          { id: 'state', label: 'Estado' },
+                          { id: 'device', label: 'Dispositivo' }
+                        ].map(tab => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setConversionVar(tab.id as any)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                              conversionVar === tab.id 
+                                ? 'bg-white text-slate-900 shadow-xs' 
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                      {/* Tabela de Conversão */}
+                      <div className="lg:col-span-2 border border-slate-100 rounded-lg overflow-hidden flex flex-col h-[380px]">
+                        <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 font-bold text-xs text-slate-700 uppercase tracking-wider">
+                          Detalhamento de Conversões
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead className="sticky top-0 bg-white shadow-xs z-10">
+                              <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8">
+                                <th className="py-2 px-4">Item</th>
+                                <th className="py-2 px-2 text-right">Pedidos (Conv.)</th>
+                                <th className="py-2 px-4 text-right">Faturamento (Receita)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 text-slate-700">
+                              {conversionStats.tableList.map((item, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                  <td className="py-3 px-4 font-semibold text-slate-900 truncate max-w-[150px]" title={item.name}>{item.name === '(not set)' ? '-' : item.name}</td>
+                                  <td className="py-3 px-2 text-right font-mono font-bold text-slate-800">{item.conversions.toLocaleString('pt-BR')}</td>
+                                  <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                </tr>
+                              ))}
+                              {conversionStats.tableList.length === 0 && (
+                                <tr>
+                                  <td colSpan={3} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Gráfico Histórico Diário */}
+                      <div className="lg:col-span-3 border border-slate-100 rounded-lg p-5 flex flex-col h-[380px]">
+                        <div className="font-bold text-xs text-slate-700 uppercase tracking-wider mb-4">
+                          Histórico Diário de Conversões (Top 5)
+                        </div>
+                        <div className="flex-1 w-full min-h-0">
+                          {conversionStats.chartList.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={conversionStats.chartList} margin={{ top: 15, right: 10, left: -25, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                                <Tooltip 
+                                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                  formatter={(value, name) => [`${value} pedidos`, name]}
+                                />
+                                <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px' }} />
+                                {conversionStats.topKeys.map((name, idx) => (
+                                  <Line 
+                                    key={name}
+                                    type="linear"
+                                    dataKey={name}
+                                    stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
+                                    strokeWidth={2.5}
+                                    dot={{ r: 1 }}
+                                    activeDot={{ r: 3 }}
+                                    name={name === '(not set)' ? 'Não Informado' : name}
+                                  />
+                                ))}
+                              </LineChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                              Sem dados diários de conversão para o período.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
