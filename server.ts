@@ -558,7 +558,7 @@ app.post('/api/ga4/traffic', async (c) => {
     const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
     // We need multiple queries because of GA4 API limitations on dimensions/metrics
-    const [overviewData, prevOverviewData, channelsData, geoData, deviceData, campaignsData, landingPagesData, granularityData] = await Promise.all([
+    const [overviewData, prevOverviewData, channelsData, geoData, deviceData, campaignsData, landingPagesData, granularityData, transactionsData] = await Promise.all([
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         metrics: [
