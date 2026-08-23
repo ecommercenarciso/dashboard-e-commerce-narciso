@@ -34,6 +34,7 @@ const clampEndDate = (endDate: string | undefined): string => {
 // Helper function to sign JWT and retrieve access token for Google API
 async function getGoogleAccessToken(clientEmail: string, privateKeyStr: string): Promise<string> {
   const pemContents = privateKeyStr
+    .replace(/\\n/g, "")
     .replace("-----BEGIN PRIVATE KEY-----", "")
     .replace("-----END PRIVATE KEY-----", "")
     .replace(/\s/g, "");
