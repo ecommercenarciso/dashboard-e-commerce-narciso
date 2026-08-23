@@ -617,6 +617,21 @@ app.post('/api/ga4/traffic', async (c) => {
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
         metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }, { name: 'advertiserAdCost' }]
+      }, extraFilters),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [
+          { name: 'date' },
+          { name: 'hour' },
+          { name: 'transactionId' },
+          { name: 'firstUserSourceMedium' },
+          { name: 'region' },
+          { name: 'city' },
+          { name: 'operatingSystem' }
+        ],
+        metrics: [
+          { name: 'purchaseRevenue' }
+        ]
       }, extraFilters)
     ]);
 
@@ -628,7 +643,8 @@ app.post('/api/ga4/traffic', async (c) => {
       deviceData,
       campaignsData,
       landingPagesData,
-      granularityData
+      granularityData,
+      transactionsData
     });
   } catch (error: any) {
     console.error('GA4 Traffic Error:', error);

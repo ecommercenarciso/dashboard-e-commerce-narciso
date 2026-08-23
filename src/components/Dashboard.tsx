@@ -6140,6 +6140,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 finalChartData={finalChartData}
                 loading={loading}
                 vtexOrders={totalVtexOrders}
+                vtexOrdersList={currentVtexOrders}
                 chartInterval={chartInterval}
                 ga4Origins={ga4Origins}
                 setGa4Origins={setGa4Origins}

@@ -26,6 +26,7 @@ interface TrafficDashboardProps {
   ga4StateOptions?: string[];
   ga4CityOptions?: string[];
   ga4OsOptions?: string[];
+  vtexOrdersList?: any[];
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -101,7 +102,7 @@ const FilterDropdown = ({ title, options, selected, onChange, isOpen, setIsOpen 
 export default function TrafficDashboard({ 
   data, filters, funnelData, finalChartData, loading, vtexOrders, chartInterval,
   ga4Origins, setGa4Origins, ga4States, setGa4States, ga4Cities, setGa4Cities, ga4Os, setGa4Os,
-  ga4OriginOptions, ga4StateOptions, ga4CityOptions, ga4OsOptions, getDayOfWeekSuffix
+  ga4OriginOptions, ga4StateOptions, ga4CityOptions, ga4OsOptions, getDayOfWeekSuffix, vtexOrdersList
 }: TrafficDashboardProps) {
   const [campaignSearch, setCampaignSearch] = useState('');
   const [granularitySearch, setGranularitySearch] = useState('');
@@ -121,56 +122,80 @@ export default function TrafficDashboard({
 
   const [conversionVar, setConversionVar] = useState<'origin' | 'city' | 'state' | 'device'>('origin');
 
+  const completedTransactions = useMemo(() => {
+    if (!data?.transactionsData?.rows) return [];
+    
+    return data.transactionsData.rows.map((r: any) => {
+      const rawDate = r.dimensionValues?.[0]?.value || '';
+      const rawHour = r.dimensionValues?.[1]?.value || '00';
+      const transactionId = r.dimensionValues?.[2]?.value || '';
+      const firstUserSourceMedium = r.dimensionValues?.[3]?.value || '(não setado)';
+      const region = r.dimensionValues?.[4]?.value || '(não setado)';
+      const city = r.dimensionValues?.[5]?.value || '(não setado)';
+      const operatingSystem = r.dimensionValues?.[6]?.value || '(não setado)';
+      
+      const ga4Revenue = parseFloat(r.metricValues?.[0]?.value || '0');
+
+      const matchedOrder = vtexOrdersList?.find(o => 
+        o.orderId === transactionId || 
+        o.orderId === `${transactionId}-01` || 
+        transactionId === o.orderId ||
+        transactionId.startsWith(o.orderId) ||
+        o.orderId.startsWith(transactionId)
+      );
+
+      if (!matchedOrder || matchedOrder.status === 'canceled') return null;
+
+      let displayDateTime = '';
+      if (matchedOrder.creationDate) {
+        try {
+          const dateObj = new Date(matchedOrder.creationDate);
+          displayDateTime = dateObj.toLocaleDateString('pt-BR') + ' ' + dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+          displayDateTime = `${rawDate.substring(6,8)}/${rawDate.substring(4,6)} ${rawHour}:00`;
+        }
+      } else {
+        displayDateTime = `${rawDate.substring(6,8)}/${rawDate.substring(4,6)} ${rawHour}:00`;
+      }
+
+      const revenue = matchedOrder.totalValue ? (matchedOrder.totalValue / 100) : ga4Revenue;
+
+      return {
+        dateTime: displayDateTime,
+        rawDate,
+        orderId: matchedOrder.orderId || transactionId,
+        firstUserSourceMedium,
+        region,
+        city,
+        operatingSystem,
+        revenue
+      };
+    }).filter(Boolean) as any[];
+  }, [data, vtexOrdersList]);
+
   const conversionStats = useMemo(() => {
     const tableDataMap: Record<string, { name: string, conversions: number, revenue: number }> = {};
     const chartDataMap: Record<string, Record<string, number>> = {};
 
-    let rows: any[] = [];
-    let dimIndex = 1;
-    let convIndex = 2;
-    let revIndex = 3;
-
-    if (conversionVar === 'origin') {
-      rows = data?.channelsData?.rows || [];
-      dimIndex = 1; // firstUserSourceMedium
-      convIndex = 4; // conversions
-      revIndex = 5; // totalRevenue
-    } else if (conversionVar === 'city') {
-      rows = data?.geoData?.rows || [];
-      dimIndex = 2; // city is index 2 (date, region, city, hour)
-      convIndex = 2;
-      revIndex = 3;
-    } else if (conversionVar === 'state') {
-      rows = data?.geoData?.rows || [];
-      dimIndex = 1; // region is index 1
-      convIndex = 2;
-      revIndex = 3;
-    } else if (conversionVar === 'device') {
-      rows = data?.deviceData?.rows || [];
-      dimIndex = 1; // operatingSystem
-      convIndex = 2;
-      revIndex = 3;
-    }
-
-    rows.forEach((r: any) => {
-      const rawDate = r.dimensionValues?.[0]?.value || '';
-      const name = r.dimensionValues?.[dimIndex]?.value || '(não setado)';
-      const convs = parseInt(r.metricValues?.[convIndex]?.value || '0', 10);
-      const rev = parseFloat(r.metricValues?.[revIndex]?.value || '0');
-
-      if (!rawDate) return;
+    completedTransactions.forEach((tx: any) => {
+      let name = '(não setado)';
+      if (conversionVar === 'origin') name = tx.firstUserSourceMedium;
+      else if (conversionVar === 'city') name = tx.city;
+      else if (conversionVar === 'state') name = tx.region;
+      else if (conversionVar === 'device') name = tx.operatingSystem;
 
       if (!tableDataMap[name]) {
         tableDataMap[name] = { name, conversions: 0, revenue: 0 };
       }
-      tableDataMap[name].conversions += convs;
-      tableDataMap[name].revenue += rev;
+      tableDataMap[name].conversions += 1;
+      tableDataMap[name].revenue += tx.revenue;
 
-      const formattedDate = `${rawDate.substring(6,8)}/${rawDate.substring(4,6)}`;
+      const rawDate = tx.rawDate || '';
+      const formattedDate = rawDate ? `${rawDate.substring(6,8)}/${rawDate.substring(4,6)}` : 'Outro';
       if (!chartDataMap[formattedDate]) {
         chartDataMap[formattedDate] = {};
       }
-      chartDataMap[formattedDate][name] = (chartDataMap[formattedDate][name] || 0) + convs;
+      chartDataMap[formattedDate][name] = (chartDataMap[formattedDate][name] || 0) + 1;
     });
 
     const tableList = Object.values(tableDataMap).sort((a, b) => b.conversions - a.conversions);
@@ -189,7 +214,7 @@ export default function TrafficDashboard({
       chartList,
       topKeys
     };
-  }, [data, conversionVar]);
+  }, [completedTransactions, conversionVar]);
   
   const handleFunnelLegendClick = (e: any) => {
     const dataKey = e.dataKey;
@@ -1136,6 +1161,48 @@ export default function TrafficDashboard({
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* CAMADA DE DETALHAMENTO DE PEDIDOS ATRIBUÍDOS (GA4 + VTEX) */}
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
+        <div>
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Rastreamento de Pedidos e Atribuição (GA4 + VTEX)</h3>
+          <p className="text-xs text-slate-500 mt-1">Lista completa de pedidos registrados no GA4 identificados e validados na VTEX com atribuição de canais e localidade.</p>
+        </div>
+        
+        <div className="overflow-x-auto max-h-[400px] custom-scrollbar">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="sticky top-0 bg-white shadow-xs z-10">
+              <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8">
+                <th className="py-2 px-4">Data e Horário</th>
+                <th className="py-2 px-4">Número do Pedido</th>
+                <th className="py-2 px-4 text-right">Valor</th>
+                <th className="py-2 px-4">Primeira Origem/Mídia</th>
+                <th className="py-2 px-4">Estado</th>
+                <th className="py-2 px-4">Cidade</th>
+                <th className="py-2 px-4">Sistema Operacional</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-700">
+              {completedTransactions.map((tx: any, idx: number) => (
+                <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-3 px-4 font-mono">{tx.dateTime}</td>
+                  <td className="py-3 px-4 font-bold text-blue-600 font-mono">{tx.orderId}</td>
+                  <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">R$ {tx.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="py-3 px-4 font-semibold text-slate-800">{tx.firstUserSourceMedium === '(not set)' ? '-' : tx.firstUserSourceMedium}</td>
+                  <td className="py-3 px-4 font-medium text-slate-600">{tx.region === '(not set)' ? '-' : tx.region}</td>
+                  <td className="py-3 px-4 text-slate-600">{tx.city === '(not set)' ? '-' : tx.city}</td>
+                  <td className="py-3 px-4 text-slate-500 font-mono text-[10px]">{tx.operatingSystem === '(not set)' ? '-' : tx.operatingSystem}</td>
+                </tr>
+              ))}
+              {completedTransactions.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400">Nenhum pedido correspondente identificado entre GA4 e VTEX no período selecionado.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
