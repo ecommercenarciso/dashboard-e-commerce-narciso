@@ -1426,7 +1426,7 @@ export default function Dashboard() {
     if (!trafficData?.geoData?.rows) return [];
     const totalMap: Record<string, number> = {};
     trafficData.geoData.rows.forEach((r: any) => {
-      const name = r.dimensionValues?.[2]?.value || '(não setado)';
+      const name = r.dimensionValues?.[1]?.value || '(não setado)';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       totalMap[name] = (totalMap[name] || 0) + val;
     });
@@ -1491,8 +1491,8 @@ export default function Dashboard() {
     const dateMap: Record<string, Record<string, number>> = {};
     trafficData.geoData.rows.forEach((r: any) => {
       const rawDate = r.dimensionValues?.[0]?.value || '';
-      const name = r.dimensionValues?.[2]?.value || '(não setado)';
-      const rawHour = r.dimensionValues?.[3]?.value || '00';
+      const name = r.dimensionValues?.[1]?.value || '(não setado)';
+      const rawHour = r.dimensionValues?.[2]?.value || '00';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
       
@@ -1604,7 +1604,7 @@ export default function Dashboard() {
     let totalVis = 0;
     let totalSess = 0;
     trafficData.geoData.rows.forEach((r: any) => {
-      const name = r.dimensionValues?.[2]?.value || '(não setado)';
+      const name = r.dimensionValues?.[1]?.value || '(não setado)';
       const sess = parseInt(r.metricValues?.[0]?.value || '0');
       const vis = parseInt(r.metricValues?.[1]?.value || '0');
       if (!map[name]) {
@@ -6810,23 +6810,23 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
 
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/30">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Tráfego por Estado (GA4)</h3>
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 mb-3 border-b border-slate-200 pb-2">Tráfego por Cidade (GA4)</h3>
             <table className="w-full text-left text-[10px]">
               <thead>
                 <tr className="border-b border-slate-350 text-slate-500 font-bold uppercase h-6">
-                  <th className="pb-1">Estado (Região)</th>
+                  <th className="pb-1">Cidade</th>
                   <th className="pb-1 text-right">Sessões</th>
                   <th className="pb-1 text-right">Receita</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(trafficData?.geoData?.rows || []).slice(0, 8).map((r: any, idx: number) => {
-                  const state = r.dimensionValues?.[1]?.value || '(não setado)';
+                  const city = r.dimensionValues?.[1]?.value || '(não setado)';
                   const sess = parseInt(r.metricValues?.[0]?.value || '0');
-                  const rev = parseFloat(r.metricValues?.[3]?.value || '0'); // totalRevenue is index 3 now! (sessions, totalUsers, conversions, totalRevenue)
+                  const rev = parseFloat(r.metricValues?.[3]?.value || '0');
                   return (
                     <tr key={idx} className="h-6">
-                      <td className="font-medium">{state}</td>
+                      <td className="font-medium">{city}</td>
                       <td className="text-right font-mono text-slate-600">{sess?.toLocaleString('pt-BR')}</td>
                       <td className="text-right font-semibold text-slate-900">R$ {rev?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     </tr>
