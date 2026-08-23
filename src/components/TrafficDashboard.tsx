@@ -130,9 +130,8 @@ export default function TrafficDashboard({
       const rawHour = r.dimensionValues?.[1]?.value || '00';
       const transactionId = r.dimensionValues?.[2]?.value || '';
       const firstUserSourceMedium = r.dimensionValues?.[3]?.value || '(não setado)';
-      const region = r.dimensionValues?.[4]?.value || '(não setado)';
-      const city = r.dimensionValues?.[5]?.value || '(não setado)';
-      const operatingSystem = r.dimensionValues?.[6]?.value || '(não setado)';
+      const city = r.dimensionValues?.[4]?.value || '(não setado)';
+      const operatingSystem = r.dimensionValues?.[5]?.value || '(não setado)';
       
       const ga4Revenue = parseFloat(r.metricValues?.[0]?.value || '0');
 
@@ -159,6 +158,8 @@ export default function TrafficDashboard({
       }
 
       const revenue = matchedOrder.totalValue ? (matchedOrder.totalValue / 100) : ga4Revenue;
+      const region = matchedOrder.state || '(não setado)';
+      const finalCity = matchedOrder.city || city;
 
       return {
         dateTime: displayDateTime,
@@ -166,7 +167,7 @@ export default function TrafficDashboard({
         orderId: matchedOrder.orderId || transactionId,
         firstUserSourceMedium,
         region,
-        city,
+        city: finalCity,
         operatingSystem,
         revenue
       };

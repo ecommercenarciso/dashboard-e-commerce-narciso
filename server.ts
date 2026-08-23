@@ -625,7 +625,6 @@ app.post('/api/ga4/traffic', async (c) => {
           { name: 'hour' },
           { name: 'transactionId' },
           { name: 'sourceMedium' },
-          { name: 'region' },
           { name: 'city' },
           { name: 'operatingSystem' }
         ],
