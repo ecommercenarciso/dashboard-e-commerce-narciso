@@ -125,7 +125,7 @@ export default function TrafficDashboard({
   const completedTransactions = useMemo(() => {
     if (!data?.transactionsData?.rows) return [];
     
-    return data.transactionsData.rows.map((r: any) => {
+    const rawList = data.transactionsData.rows.map((r: any) => {
       const rawDate = r.dimensionValues?.[0]?.value || '';
       const rawHour = r.dimensionValues?.[1]?.value || '00';
       const transactionId = r.dimensionValues?.[2]?.value || '';
@@ -169,9 +169,26 @@ export default function TrafficDashboard({
         region,
         city: finalCity,
         operatingSystem,
-        revenue
+        revenue,
+        ga4Revenue // Keep fractional revenue for sorting if needed
       };
     }).filter(Boolean) as any[];
+
+    // Deduplicate by orderId (GA4 splits credit across channels for the same transaction)
+    const uniqueOrders = new Map<string, any>();
+    for (const item of rawList) {
+      if (!uniqueOrders.has(item.orderId)) {
+        uniqueOrders.set(item.orderId, item);
+      } else {
+        // If GA4 returns multiple sources, we could combine them or pick the one with highest fractional revenue
+        const existing = uniqueOrders.get(item.orderId);
+        if (item.ga4Revenue > existing.ga4Revenue) {
+          uniqueOrders.set(item.orderId, item);
+        }
+      }
+    }
+
+    return Array.from(uniqueOrders.values());
   }, [data, vtexOrdersList]);
 
   const conversionStats = useMemo(() => {
