@@ -111,6 +111,8 @@ export default function TrafficDashboard({
   const [channelSortDir, setChannelSortDir] = useState<'asc' | 'desc'>('desc');
   const [campaignSortField, setCampaignSortField] = useState('revenue');
   const [campaignSortDir, setCampaignSortDir] = useState<'asc' | 'desc'>('desc');
+  const [trackingSortField, setTrackingSortField] = useState('dateTime');
+  const [trackingSortDir, setTrackingSortDir] = useState<'asc' | 'desc'>('desc');
   const [funnelBase, setFunnelBase] = useState<'users' | 'sessions'>('users');
   const [activeFunnelLines, setActiveFunnelLines] = useState<string[]>([]);
   const [isAverageView, setIsAverageView] = useState(false);
@@ -190,6 +192,21 @@ export default function TrafficDashboard({
 
     return Array.from(uniqueOrders.values());
   }, [data, vtexOrdersList]);
+
+  const sortedTransactions = useMemo(() => {
+    return [...completedTransactions].sort((a: any, b: any) => {
+      let valA = a[trackingSortField];
+      let valB = b[trackingSortField];
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return trackingSortDir === 'asc' 
+          ? valA.localeCompare(valB) 
+          : valB.localeCompare(valA);
+      }
+      return trackingSortDir === 'asc' 
+        ? (valA as number) - (valB as number) 
+        : (valB as number) - (valA as number);
+    });
+  }, [completedTransactions, trackingSortField, trackingSortDir]);
 
   const conversionStats = useMemo(() => {
     const tableDataMap: Record<string, { name: string, conversions: number, revenue: number }> = {};
@@ -383,6 +400,11 @@ export default function TrafficDashboard({
   const handleCampaignSort = (field: string) => {
     if (campaignSortField === field) setCampaignSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setCampaignSortField(field); setCampaignSortDir('desc'); }
+  };
+
+  const handleTrackingSort = (field: string) => {
+    if (trackingSortField === field) setTrackingSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setTrackingSortField(field); setTrackingSortDir('desc'); }
   };
 
   if (!data || data.mock || !data.overviewData || !data.overviewData.rows || data.overviewData.rows.length === 0) {
@@ -1193,17 +1215,17 @@ export default function TrafficDashboard({
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 bg-white shadow-xs z-10">
               <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8">
-                <th className="py-2 px-4">Data e Horário</th>
-                <th className="py-2 px-4">Número do Pedido</th>
-                <th className="py-2 px-4 text-right">Valor</th>
-                <th className="py-2 px-4">Primeira Origem/Mídia</th>
-                <th className="py-2 px-4">Estado</th>
-                <th className="py-2 px-4">Cidade</th>
-                <th className="py-2 px-4">Sistema Operacional</th>
+                <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleTrackingSort('dateTime')}>Data e Horário {trackingSortField === 'dateTime' ? (trackingSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleTrackingSort('orderId')}>Número do Pedido {trackingSortField === 'orderId' ? (trackingSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleTrackingSort('revenue')}>Valor {trackingSortField === 'revenue' ? (trackingSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleTrackingSort('firstUserSourceMedium')}>Primeira Origem/Mídia {trackingSortField === 'firstUserSourceMedium' ? (trackingSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleTrackingSort('region')}>Estado {trackingSortField === 'region' ? (trackingSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleTrackingSort('city')}>Cidade {trackingSortField === 'city' ? (trackingSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleTrackingSort('operatingSystem')}>Sistema Operacional {trackingSortField === 'operatingSystem' ? (trackingSortDir === 'desc' ? '▼' : '▲') : ''}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {completedTransactions.map((tx: any, idx: number) => (
+              {sortedTransactions.map((tx: any, idx: number) => (
                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
                   <td className="py-3 px-4 font-mono">{tx.dateTime}</td>
                   <td className="py-3 px-4 font-bold text-blue-600 font-mono">{tx.orderId}</td>
