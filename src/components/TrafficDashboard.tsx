@@ -125,72 +125,67 @@ export default function TrafficDashboard({
   const [conversionVar, setConversionVar] = useState<'origin' | 'city' | 'state' | 'device'>('origin');
 
   const completedTransactions = useMemo(() => {
-    if (!data?.transactionsData?.rows) return [];
+    if (!vtexOrdersList) return [];
     
-    const rawList = data.transactionsData.rows.map((r: any) => {
-      const rawDate = r.dimensionValues?.[0]?.value || '';
-      const rawHour = r.dimensionValues?.[1]?.value || '00';
-      const transactionId = r.dimensionValues?.[2]?.value || '';
-      const firstUserSourceMedium = r.dimensionValues?.[3]?.value || '(não setado)';
-      const city = r.dimensionValues?.[4]?.value || '(não setado)';
-      const operatingSystem = r.dimensionValues?.[5]?.value || '(não setado)';
-      
-      const ga4Revenue = parseFloat(r.metricValues?.[0]?.value || '0');
+    const ga4Rows = data?.transactionsData?.rows || [];
 
-      const matchedOrder = vtexOrdersList?.find(o => 
-        o.orderId === transactionId || 
-        o.orderId === `${transactionId}-01` || 
-        transactionId === o.orderId ||
-        transactionId.startsWith(o.orderId) ||
-        o.orderId.startsWith(transactionId)
-      );
+    return vtexOrdersList
+      .filter(o => o.status !== 'canceled')
+      .map((o: any) => {
+        const matches = ga4Rows.filter((r: any) => {
+          const tid = r.dimensionValues?.[2]?.value || '';
+          return tid && (
+            o.orderId === tid ||
+            o.orderId === `${tid}-01` ||
+            tid === o.orderId ||
+            tid.startsWith(o.orderId) ||
+            o.orderId.startsWith(tid)
+          );
+        });
 
-      if (!matchedOrder || matchedOrder.status === 'canceled') return null;
+        // Pick highest revenue match if Data-Driven Attribution splits credit
+        matches.sort((a: any, b: any) => {
+          const revA = parseFloat(a.metricValues?.[0]?.value || '0');
+          const revB = parseFloat(b.metricValues?.[0]?.value || '0');
+          return revB - revA;
+        });
 
-      let displayDateTime = '';
-      if (matchedOrder.creationDate) {
-        try {
-          const dateObj = new Date(matchedOrder.creationDate);
-          displayDateTime = dateObj.toLocaleDateString('pt-BR') + ' ' + dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        } catch (e) {
-          displayDateTime = `${rawDate.substring(6,8)}/${rawDate.substring(4,6)} ${rawHour}:00`;
+        const primaryMatch = matches[0];
+
+        const rawDate = primaryMatch?.dimensionValues?.[0]?.value || '';
+        const rawHour = primaryMatch?.dimensionValues?.[1]?.value || '00';
+        const firstUserSourceMedium = primaryMatch?.dimensionValues?.[3]?.value || '-';
+        const city = primaryMatch?.dimensionValues?.[4]?.value || '-';
+        const operatingSystem = primaryMatch?.dimensionValues?.[5]?.value || '-';
+        
+        let displayDateTime = '';
+        if (o.creationDate) {
+          try {
+            const dateObj = new Date(o.creationDate);
+            displayDateTime = dateObj.toLocaleDateString('pt-BR') + ' ' + dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          } catch (e) {
+            displayDateTime = 'Data Inválida';
+          }
+        } else {
+          displayDateTime = rawDate ? `${rawDate.substring(6,8)}/${rawDate.substring(4,6)} ${rawHour}:00` : '-';
         }
-      } else {
-        displayDateTime = `${rawDate.substring(6,8)}/${rawDate.substring(4,6)} ${rawHour}:00`;
-      }
 
-      const revenue = matchedOrder.totalValue ? (matchedOrder.totalValue / 100) : ga4Revenue;
-      const region = matchedOrder.state || '(não setado)';
-      const finalCity = matchedOrder.city || city;
+        const revenue = o.totalValue ? (o.totalValue / 100) : 0;
+        const region = o.state || '-';
+        const finalCity = o.city || city;
 
-      return {
-        dateTime: displayDateTime,
-        rawDate,
-        orderId: matchedOrder.orderId || transactionId,
-        firstUserSourceMedium,
-        region,
-        city: finalCity,
-        operatingSystem,
-        revenue,
-        ga4Revenue // Keep fractional revenue for sorting if needed
-      };
-    }).filter(Boolean) as any[];
-
-    // Deduplicate by orderId (GA4 splits credit across channels for the same transaction)
-    const uniqueOrders = new Map<string, any>();
-    for (const item of rawList) {
-      if (!uniqueOrders.has(item.orderId)) {
-        uniqueOrders.set(item.orderId, item);
-      } else {
-        // If GA4 returns multiple sources, we could combine them or pick the one with highest fractional revenue
-        const existing = uniqueOrders.get(item.orderId);
-        if (item.ga4Revenue > existing.ga4Revenue) {
-          uniqueOrders.set(item.orderId, item);
-        }
-      }
-    }
-
-    return Array.from(uniqueOrders.values());
+        return {
+          dateTime: displayDateTime,
+          rawDate: rawDate || (o.creationDate ? o.creationDate.split('T')[0].replace(/-/g, '') : ''),
+          orderId: o.orderId,
+          firstUserSourceMedium,
+          region,
+          city: finalCity,
+          operatingSystem,
+          revenue,
+          ga4Revenue: primaryMatch ? parseFloat(primaryMatch.metricValues?.[0]?.value || '0') : 0
+        };
+      });
   }, [data, vtexOrdersList]);
 
   const sortedTransactions = useMemo(() => {
@@ -226,23 +221,25 @@ export default function TrafficDashboard({
       tableDataMap[name].revenue += tx.revenue;
 
       const rawDate = tx.rawDate || '';
-      const formattedDate = rawDate ? `${rawDate.substring(6,8)}/${rawDate.substring(4,6)}` : 'Outro';
-      if (!chartDataMap[formattedDate]) {
-        chartDataMap[formattedDate] = {};
+      if (!chartDataMap[rawDate]) {
+        chartDataMap[rawDate] = {};
       }
-      chartDataMap[formattedDate][name] = (chartDataMap[formattedDate][name] || 0) + 1;
+      chartDataMap[rawDate][name] = (chartDataMap[rawDate][name] || 0) + 1;
     });
 
     const tableList = Object.values(tableDataMap).sort((a, b) => b.conversions - a.conversions);
     const topKeys = tableList.slice(0, 5).map(item => item.name);
 
-    const chartList = Object.entries(chartDataMap).map(([date, values]) => {
-      const row: Record<string, any> = { date };
-      topKeys.forEach(k => {
-        row[k] = values[k] || 0;
+    const chartList = Object.entries(chartDataMap)
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([rawDate, values]) => {
+        const formattedDate = rawDate.length === 8 ? `${rawDate.substring(6,8)}/${rawDate.substring(4,6)}` : 'Outro';
+        const row: Record<string, any> = { date: formattedDate };
+        topKeys.forEach(k => {
+          row[k] = values[k] || 0;
+        });
+        return row;
       });
-      return row;
-    });
 
     return {
       tableList,
@@ -1211,7 +1208,7 @@ export default function TrafficDashboard({
           <p className="text-xs text-slate-500 mt-1">Lista completa de pedidos registrados no GA4 identificados e validados na VTEX com atribuição de canais e localidade.</p>
         </div>
         
-        <div className="overflow-x-auto max-h-[400px] custom-scrollbar">
+        <div className="overflow-auto max-h-[400px] custom-scrollbar">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 bg-white shadow-xs z-10">
               <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8">
