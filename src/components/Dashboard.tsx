@@ -239,6 +239,8 @@ export default function Dashboard() {
     sessions: 40000
   });
 
+  const [goalsGranularity, setGoalsGranularity] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+
   useEffect(() => {
     const savedGoals = localStorage.getItem('dashboard_goals');
     if (savedGoals) {
@@ -5040,92 +5042,163 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                    </div>
                 </div>
 
+                {/* Granularity Selector & Header */}
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-2 mt-4">
+                   <div>
+                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Acompanhamento de Desempenho</h3>
+                      <p className="text-xs text-slate-500 mt-1">Selecione a escala temporal para monitorar o atingimento das metas.</p>
+                   </div>
+                   <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                      {[
+                        { id: 'daily', label: 'Diário' },
+                        { id: 'weekly', label: 'Semanal' },
+                        { id: 'monthly', label: 'Mensal' }
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setGoalsGranularity(tab.id as any)}
+                          className={`px-3 py-1 rounded-[6px] text-xs font-semibold transition-all ${goalsGranularity === tab.id ? 'bg-white shadow-xs text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+
                 {/* Grid de Acompanhamento */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {[
-                      {
-                         title: "Faturamento VTEX",
-                         real: totalVtexRevenue,
-                         meta: goals.revenue,
-                         formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                         type: "currency"
-                      },
-                      {
-                         title: "Quantidade de Pedidos",
-                         real: totalVtexOrders,
-                         meta: goals.orders,
-                         formatter: (v: number) => v.toLocaleString('pt-BR'),
-                         type: "count"
-                      },
-                      {
-                         title: "Ticket Médio",
-                         real: avgOrderValue,
-                         meta: goals.ticket,
-                         formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                         type: "currency"
-                      },
-                      {
-                         title: "Taxa de Conversão",
-                         real: parseFloat(avgConversionRate),
-                         meta: goals.conversion,
-                         formatter: (v: number) => `${v.toFixed(2)}%`,
-                         type: "percentage"
-                      },
-                      {
-                         title: "Sessões (Tráfego)",
-                         real: totalSessions,
-                         meta: goals.sessions,
-                         formatter: (v: number) => v.toLocaleString('pt-BR'),
-                         type: "count"
-                      }
-                   ].map((item, idx) => {
-                      const pct = item.meta > 0 ? (item.real / item.meta) * 100 : 0;
-                      const diff = item.real - item.meta;
-                      const isReached = diff >= 0;
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                   {(() => {
+                      const startD = new Date(filters.startDate);
+                      const startUtc = Date.UTC(startD.getFullYear(), startD.getMonth(), startD.getDate());
+                      const endD = new Date(filters.endDate);
+                      const endUtc = Date.UTC(endD.getFullYear(), endD.getMonth(), endD.getDate());
+                      const diffDays = Math.max(1, Math.floor((endUtc - startUtc) / (1000 * 60 * 60 * 24)) + 1);
+                      const weeksInPeriod = Math.max(0.1, diffDays / 7);
+                      const monthsInPeriod = Math.max(0.1, diffDays / 30);
+
+                      let scaleLabel = '';
+                      let revenueReal = totalVtexRevenue;
+                      let revenueMeta = goals.revenue;
                       
-                      let progressColor = 'bg-rose-500';
-                      let textColor = 'text-rose-600';
-                      if (pct >= 100) {
-                         progressColor = 'bg-emerald-500';
-                         textColor = 'text-emerald-600';
-                      } else if (pct >= 70) {
-                         progressColor = 'bg-amber-500';
-                         textColor = 'text-amber-600';
+                      let ordersReal = totalVtexOrders;
+                      let ordersMeta = goals.orders;
+                      
+                      let sessionsReal = totalSessions;
+                      let sessionsMeta = goals.sessions;
+
+                      if (goalsGranularity === 'daily') {
+                         scaleLabel = '/dia';
+                         revenueReal = totalVtexRevenue / diffDays;
+                         revenueMeta = 2000;
+                         ordersReal = totalVtexOrders / diffDays;
+                         ordersMeta = 7;
+                         sessionsReal = totalSessions / diffDays;
+                         sessionsMeta = 1400;
+                      } else if (goalsGranularity === 'weekly') {
+                         scaleLabel = '/semana';
+                         revenueReal = totalVtexRevenue / weeksInPeriod;
+                         revenueMeta = 15000;
+                         ordersReal = totalVtexOrders / weeksInPeriod;
+                         ordersMeta = 50;
+                         sessionsReal = totalSessions / weeksInPeriod;
+                         sessionsMeta = 9600;
+                      } else {
+                         scaleLabel = '/mês';
+                         revenueReal = totalVtexRevenue / monthsInPeriod;
+                         revenueMeta = goals.revenue;
+                         ordersReal = totalVtexOrders / monthsInPeriod;
+                         ordersMeta = goals.orders;
+                         sessionsReal = totalSessions / monthsInPeriod;
+                         sessionsMeta = goals.sessions;
                       }
 
-                      return (
-                         <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-48">
-                            <div>
-                               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.title}</span>
-                               <div className="flex justify-between items-baseline mt-2">
-                                  <h3 className="text-2xl font-black text-slate-800">{item.formatter(item.real)}</h3>
-                                  <span className={`text-xs font-extrabold ${textColor}`}>{pct.toFixed(1)}%</span>
+                      const cardsList = [
+                        {
+                           title: `Faturamento Meta (${goalsGranularity === 'daily' ? 'Diário' : goalsGranularity === 'weekly' ? 'Semanal' : 'Mensal'})`,
+                           real: revenueReal,
+                           meta: revenueMeta,
+                           formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                           type: "currency"
+                        },
+                        {
+                           title: `Quantidade de Pedidos (${goalsGranularity === 'daily' ? 'Diário' : goalsGranularity === 'weekly' ? 'Semanal' : 'Mensal'})`,
+                           real: ordersReal,
+                           meta: ordersMeta,
+                           formatter: (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+                           type: "count"
+                        },
+                        {
+                           title: "Ticket Médio Meta",
+                           real: avgOrderValue,
+                           meta: goals.ticket,
+                           formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                           type: "currency"
+                        },
+                        {
+                           title: "Taxa de Conversão Meta",
+                           real: parseFloat(avgConversionRate),
+                           meta: goals.conversion,
+                           formatter: (v: number) => `${v.toFixed(2)}%`,
+                           type: "percentage"
+                        },
+                        {
+                           title: `Sessões / Tráfego (${goalsGranularity === 'daily' ? 'Diário' : goalsGranularity === 'weekly' ? 'Semanal' : 'Mensal'})`,
+                           real: sessionsReal,
+                           meta: sessionsMeta,
+                           formatter: (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+                           type: "count"
+                        }
+                      ];
+
+                      return cardsList.map((item, idx) => {
+                         const pct = item.meta > 0 ? (item.real / item.meta) * 100 : 0;
+                         const diff = item.real - item.meta;
+                         const isReached = diff >= 0;
+                         
+                         let progressColor = 'bg-rose-500';
+                         let textColor = 'text-rose-600';
+                         if (pct >= 100) {
+                            progressColor = 'bg-emerald-500';
+                            textColor = 'text-emerald-600';
+                         } else if (pct >= 70) {
+                            progressColor = 'bg-amber-500';
+                            textColor = 'text-amber-600';
+                         }
+
+                         return (
+                            <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between h-48">
+                               <div>
+                                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.title}</span>
+                                  <div className="flex justify-between items-baseline mt-2">
+                                     <h3 className="text-2xl font-black text-slate-800">{item.formatter(item.real)}</h3>
+                                     <span className={`text-xs font-extrabold ${textColor}`}>{pct.toFixed(1)}%</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 mt-1">Meta: {item.formatter(item.meta)}</p>
                                </div>
-                               <p className="text-[10px] text-slate-400 mt-1">Meta definida: {item.formatter(item.meta)}</p>
-                            </div>
 
-                            <div className="w-full mt-4">
-                               <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                  <div className={`h-full ${progressColor} rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                                </div>
-                            </div>
+                               <div className="w-full mt-4">
+                                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                     <div className={`h-full ${progressColor} rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                                   </div>
+                               </div>
 
-                            <div className="text-[10px] font-semibold border-t border-slate-100 pt-3 flex justify-between">
-                               {isReached ? (
-                                  <>
-                                     <span className="text-emerald-600">Meta Superada!</span>
-                                     <span className="text-emerald-600">+{item.formatter(diff)}</span>
-                                  </>
-                               ) : (
-                                  <>
-                                     <span className="text-rose-500">Falta para a Meta:</span>
-                                     <span className="text-rose-500">{item.formatter(Math.abs(diff))}</span>
-                                  </>
-                               )}
+                               <div className="text-[10px] font-semibold border-t border-slate-100 pt-3 flex justify-between">
+                                  {isReached ? (
+                                     <>
+                                        <span className="text-emerald-600">Meta Superada!</span>
+                                        <span className="text-emerald-600">+{item.formatter(diff)}</span>
+                                     </>
+                                  ) : (
+                                     <>
+                                        <span className="text-rose-500">Falta para a Meta:</span>
+                                        <span className="text-rose-500">{item.formatter(Math.abs(diff))}</span>
+                                     </>
+                                  )}
+                               </div>
                             </div>
-                         </div>
-                      );
-                   })}
+                         );
+                      });
+                   })()}
                 </div>
 
                 {/* Metas por Dia da Semana */}
