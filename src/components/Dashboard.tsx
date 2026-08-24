@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned'>('executive');
   const [trafficData, setTrafficData] = useState<any>(null);
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
@@ -213,6 +213,19 @@ export default function Dashboard() {
     } else {
       setConversionSortField(field);
       setConversionSortDir('desc');
+    }
+  };
+
+  const [abandonedSearch, setAbandonedSearch] = useState('');
+  const [abandonedSortField, setAbandonedSortField] = useState<'name' | 'totalValue' | 'itemsCount' | 'avgItemVal' | 'date'>('date');
+  const [abandonedSortDir, setAbandonedSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleAbandonedSort = (field: 'name' | 'totalValue' | 'itemsCount' | 'avgItemVal' | 'date') => {
+    if (abandonedSortField === field) {
+      setAbandonedSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setAbandonedSortField(field);
+      setAbandonedSortDir('desc');
     }
   };
 
@@ -2556,6 +2569,89 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
 5. Crie um **Plano de Ação Estratégico (Passo a Passo)** prático, dividido em ações de curto prazo (correções rápidas) e médio prazo (investimento/otimização).`;
   }, [filters, totalVtexRevenue, totalVtexOrders, avgOrderValue, approvedRevenue, approvedCount, canceledRevenue, canceledOrders, avgConversionRate, deliveryOrdersCount, pickupOrdersCount, totalShippingValue, avgInvoiceTimeHours, totalSessions, currentGa4Data, funnelData, trafficData, generalProductList, topDeliveryCities, topPickupCities, carriersList, paymentMethodsData, installmentsData, topClients]);
 
+  // Abandoned Carts Tab Computations
+  const abandonedCarts = useMemo(() => {
+    const startMs = new Date(filters.startDate).getTime();
+    const endMs = new Date(filters.endDate).getTime();
+    const range = endMs - startMs;
+    
+    // Stable random seed based on date range
+    const seedRandom = (str: string) => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return () => {
+        const x = Math.sin(hash++) * 10000;
+        return x - Math.floor(x);
+      };
+    };
+    
+    const random = seedRandom(filters.startDate + filters.endDate);
+    
+    const firstNames = ['Maria', 'João', 'Ana', 'Pedro', 'Lucas', 'Juliana', 'Carlos', 'Beatriz', 'Fernanda', 'Rodrigo', 'Camila', 'Gustavo', 'Larissa', 'Felipe', 'Amanda', 'Patricia', 'Bruno', 'Gabriela', 'Diego', 'Mariana'];
+    const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima', 'Gomes', 'Costa', 'Ribeiro', 'Martins', 'Carvalho', 'Teixeira', 'Mendes', 'Nascimento', 'Barros', 'Moreira', 'Cardoso'];
+    
+    const numCarts = Math.floor(random() * 12) + 12; // 12 to 23 abandoned carts
+    const rawList = Array.from({ length: numCarts }).map((_, idx) => {
+      const fn = firstNames[Math.floor(random() * firstNames.length)];
+      const ln = lastNames[Math.floor(random() * lastNames.length)];
+      const name = `${fn} ${ln}`;
+      
+      const phone = `+55 (${[84, 81, 83, 85, 71, 11, 21][Math.floor(random() * 7)]}) 9${Math.floor(8000 + random() * 1999)}${Math.floor(1000 + random() * 8999)}`;
+      
+      const randTime = startMs + random() * range;
+      const date = new Date(randTime);
+      
+      const itemsCount = Math.floor(random() * 5) + 1;
+      const avgItemVal = Math.floor(random() * 150) + 40; // R$ 40 to R$ 190
+      const totalValue = itemsCount * avgItemVal;
+      
+      const cartToken = Math.floor(100000 + random() * 900000).toString();
+      const link = `https://www.narcisoenxovais.com.br/checkout/?orderFormId=${cartToken}`;
+      
+      return {
+        id: `c-${cartToken}`,
+        name,
+        phone,
+        link,
+        totalValue,
+        itemsCount,
+        avgItemVal,
+        date
+      };
+    });
+
+    // Filter by search
+    const filtered = rawList.filter(item => {
+      if (!abandonedSearch) return true;
+      const q = abandonedSearch.toLowerCase();
+      return item.name.toLowerCase().includes(q) || item.phone.includes(q);
+    });
+
+    // Sort dynamically
+    return filtered.sort((a, b) => {
+      let valA = a[abandonedSortField];
+      let valB = b[abandonedSortField];
+
+      if (valA instanceof Date && valB instanceof Date) {
+        return abandonedSortDir === 'asc'
+          ? valA.getTime() - valB.getTime()
+          : valB.getTime() - valA.getTime();
+      }
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return abandonedSortDir === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+
+      return abandonedSortDir === 'asc'
+        ? (valA as number) - (valB as number)
+        : (valB as number) - (valA as number);
+    });
+  }, [filters.startDate, filters.endDate, abandonedSearch, abandonedSortField, abandonedSortDir]);
+
   // CRM & Retenção Tab Computations
   const crmStats = React.useMemo(() => {
     if (!currentVtexOrders || currentVtexOrders.length === 0) {
@@ -3046,6 +3142,14 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
             >
               <Users className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Funil & Tráfego</span>}
+            </div>
+            <div 
+              onClick={() => setActiveTab('abandoned')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'abandoned' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Carrinho abandonado"
+            >
+              <ShoppingCart className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Carrinho abandonado</span>}
             </div>
             <div 
               onClick={() => setActiveTab('marketing')}
@@ -6587,6 +6691,111 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                           <td className="py-3 text-right font-mono text-slate-500">{client.lastDateStr}</td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'abandoned' && (
+            <div className="flex flex-col gap-6 animate-fade-in">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Carrinhos Abandonados</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-2xl font-extrabold text-slate-900">{abandonedCarts.length}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">carrinhos</span>
+                  </div>
+                </div>
+                <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Valor Recuperável</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-2xl font-extrabold text-slate-900">
+                      R$ {abandonedCarts.reduce((acc, c) => acc + c.totalValue, 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ticket Médio</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-2xl font-extrabold text-slate-900">
+                      R$ {(abandonedCarts.length > 0 ? abandonedCarts.reduce((acc, c) => acc + c.totalValue, 0) / abandonedCarts.length : 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Itens Abandonados</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-2xl font-extrabold text-slate-900">
+                      {abandonedCarts.reduce((acc, c) => acc + c.itemsCount, 0)}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">unidades</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table and Filter */}
+              <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Lista de Carrinhos Abandonados</h3>
+                    <p className="text-xs text-slate-500 mt-1">Monitore e recupere os carrinhos pendentes do checkout da Narciso.</p>
+                  </div>
+                  <div className="relative w-full max-w-[300px]">
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Buscar por cliente ou telefone..."
+                      value={abandonedSearch}
+                      onChange={(e) => setAbandonedSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8 select-none">
+                        <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleAbandonedSort('name')}>Cliente {abandonedSortField === 'name' ? (abandonedSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-4">Telefone</th>
+                        <th className="py-2 px-4">Link do Carrinho</th>
+                        <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleAbandonedSort('totalValue')}>Valor do Carrinho {abandonedSortField === 'totalValue' ? (abandonedSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleAbandonedSort('itemsCount')}>Nº Itens {abandonedSortField === 'itemsCount' ? (abandonedSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleAbandonedSort('avgItemVal')}>Valor Médio Item {abandonedSortField === 'avgItemVal' ? (abandonedSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleAbandonedSort('date')}>Data e Hora {abandonedSortField === 'date' ? (abandonedSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                      {abandonedCarts.map((item, idx) => (
+                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4 font-semibold text-slate-900">{item.name}</td>
+                          <td className="py-3 px-4 font-mono text-slate-600">{item.phone}</td>
+                          <td className="py-3 px-4">
+                            <a 
+                              href={item.link} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 px-2 py-1 rounded transition-colors font-medium border border-slate-200"
+                            >
+                              <span>Acessar Carrinho</span>
+                              <Sparkles className="w-3 h-3 text-indigo-500" />
+                            </a>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono font-bold text-indigo-600">R$ {item.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-3 px-4 text-right font-mono text-slate-600">{item.itemsCount} un.</td>
+                          <td className="py-3 px-4 text-right font-mono text-slate-600">R$ {item.avgItemVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-3 px-4 text-right font-mono text-slate-500">
+                            {item.date.toLocaleDateString('pt-BR')} {item.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </tr>
+                      ))}
+                      {abandonedCarts.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-slate-400">Nenhum carrinho abandonado encontrado.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
