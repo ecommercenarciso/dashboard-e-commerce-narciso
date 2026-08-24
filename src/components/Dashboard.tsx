@@ -204,10 +204,10 @@ export default function Dashboard() {
   const [entregaSortDirection, setEntregaSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const [conversionVar, setConversionVar] = useState<'origin' | 'city' | 'state' | 'device'>('origin');
-  const [conversionSortField, setConversionSortField] = useState<'name' | 'conversions' | 'rate' | 'revenue'>('conversions');
+  const [conversionSortField, setConversionSortField] = useState<'name' | 'sessions' | 'conversions' | 'rate' | 'revenue'>('conversions');
   const [conversionSortDir, setConversionSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const handleConversionSort = (field: 'name' | 'conversions' | 'rate' | 'revenue') => {
+  const handleConversionSort = (field: 'name' | 'sessions' | 'conversions' | 'rate' | 'revenue') => {
     if (conversionSortField === field) {
       setConversionSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
@@ -3744,6 +3744,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <thead className="sticky top-0 bg-white shadow-xs z-10">
                               <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8 select-none">
                                 <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('name')}>Item {conversionSortField === 'name' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                                <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('sessions')}>Sessões {conversionSortField === 'sessions' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
                                 <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('conversions')}>Pedidos (Conv.) {conversionSortField === 'conversions' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
                                 <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('rate')}>Taxa Conv. {conversionSortField === 'rate' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
                                 <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('revenue')}>Faturamento (Receita) {conversionSortField === 'revenue' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
@@ -3753,6 +3754,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                               {conversionStats.tableList.map((item, idx) => (
                                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
                                   <td className="py-3 px-4 font-semibold text-slate-900 truncate max-w-[150px]" title={item.name}>{item.name === '(not set)' ? '-' : item.name}</td>
+                                  <td className="py-3 px-2 text-right font-mono text-slate-600">{item.sessions.toLocaleString('pt-BR')}</td>
                                   <td className="py-3 px-2 text-right font-mono font-bold text-slate-800">{item.conversions.toLocaleString('pt-BR')}</td>
                                   <td className="py-3 px-2 text-right font-mono font-bold text-indigo-600">{item.rate.toFixed(2)}%</td>
                                   <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -3760,7 +3762,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                               ))}
                               {conversionStats.tableList.length === 0 && (
                                 <tr>
-                                  <td colSpan={4} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
+                                  <td colSpan={5} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
                                 </tr>
                               )}
                             </tbody>
