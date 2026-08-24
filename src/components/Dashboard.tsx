@@ -1330,7 +1330,54 @@ export default function Dashboard() {
       chartDataMap[rawDate][name] = (chartDataMap[rawDate][name] || 0) + 1;
     });
 
-    const tableList = Object.values(tableDataMap).sort((a, b) => b.conversions - a.conversions);
+    const sessionsMap: Record<string, number> = {};
+
+    if (conversionVar === 'origin' && trafficData?.channelsData?.rows) {
+      trafficData.channelsData.rows.forEach((r: any) => {
+        const name = r.dimensionValues?.[1]?.value || '(not set)';
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        sessionsMap[name] = (sessionsMap[name] || 0) + sess;
+      });
+    } else if (conversionVar === 'city' && trafficData?.geoData?.rows) {
+      trafficData.geoData.rows.forEach((r: any) => {
+        const name = r.dimensionValues?.[1]?.value || '(não setado)';
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        sessionsMap[name] = (sessionsMap[name] || 0) + sess;
+      });
+    } else if (conversionVar === 'state' && trafficData?.geoData?.rows) {
+      const stateMapping: Record<string, string> = {
+        'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM',
+        'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF', 'Espírito Santo': 'ES',
+        'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS',
+        'Minas Gerais': 'MG', 'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR',
+        'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
+        'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
+        'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO'
+      };
+      trafficData.geoData.rows.forEach((r: any) => {
+        const regionName = r.dimensionValues?.[2]?.value || '';
+        const stateAbbr = stateMapping[regionName] || regionName || '-';
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        sessionsMap[stateAbbr] = (sessionsMap[stateAbbr] || 0) + sess;
+      });
+    } else if (conversionVar === 'device' && trafficData?.deviceData?.rows) {
+      trafficData.deviceData.rows.forEach((r: any) => {
+        const name = r.dimensionValues?.[1]?.value || '(not set)';
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        sessionsMap[name] = (sessionsMap[name] || 0) + sess;
+      });
+    }
+
+    const tableList = Object.values(tableDataMap).map(item => {
+      const sess = sessionsMap[item.name] || 0;
+      const rate = sess > 0 ? (item.conversions / sess) * 100 : 0;
+      return {
+        ...item,
+        sessions: sess,
+        rate
+      };
+    }).sort((a, b) => b.conversions - a.conversions);
+
     const topKeys = tableList.slice(0, 5).map(item => item.name);
 
     const chartList = Object.entries(chartDataMap)
@@ -1349,7 +1396,7 @@ export default function Dashboard() {
       chartList,
       topKeys
     };
-  }, [completedTransactions, conversionVar]);
+  }, [completedTransactions, conversionVar, trafficData]);
 
   // Order status distribution data - based on current period only
   const statusMetrics = currentVtexOrders.reduce((acc, order) => {
@@ -1603,7 +1650,7 @@ export default function Dashboard() {
     trafficData.geoData.rows.forEach((r: any) => {
       const rawDate = r.dimensionValues?.[0]?.value || '';
       const name = r.dimensionValues?.[1]?.value || '(não setado)';
-      const rawHour = r.dimensionValues?.[2]?.value || '00';
+      const rawHour = r.dimensionValues?.[3]?.value || '00';
       const val = parseInt(r.metricValues?.[execFunnelBase === 'users' ? 1 : 0]?.value || '0');
       if (!rawDate) return;
       
@@ -3663,6 +3710,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                               <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8">
                                 <th className="py-2 px-4">Item</th>
                                 <th className="py-2 px-2 text-right">Pedidos (Conv.)</th>
+                                <th className="py-2 px-2 text-right">Taxa Conv.</th>
                                 <th className="py-2 px-4 text-right">Faturamento (Receita)</th>
                               </tr>
                             </thead>
@@ -3671,12 +3719,13 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
                                   <td className="py-3 px-4 font-semibold text-slate-900 truncate max-w-[150px]" title={item.name}>{item.name === '(not set)' ? '-' : item.name}</td>
                                   <td className="py-3 px-2 text-right font-mono font-bold text-slate-800">{item.conversions.toLocaleString('pt-BR')}</td>
+                                  <td className="py-3 px-2 text-right font-mono font-bold text-indigo-600">{item.rate.toFixed(2)}%</td>
                                   <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                               ))}
                               {conversionStats.tableList.length === 0 && (
                                 <tr>
-                                  <td colSpan={3} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
+                                  <td colSpan={4} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
                                 </tr>
                               )}
                             </tbody>
