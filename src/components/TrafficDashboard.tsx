@@ -431,7 +431,8 @@ export default function TrafficDashboard({
     const ordersByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
     
     finalChartData.forEach(row => {
-      const suffix = getDayOfWeekSuffix ? getDayOfWeekSuffix(row.date) : '';
+      const dateStr = row.displayDate ? row.displayDate.split(' ')[0] : '';
+      const suffix = getDayOfWeekSuffix ? getDayOfWeekSuffix(dateStr) : '';
       if (!suffix) return;
       
       const dayIdx = daysOfWeekFull.indexOf(suffix);
