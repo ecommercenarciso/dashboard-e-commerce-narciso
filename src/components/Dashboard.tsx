@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned' | 'colchao'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned'>('executive');
   const [trafficData, setTrafficData] = useState<any>(null);
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
@@ -256,10 +256,6 @@ export default function Dashboard() {
   });
 
   const [goalsGranularity, setGoalsGranularity] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
-
-  const [colchaoWeight, setColchaoWeight] = useState<number>(75);
-  const [colchaoHeight, setColchaoHeight] = useState<number>(1.75);
-  const [colchaoCarouselIndex, setColchaoCarouselIndex] = useState<number>(0);
 
   useEffect(() => {
     const savedGoals = localStorage.getItem('dashboard_goals');
@@ -3359,14 +3355,6 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               <Calculator className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora DRE</span>}
             </div>
-            <div 
-              onClick={() => setActiveTab('colchao')}
-              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'colchao' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
-              title="Calculadora Colchão"
-            >
-              <Bed className="w-5 h-5 shrink-0" />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora Colchão</span>}
-            </div>
           </nav>
         </div>
 
@@ -3427,9 +3415,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                         ? 'Visão Geral de Tráfego'
                         : activeTab === 'dre'
                           ? 'Calculadora de Metas DRE'
-                          : activeTab === 'colchao'
-                            ? 'Calculadora de Densidade de Colchão'
-                            : activeTab === 'abandoned'
+                          : activeTab === 'abandoned'
                               ? 'Carrinho Abandonado'
                               : activeTab === 'crm'
                                 ? 'CRM & Retenção'
@@ -5815,278 +5801,6 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {activeTab === 'colchao' && (() => {
-            const getColchaoRecommendation = (weight: number, height: number): { density: string, desc: string, color: string } => {
-              if (weight <= 50) {
-                if (height <= 1.50) return { density: 'D20', desc: 'Ideal para recém-nascidos, crianças até 3 anos ou pessoas leves até 50kg.', color: '#3b82f6' };
-                return { density: 'D23', desc: 'Recomendado para pessoas de até 50kg com altura superior a 1,50m.', color: '#06b6d4' };
-              }
-              if (weight <= 60) {
-                if (height <= 1.60) return { density: 'D26', desc: 'Ideal para pessoas entre 51kg e 60kg com estatura até 1,60m.', color: '#10b981' };
-                return { density: 'D23', desc: 'Ideal para pessoas de 51kg a 60kg com altura superior a 1,60m.', color: '#06b6d4' };
-              }
-              if (weight <= 70) {
-                if (height <= 1.60) return { density: 'D28', desc: 'Ideal para pessoas de 61kg a 70kg com estatura média até 1,60m.', color: '#8b5cf6' };
-                return { density: 'D28', desc: 'Ideal para pessoas de 61kg a 70kg com estatura média.', color: '#8b5cf6' };
-              }
-              if (weight <= 80) {
-                if (height <= 1.60) return { density: 'D33', desc: 'Ideal para pessoas de 71kg a 80kg com estatura média até 1,60m.', color: '#f59e0b' };
-                return { density: 'D28', desc: 'Ideal para pessoas de 71kg a 80kg com altura acima de 1,60m.', color: '#8b5cf6' };
-              }
-              if (weight <= 90) {
-                return { density: 'D33', desc: 'Recomendado para pessoas de 81kg a 90kg, oferecendo excelente sustentação e conforto.', color: '#f59e0b' };
-              }
-              if (weight <= 100) {
-                return { density: 'D33', desc: 'Ideal para pessoas de 91kg a 100kg, proporcionando firmeza adequada para a coluna.', color: '#f59e0b' };
-              }
-              if (weight <= 120) {
-                if (height <= 1.80) return { density: 'D45', desc: 'Recomendado para pessoas de 101kg a 120kg com estatura média.', color: '#ef4444' };
-                return { density: 'D33', desc: 'Ideal para pessoas de 101kg a 120kg de alta estatura.', color: '#f59e0b' };
-              }
-              return { density: 'D45', desc: 'Indicado para pessoas de 121kg a 150kg, oferecendo a máxima firmeza e durabilidade exigidas.', color: '#ef4444' };
-            };
-
-            const rec = getColchaoRecommendation(colchaoWeight, colchaoHeight);
-
-            // Dynamically build mattress catalog
-            const itemsMap = new Map<string, any>();
-            detailedOrdersList.forEach(order => {
-              if (order.items) {
-                order.items.forEach((item: any) => {
-                  const name = item.name || '';
-                  const lower = name.toLowerCase();
-                  if (lower.includes('colchão') || lower.includes('colchao') || lower.includes('cama box') || lower.includes('cama combate') || lower.includes('conjunto box')) {
-                    let density = '';
-                    if (lower.includes('d20') || lower.includes('d-20')) density = 'D20';
-                    else if (lower.includes('d23') || lower.includes('d-23')) density = 'D23';
-                    else if (lower.includes('d26') || lower.includes('d-26')) density = 'D26';
-                    else if (lower.includes('d28') || lower.includes('d-28')) density = 'D28';
-                    else if (lower.includes('d33') || lower.includes('d-33')) density = 'D33';
-                    else if (lower.includes('d45') || lower.includes('d-45')) density = 'D45';
-                    else density = 'D33';
-
-                    const link = item.detailUrl ? (item.detailUrl.startsWith('http') ? item.detailUrl : `https://www.narcisoenxovais.com.br${item.detailUrl}`) : 'https://www.narcisoenxovais.com.br';
-                    const image = item.imageUrl || 'https://placehold.co/300x300?text=Narciso+Colchões';
-                    const price = (item.sellingPrice || item.price || 0) / 100;
-
-                    if (!itemsMap.has(name) && price > 0) {
-                      itemsMap.set(name, { name, density, image, price, link });
-                    }
-                  }
-                });
-              }
-            });
-
-            // If empty, use our real Narciso colchões fallbacks
-            if (itemsMap.size === 0) {
-              const fallbacks = [
-                { name: "Colchão Solteiro Top D20 78x190x12cm Tekshine", density: "D20", image: "https://narciso.vtexassets.com/arquivos/ids/173919/colchao-top-d20.jpg", price: 299.90, link: "https://www.narcisoenxovais.com.br/colchao-solteiro-top-d20-78x190x12cm-tekshine/p" },
-                { name: "Colchão Casal D23 Top 138x188x14cm Tekshine", density: "D23", image: "https://narciso.vtexassets.com/arquivos/ids/173919/colchao-top-d23.jpg", price: 459.90, link: "https://www.narcisoenxovais.com.br/colchao-casal-d23-top/p" },
-                { name: "Colchão Solteiro D28 Premium 88x188x17cm Tekshine", density: "D28", image: "https://narciso.vtexassets.com/arquivos/ids/173922/colchao-premium-d28.jpg", price: 399.90, link: "https://www.narcisoenxovais.com.br/colchao-solteiro-d28-premium/p" },
-                { name: "Cama Combate Casal D28 128X188X41", density: "D28", image: "https://narciso.vtexassets.com/arquivos/ids/173917/cama-combate-casal-d28.jpg", price: 799.00, link: "https://www.narcisoenxovais.com.br/cama-combate-casal-128x188x41/p" },
-                { name: "Colchão Casal D33 Premium 138x188x17cm Tekshine", density: "D33", image: "https://narciso.vtexassets.com/arquivos/ids/173925/colchao-premium-d33.jpg", price: 699.90, link: "https://www.narcisoenxovais.com.br/colchao-casal-d33-premium/p" },
-                { name: "Colchão Casal Top D20 12x188x138 cm Preto Tekshine", density: "D20", image: "https://narciso.vtexassets.com/arquivos/ids/173920/colchao-casal-top-d20.jpg", price: 429.90, link: "https://www.narcisoenxovais.com.br/colchao-casal-top-d20-preto/p" },
-                { name: "Colchão Queen D33 Black Gold 158x198x24cm Tekshine", density: "D33", image: "https://narciso.vtexassets.com/arquivos/ids/173926/colchao-black-gold-d33.jpg", price: 1299.90, link: "https://www.narcisoenxovais.com.br/colchao-queen-d33-black-gold/p" },
-                { name: "Colchão King D45 Master Extra Firme 193x203x28cm", density: "D45", image: "https://narciso.vtexassets.com/arquivos/ids/173928/colchao-master-d45.jpg", price: 1899.90, link: "https://www.narcisoenxovais.com.br/colchao-king-d45-master/p" }
-              ];
-              fallbacks.forEach(f => itemsMap.set(f.name, f));
-            }
-
-            const allCatalog = Array.from(itemsMap.values());
-            const recommendedProducts = allCatalog.filter(p => p.density === rec.density);
-
-            return (
-              <div className="flex flex-col gap-6 animate-fade-in">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800">Calculadora de Densidade de Colchão</h2>
-                    <p className="text-xs text-slate-500 mt-1">Descubra a densidade de espuma ideal recomendada pelo INER para a sua saúde e conforto da coluna.</p>
-                  </div>
-                  <Bed className="w-8 h-8 text-cyan-600 shrink-0" />
-                </div>
-
-                {/* Grid Inputs & Result */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Inputs */}
-                  <div className="lg:col-span-1 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-6">
-                    <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Seus Dados</h3>
-                    
-                    {/* Weight Input */}
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between items-baseline">
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Peso</label>
-                        <span className="text-lg font-black text-slate-900">{colchaoWeight} kg</span>
-                      </div>
-                      <input 
-                        type="range" 
-                        min="30" 
-                        max="160"
-                        value={colchaoWeight}
-                        onChange={(e) => {
-                          setColchaoWeight(parseInt(e.target.value, 10));
-                          setColchaoCarouselIndex(0);
-                        }}
-                        className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-400">
-                        <span>30 kg</span>
-                        <span>160 kg</span>
-                      </div>
-                    </div>
-
-                    {/* Height Input */}
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between items-baseline">
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Altura</label>
-                        <span className="text-lg font-black text-slate-900">{colchaoHeight.toFixed(2)} m</span>
-                      </div>
-                      <input 
-                        type="range" 
-                        min="1.20" 
-                        max="2.20"
-                        step="0.01"
-                        value={colchaoHeight}
-                        onChange={(e) => {
-                          setColchaoHeight(parseFloat(e.target.value));
-                          setColchaoCarouselIndex(0);
-                        }}
-                        className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-400">
-                        <span>1.20 m</span>
-                        <span>2.20 m</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recommendation Card */}
-                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2 mb-4">Recomendação do Especialista</h3>
-                      
-                      <div className="flex items-center gap-6">
-                        <div 
-                          className="w-24 h-24 rounded-full flex flex-col items-center justify-center text-white font-black text-2xl shadow-md border-4 border-white ring-4"
-                          style={{ backgroundColor: rec.color, ringColor: `${rec.color}40` }}
-                        >
-                          <span className="text-xs font-medium uppercase tracking-wider -mb-1">Densidade</span>
-                          {rec.density}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="text-md font-bold text-slate-800">Colchão Recomendado: {rec.density}</h4>
-                          <p className="text-xs text-slate-600 mt-2 leading-relaxed">{rec.desc}</p>
-                          <div className="flex items-center gap-2 mt-4 bg-slate-50 px-3 py-2 rounded border border-slate-100 max-w-fit">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Normas do INER (Tabela Oficial)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Scale visualization */}
-                    <div className="mt-6 border-t border-slate-100 pt-4">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Espectro de Densidade</span>
-                      <div className="grid grid-cols-5 gap-1 text-center font-bold text-[10px]">
-                        {[
-                          { d: 'D20', label: 'Infantil / Leve', color: 'bg-blue-500' },
-                          { d: 'D23', label: 'Até 50kg-60kg', color: 'bg-cyan-500' },
-                          { d: 'D26/D28', label: 'Até 70kg-80kg', color: 'bg-purple-500' },
-                          { d: 'D33', label: 'Até 90kg-100kg', color: 'bg-amber-500' },
-                          { d: 'D45', label: 'Até 120kg-150kg', color: 'bg-red-500' }
-                        ].map((s, idx) => {
-                          const isCurrent = rec.density === s.d || (s.d === 'D26/D28' && (rec.density === 'D26' || rec.density === 'D28'));
-                          return (
-                            <div key={idx} className={`p-2 rounded transition-all ${isCurrent ? 'bg-slate-900 text-white shadow-sm scale-105' : 'bg-slate-50 text-slate-500'}`}>
-                              <div>{s.d}</div>
-                              <div className="text-[8px] font-normal truncate mt-0.5">{s.label}</div>
-                              <div className={`h-1 w-full rounded-full mt-1.5 ${s.color}`}></div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Carrossel de Recomendações */}
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4">
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Colchões e Camas {rec.density} na Narciso Enxovais</h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Produtos identificados no e-commerce que possuem a densidade {rec.density} recomendada.</p>
-                    </div>
-                    {recommendedProducts.length > 1 && (
-                      <div className="flex items-center gap-1">
-                        <button 
-                          onClick={() => setColchaoCarouselIndex(prev => Math.max(0, prev - 1))}
-                          disabled={colchaoCarouselIndex === 0}
-                          className="p-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <span className="text-[10px] text-slate-500 px-2 font-mono">{colchaoCarouselIndex + 1} / {recommendedProducts.length}</span>
-                        <button 
-                          onClick={() => setColchaoCarouselIndex(prev => Math.min(recommendedProducts.length - 1, prev + 1))}
-                          disabled={colchaoCarouselIndex === recommendedProducts.length - 1}
-                          className="p-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="relative overflow-hidden w-full h-[320px] bg-slate-50/50 rounded-lg flex items-center justify-center p-6 border border-slate-100">
-                    {recommendedProducts.length > 0 ? (
-                      <div className="flex items-center gap-6 max-w-2xl w-full">
-                        {/* Image Frame */}
-                        <div className="w-1/3 aspect-square bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
-                          <img 
-                            src={recommendedProducts[colchaoCarouselIndex].image} 
-                            alt={recommendedProducts[colchaoCarouselIndex].name}
-                            className="object-contain max-h-full max-w-full p-2"
-                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/300x300?text=Narciso+Colchões'; }}
-                          />
-                        </div>
-                        {/* Info details */}
-                        <div className="flex-1 flex flex-col justify-between h-full py-2">
-                          <div>
-                            <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[9px] font-bold rounded-full uppercase tracking-wider max-w-fit block mb-2">
-                              Densidade {recommendedProducts[colchaoCarouselIndex].density}
-                            </span>
-                            <h4 className="text-md font-bold text-slate-800 line-clamp-3 leading-tight">{recommendedProducts[colchaoCarouselIndex].name}</h4>
-                            <div className="mt-4">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Preço no E-commerce</span>
-                              <span className="text-xl font-black text-slate-900">
-                                R$ {recommendedProducts[colchaoCarouselIndex].price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <a 
-                            href={recommendedProducts[colchaoCarouselIndex].link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-900 text-white rounded-md text-xs font-bold hover:bg-slate-800 transition-all shadow-sm max-w-fit mt-6 uppercase tracking-wider"
-                          >
-                            Ver colchão na loja
-                            <Sparkles className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 text-slate-400 flex flex-col items-center gap-2">
-                        <AlertCircle className="w-8 h-8 text-slate-300" />
-                        <span>Nenhum colchão D{rec.density} encontrado no catálogo.</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
