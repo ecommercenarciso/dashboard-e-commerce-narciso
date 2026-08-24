@@ -5068,13 +5068,41 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 {/* Grid de Acompanhamento */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                    {(() => {
-                      const startD = new Date(filters.startDate);
+                      const startD = new Date(filters.startDate + 'T00:00:00');
+                      const endD = new Date(filters.endDate + 'T23:59:59');
+                      
                       const startUtc = Date.UTC(startD.getFullYear(), startD.getMonth(), startD.getDate());
-                      const endD = new Date(filters.endDate);
                       const endUtc = Date.UTC(endD.getFullYear(), endD.getMonth(), endD.getDate());
                       const diffDays = Math.max(1, Math.floor((endUtc - startUtc) / (1000 * 60 * 60 * 24)) + 1);
                       const weeksInPeriod = Math.max(0.1, diffDays / 7);
                       const monthsInPeriod = Math.max(0.1, diffDays / 30);
+
+                      const dayOfWeekTargets = {
+                        sessions: [800, 1300, 1400, 1700, 1800, 1400, 1200], // Dom, Seg, Ter, Qua, Qui, Sex, Sab
+                        orders: [4, 7, 7, 9, 10, 7, 6],
+                        revenue: [1200, 2100, 2100, 2700, 2700, 2100, 1800]
+                      };
+
+                      let totalTargetRevenue = 0;
+                      let totalTargetOrders = 0;
+                      let totalTargetSessions = 0;
+                      let countedDays = 0;
+
+                      const today = new Date();
+                      const todayDateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+                      for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+                         const currentDayStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                         if (currentDayStr === todayDateStr) continue; // Skip incomplete today
+
+                         const dayOfWeekIdx = d.getDay();
+                         totalTargetRevenue += dayOfWeekTargets.revenue[dayOfWeekIdx];
+                         totalTargetOrders += dayOfWeekTargets.orders[dayOfWeekIdx];
+                         totalTargetSessions += dayOfWeekTargets.sessions[dayOfWeekIdx];
+                         countedDays++;
+                      }
+
+                      const finalCountedDays = Math.max(1, countedDays);
 
                       let scaleLabel = '';
                       let revenueReal = totalVtexRevenue;
@@ -5089,11 +5117,11 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                       if (goalsGranularity === 'daily') {
                          scaleLabel = '/dia';
                          revenueReal = totalVtexRevenue / diffDays;
-                         revenueMeta = 2000;
+                         revenueMeta = totalTargetRevenue / finalCountedDays;
                          ordersReal = totalVtexOrders / diffDays;
-                         ordersMeta = 7;
+                         ordersMeta = totalTargetOrders / finalCountedDays;
                          sessionsReal = totalSessions / diffDays;
-                         sessionsMeta = 1400;
+                         sessionsMeta = totalTargetSessions / finalCountedDays;
                       } else if (goalsGranularity === 'weekly') {
                          scaleLabel = '/semana';
                          revenueReal = totalVtexRevenue / weeksInPeriod;
