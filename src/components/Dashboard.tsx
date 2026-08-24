@@ -232,11 +232,11 @@ export default function Dashboard() {
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
-    revenue: 50000,
+    revenue: 60000,
     orders: 200,
-    ticket: 250,
-    conversion: 1.5,
-    sessions: 15000
+    ticket: 300,
+    conversion: 0.5,
+    sessions: 40000
   });
 
   useEffect(() => {
@@ -2650,6 +2650,74 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
     });
   }, [vtexAbandonedCarts, filters.startDate, filters.endDate, abandonedSearch, abandonedSortField, abandonedSortDir]);
 
+  const goalsDayOfWeekStats = React.useMemo(() => {
+    if (!aggregatedChartData || aggregatedChartData.length === 0) return [];
+    
+    const daysOfWeekList = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const daysOfWeekShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    
+    const targetGoals = {
+      sessions: [800, 1300, 1400, 1700, 1800, 1400, 1200],
+      orders: [4, 7, 7, 9, 10, 7, 6],
+      revenue: [1200, 2100, 2100, 2700, 2700, 2100, 1800]
+    };
+    
+    const sessionsByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    const ordersByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    const revenueByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    
+    const today = new Date();
+    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
+    
+    aggregatedChartData.forEach(row => {
+      const dateStr = row.displayDate ? row.displayDate.split(' ')[0] : '';
+      if (dateStr === todayStr) return;
+      
+      const suffix = getDayOfWeekSuffix(dateStr);
+      if (!suffix) return;
+      
+      const dayIdx = daysOfWeekList.indexOf(suffix);
+      if (dayIdx === -1) return;
+      
+      const sess = row.visitorsSessions || row.sessions || 0;
+      const ords = row.vtexOrders || 0;
+      const rev = row.vtexRevenue || 0;
+      
+      sessionsByDay[dayIdx].push(sess);
+      ordersByDay[dayIdx].push(ords);
+      revenueByDay[dayIdx].push(rev);
+    });
+    
+    return daysOfWeekShort.map((dayName, idx) => {
+      const sList = sessionsByDay[idx];
+      const oList = ordersByDay[idx];
+      const rList = revenueByDay[idx];
+      
+      const avgSessions = sList.length > 0 ? sList.reduce((a, b) => a + b, 0) / sList.length : 0;
+      const avgOrders = oList.length > 0 ? oList.reduce((a, b) => a + b, 0) / oList.length : 0;
+      const avgRevenue = rList.length > 0 ? rList.reduce((a, b) => a + b, 0) / rList.length : 0;
+      
+      const targetSess = targetGoals.sessions[idx];
+      const targetOrds = targetGoals.orders[idx];
+      const targetRev = targetGoals.revenue[idx];
+      
+      return {
+        dayName,
+        avgSessions,
+        targetSessions: targetSess,
+        sessionsProgress: targetSess > 0 ? (avgSessions / targetSess) * 100 : 0,
+        
+        avgOrders,
+        targetOrders: targetOrds,
+        ordersProgress: targetOrds > 0 ? (avgOrders / targetOrds) * 100 : 0,
+        
+        avgRevenue,
+        targetRevenue: targetRev,
+        revenueProgress: targetRev > 0 ? (avgRevenue / targetRev) * 100 : 0
+      };
+    });
+  }, [aggregatedChartData]);
+
   // CRM & Retenção Tab Computations
   const crmStats = React.useMemo(() => {
     if (!currentVtexOrders || currentVtexOrders.length === 0) {
@@ -5058,6 +5126,77 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                          </div>
                       );
                    })}
+                </div>
+
+                {/* Metas por Dia da Semana */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
+                   <div className="flex items-center gap-2 mb-2">
+                     <Target className="w-5 h-5 text-cyan-600" />
+                     <h3 className="font-bold text-slate-800 text-sm">Metas por Dia da Semana (Mapeamento)</h3>
+                   </div>
+                   <p className="text-xs text-slate-500 mb-4">Compara a média diária realizada no período com as metas recomendadas do mindmap.</p>
+                   
+                   <div className="overflow-x-auto custom-scrollbar">
+                     <table className="w-full text-left text-xs border-collapse">
+                       <thead>
+                         <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8 select-none">
+                           <th className="pb-2 text-left">Dia</th>
+                           <th className="pb-2 text-right">Média Visitas</th>
+                           <th className="pb-2 text-right">Meta Visitas</th>
+                           <th className="pb-2 text-right text-indigo-500">Média Pedidos</th>
+                           <th className="pb-2 text-right text-indigo-500">Meta Pedidos</th>
+                           <th className="pb-2 text-right text-emerald-600">Média Fat.</th>
+                           <th className="pb-2 text-right text-emerald-600">Meta Fat.</th>
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y divide-slate-100 text-slate-700">
+                         {goalsDayOfWeekStats.map((item: any, idx: number) => {
+                           const sPct = item.sessionsProgress;
+                           const oPct = item.ordersProgress;
+                           const rPct = item.revenueProgress;
+                           
+                           return (
+                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                               <td className="py-3 font-bold text-slate-900">{item.dayName}</td>
+                               
+                               {/* Visitas */}
+                               <td className="py-3 text-right font-mono">
+                                 {Math.round(item.avgSessions).toLocaleString('pt-BR')}
+                               </td>
+                               <td className="py-3 text-right font-mono text-slate-500">
+                                 {item.targetSessions.toLocaleString('pt-BR')} 
+                                 <span className={`text-[9px] font-bold ml-1 ${sPct >= 100 ? 'text-emerald-600' : sPct >= 70 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                   ({sPct.toFixed(0)}%)
+                                 </span>
+                               </td>
+
+                               {/* Pedidos */}
+                               <td className="py-3 text-right font-mono font-semibold text-indigo-600">
+                                 {item.avgOrders.toFixed(2)}
+                               </td>
+                               <td className="py-3 text-right font-mono text-slate-500">
+                                 {item.targetOrders}
+                                 <span className={`text-[9px] font-bold ml-1 ${oPct >= 100 ? 'text-emerald-600' : oPct >= 70 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                   ({oPct.toFixed(0)}%)
+                                 </span>
+                               </td>
+
+                               {/* Faturamento */}
+                               <td className="py-3 text-right font-mono font-bold text-emerald-600">
+                                 R$ {item.avgRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                               </td>
+                               <td className="py-3 text-right font-mono text-slate-500">
+                                 R$ {item.targetRevenue.toLocaleString('pt-BR')}
+                                 <span className={`text-[9px] font-bold ml-1 ${rPct >= 100 ? 'text-emerald-600' : rPct >= 70 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                   ({rPct.toFixed(0)}%)
+                                 </span>
+                               </td>
+                             </tr>
+                           );
+                         })}
+                       </tbody>
+                     </table>
+                   </div>
                 </div>
              </div>
           )}
