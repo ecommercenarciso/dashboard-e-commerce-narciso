@@ -62,7 +62,8 @@ export default function Dashboard() {
   const [ga4StateOptions, setGa4StateOptions] = useState<string[]>([]);
   const [ga4CityOptions, setGa4CityOptions] = useState<string[]>([]);
   const [ga4OsOptions, setGa4OsOptions] = useState<string[]>([]);
-  
+  const [vtexAbandonedCarts, setVtexAbandonedCarts] = useState<any[]>([]);
+  const [loadingAbandoned, setLoadingAbandoned] = useState(false);
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [buyerSortField, setBuyerSortField] = useState<'name' | 'count' | 'total' | 'avg'>('total');
   const [buyerSortDirection, setBuyerSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -579,6 +580,19 @@ export default function Dashboard() {
             setGa4OsOptions(data.os || []);
           }
         }).catch(e => console.error("Error fetching GA4 dimensions:", e));
+      }
+
+      setLoadingAbandoned(true);
+      try {
+        const abResponse = await fetch('/api/vtex/abandoned-carts');
+        if (abResponse.ok) {
+          const abJson = await abResponse.json();
+          setVtexAbandonedCarts(abJson.list || []);
+        }
+      } catch (e) {
+        console.error("Error fetching abandoned carts:", e);
+      } finally {
+        setLoadingAbandoned(false);
       }
 
     } catch (err: any) {
@@ -2571,59 +2585,43 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
 
   // Abandoned Carts Tab Computations
   const abandonedCarts = useMemo(() => {
-    const startMs = new Date(filters.startDate).getTime();
-    const endMs = new Date(filters.endDate).getTime();
-    const range = endMs - startMs;
-    
-    // Stable random seed based on date range
-    const seedRandom = (str: string) => {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    const start = new Date(filters.startDate);
+    const end = new Date(filters.endDate);
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
+
+    const parsedList = vtexAbandonedCarts.map(item => {
+      let date = new Date();
+      if (item.dateStr) {
+        const parts = item.dateStr.split(' ');
+        if (parts.length === 2) {
+          const dParts = parts[0].split('/');
+          const tParts = parts[1].split(':');
+          if (dParts.length === 3 && tParts.length === 3) {
+            date = new Date(
+              parseInt(dParts[2], 10),
+              parseInt(dParts[1], 10) - 1,
+              parseInt(dParts[0], 10),
+              parseInt(tParts[0], 10),
+              parseInt(tParts[1], 10),
+              parseInt(tParts[2], 10)
+            );
+          }
+        }
       }
-      return () => {
-        const x = Math.sin(hash++) * 10000;
-        return x - Math.floor(x);
-      };
-    };
-    
-    const random = seedRandom(filters.startDate + filters.endDate);
-    
-    const firstNames = ['Maria', 'João', 'Ana', 'Pedro', 'Lucas', 'Juliana', 'Carlos', 'Beatriz', 'Fernanda', 'Rodrigo', 'Camila', 'Gustavo', 'Larissa', 'Felipe', 'Amanda', 'Patricia', 'Bruno', 'Gabriela', 'Diego', 'Mariana'];
-    const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima', 'Gomes', 'Costa', 'Ribeiro', 'Martins', 'Carvalho', 'Teixeira', 'Mendes', 'Nascimento', 'Barros', 'Moreira', 'Cardoso'];
-    
-    const numCarts = Math.floor(random() * 12) + 12; // 12 to 23 abandoned carts
-    const rawList = Array.from({ length: numCarts }).map((_, idx) => {
-      const fn = firstNames[Math.floor(random() * firstNames.length)];
-      const ln = lastNames[Math.floor(random() * lastNames.length)];
-      const name = `${fn} ${ln}`;
-      
-      const phone = `+55 (${[84, 81, 83, 85, 71, 11, 21][Math.floor(random() * 7)]}) 9${Math.floor(8000 + random() * 1999)}${Math.floor(1000 + random() * 8999)}`;
-      
-      const randTime = startMs + random() * range;
-      const date = new Date(randTime);
-      
-      const itemsCount = Math.floor(random() * 5) + 1;
-      const avgItemVal = Math.floor(random() * 150) + 40; // R$ 40 to R$ 190
-      const totalValue = itemsCount * avgItemVal;
-      
-      const cartToken = Math.floor(100000 + random() * 900000).toString();
-      const link = `https://www.narcisoenxovais.com.br/checkout/?orderFormId=${cartToken}`;
-      
       return {
-        id: `c-${cartToken}`,
-        name,
-        phone,
-        link,
-        totalValue,
-        itemsCount,
-        avgItemVal,
+        ...item,
         date
       };
     });
 
-    // Filter by search
-    const filtered = rawList.filter(item => {
+    // Filter by date range and search
+    const filtered = parsedList.filter(item => {
+      const itemTime = item.date.getTime();
+      if (itemTime < start.getTime() || itemTime > end.getTime()) {
+        return false;
+      }
+      
       if (!abandonedSearch) return true;
       const q = abandonedSearch.toLowerCase();
       return item.name.toLowerCase().includes(q) || item.phone.includes(q);
@@ -2650,7 +2648,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
         ? (valA as number) - (valB as number)
         : (valB as number) - (valA as number);
     });
-  }, [filters.startDate, filters.endDate, abandonedSearch, abandonedSortField, abandonedSortDir]);
+  }, [vtexAbandonedCarts, filters.startDate, filters.endDate, abandonedSearch, abandonedSortField, abandonedSortDir]);
 
   // CRM & Retenção Tab Computations
   const crmStats = React.useMemo(() => {
