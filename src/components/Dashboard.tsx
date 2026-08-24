@@ -2741,9 +2741,6 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
   }, [vtexAbandonedCarts, filters.startDate, filters.endDate, abandonedSearch, abandonedSortField, abandonedSortDir]);
 
   const goalsDayOfWeekStats = React.useMemo(() => {
-    if (!aggregatedChartData || aggregatedChartData.length === 0) return [];
-    
-    const daysOfWeekList = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
     const daysOfWeekShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     
     const targetGoals = {
@@ -2756,26 +2753,38 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
     const ordersByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
     const revenueByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
     
-    const today = new Date();
-    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const dailyTotals: Record<string, { sessions: number, orders: number, revenue: number }> = {};
     
-    aggregatedChartData.forEach(row => {
-      const dateStr = row.displayDate ? row.displayDate.split(' ')[0] : '';
-      if (dateStr === todayStr) return;
+    (chartData || []).forEach(row => {
+      const dateKey = String(row.date);
+      if (!dailyTotals[dateKey]) {
+        dailyTotals[dateKey] = { sessions: 0, orders: 0, revenue: 0 };
+      }
+      dailyTotals[dateKey].sessions += row.visitorsSessions || row.sessions || 0;
+      dailyTotals[dateKey].orders += row.vtexOrders || 0;
+      dailyTotals[dateKey].revenue += row.vtexRevenue || 0;
+    });
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+    
+    Object.entries(dailyTotals).forEach(([dateStr, data]) => {
+      const isSingleDayToday = (filters.startDate === filters.endDate && dateStr === todayStr);
+      if (dateStr === todayStr && !isSingleDayToday) {
+        return;
+      }
       
-      const suffix = getDayOfWeekSuffix(dateStr);
-      if (!suffix) return;
-      
-      const dayIdx = daysOfWeekList.indexOf(suffix);
-      if (dayIdx === -1) return;
-      
-      const sess = row.visitorsSessions || row.sessions || 0;
-      const ords = row.vtexOrders || 0;
-      const rev = row.vtexRevenue || 0;
-      
-      sessionsByDay[dayIdx].push(sess);
-      ordersByDay[dayIdx].push(ords);
-      revenueByDay[dayIdx].push(rev);
+      if (dateStr.length === 8) {
+        const year = parseInt(dateStr.substring(0, 4), 10);
+        const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+        const day = parseInt(dateStr.substring(6, 8), 10);
+        const dateObj = new Date(year, month, day);
+        const dayIdx = dateObj.getDay();
+        
+        sessionsByDay[dayIdx].push(data.sessions);
+        ordersByDay[dayIdx].push(data.orders);
+        revenueByDay[dayIdx].push(data.revenue);
+      }
     });
     
     return daysOfWeekShort.map((dayName, idx) => {
@@ -2806,7 +2815,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
         revenueProgress: targetRev > 0 ? (avgRevenue / targetRev) * 100 : 0
       };
     });
-  }, [aggregatedChartData]);
+  }, [chartData, filters.startDate, filters.endDate]);
 
   // CRM & Retenção Tab Computations
   const crmStats = React.useMemo(() => {
