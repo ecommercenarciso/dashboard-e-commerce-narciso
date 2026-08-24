@@ -231,6 +231,77 @@ export default function Dashboard() {
     }
   };
 
+  const [prodFunnelSearch, setProdFunnelSearch] = useState('');
+  const [prodFunnelSortField, setProdFunnelSortField] = useState<'name' | 'sessions' | 'users' | 'addUsers' | 'viewToAdd' | 'orders' | 'cartToOrder'>('addUsers');
+  const [prodFunnelSortDir, setProdFunnelSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleProdFunnelSort = (field: typeof prodFunnelSortField) => {
+    if (prodFunnelSortField === field) {
+      setProdFunnelSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setProdFunnelSortField(field);
+      setProdFunnelSortDir('desc');
+    }
+  };
+
+  const parsedProdFunnel = useMemo(() => {
+    const products = ga4Products || [];
+    const orders = currentVtexOrders || [];
+    
+    return products.map((p, idx) => {
+      const name = p.itemName || '';
+      
+      const matchingOrdersCount = orders.filter(o => {
+        if (!o.items) return false;
+        return o.items.some((item: any) => {
+          const vtexName = (item.name || '').toLowerCase();
+          const ga4Name = name.toLowerCase();
+          return vtexName.includes(ga4Name) || ga4Name.includes(vtexName);
+        });
+      }).length;
+      
+      const viewUsers = p.viewUsers || 0;
+      const addUsers = p.addUsers || 0;
+      const viewSessions = p.viewSessions || 0;
+      
+      const viewToAdd = viewUsers > 0 ? (addUsers / viewUsers) * 100 : 0;
+      const cartToOrder = addUsers > 0 ? (matchingOrdersCount / addUsers) * 100 : 0;
+      
+      return {
+        id: idx,
+        name,
+        sessions: viewSessions,
+        users: viewUsers,
+        addUsers,
+        viewToAdd,
+        orders: matchingOrdersCount,
+        cartToOrder
+      };
+    });
+  }, [ga4Products, currentVtexOrders]);
+
+  const filteredProdFunnel = useMemo(() => {
+    const filtered = parsedProdFunnel.filter(p => {
+      if (!prodFunnelSearch) return true;
+      return p.name.toLowerCase().includes(prodFunnelSearch.toLowerCase());
+    });
+    
+    return filtered.sort((a, b) => {
+      let valA = a[prodFunnelSortField];
+      let valB = b[prodFunnelSortField];
+      
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return prodFunnelSortDir === 'asc' 
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      
+      return prodFunnelSortDir === 'asc'
+        ? (valA as number) - (valB as number)
+        : (valB as number) - (valA as number);
+    });
+  }, [parsedProdFunnel, prodFunnelSearch, prodFunnelSortField, prodFunnelSortDir]);
+
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
     revenue: 60000,
@@ -6797,6 +6868,60 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                     </div>
                   </div>
                 </section>
+
+                {/* CAMADA: Funil de Conversão por Produto */}
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4 mt-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Funil de Conversão por Produto (GA4 + VTEX)</h3>
+                      <p className="text-xs text-slate-500 mt-1">Acompanhe as interações do usuário com cada produto desde a visualização e adição ao carrinho até a compra final.</p>
+                    </div>
+                    <div className="relative w-full max-w-[300px]">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar produto..."
+                        value={prodFunnelSearch}
+                        onChange={(e) => setProdFunnelSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto custom-scrollbar max-h-[450px] overflow-y-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8 select-none sticky top-0 bg-white z-10">
+                          <th className="py-2 px-3 cursor-pointer hover:text-slate-800" onClick={() => handleProdFunnelSort('name')}>Produto {prodFunnelSortField === 'name' ? (prodFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProdFunnelSort('sessions')}>Sessões Vistas {prodFunnelSortField === 'sessions' ? (prodFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProdFunnelSort('users')}>Usuários Vistos {prodFunnelSortField === 'users' ? (prodFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProdFunnelSort('addUsers')}>Usuários Add Carrinho {prodFunnelSortField === 'addUsers' ? (prodFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-indigo-600" onClick={() => handleProdFunnelSort('viewToAdd')}>Taxa Visto → Carrinho (User) {prodFunnelSortField === 'viewToAdd' ? (prodFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProdFunnelSort('orders')}>Pedidos Gerados {prodFunnelSortField === 'orders' ? (prodFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-emerald-600" onClick={() => handleProdFunnelSort('cartToOrder')}>Taxa Carrinho → Pedido (User) {prodFunnelSortField === 'cartToOrder' ? (prodFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {filteredProdFunnel.map((item: any) => (
+                          <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 px-3 font-semibold text-slate-900 max-w-[320px] truncate" title={item.name}>{item.name}</td>
+                            <td className="py-3 px-3 text-right font-mono text-slate-600">{item.sessions.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono text-slate-600">{item.users.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{item.addUsers.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-indigo-600 bg-indigo-50/20">{item.viewToAdd.toFixed(2)}%</td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">{item.orders.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 bg-emerald-50/20">{item.cartToOrder.toFixed(2)}%</td>
+                          </tr>
+                        ))}
+                        {filteredProdFunnel.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-slate-400">Nenhum produto encontrado.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             );
           })()}
