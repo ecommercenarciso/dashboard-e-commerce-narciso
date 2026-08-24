@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Legend, LineChart, Line,
-  CartesianAxis
+  CartesianAxis, LabelList
 } from 'recharts';
 import { ArrowUpRight, ArrowDownRight, Users, Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 
@@ -1092,7 +1092,14 @@ export default function TrafficDashboard({
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value) => [`${parseFloat(value as string).toFixed(1)} ${funnelBase === 'users' ? 'visitantes' : 'sessões'}`, 'Média']}
                   />
-                  <Bar dataKey="avgVisits" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="avgVisits" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={30}>
+                    <LabelList 
+                      dataKey="avgVisits" 
+                      position="top" 
+                      formatter={(v: number) => Math.round(v).toLocaleString('pt-BR')} 
+                      style={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} 
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
