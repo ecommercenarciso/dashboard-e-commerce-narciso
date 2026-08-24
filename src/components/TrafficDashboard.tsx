@@ -430,8 +430,13 @@ export default function TrafficDashboard({
     const visitsByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
     const ordersByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
     
+    const today = new Date();
+    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
+
     finalChartData.forEach(row => {
       const dateStr = row.displayDate ? row.displayDate.split(' ')[0] : '';
+      if (dateStr === todayStr) return; // Skip today's incomplete data
+      
       const suffix = getDayOfWeekSuffix ? getDayOfWeekSuffix(dateStr) : '';
       if (!suffix) return;
       
