@@ -1342,18 +1342,27 @@ export default function Dashboard() {
     });
 
     const sessionsMap: Record<string, number> = {};
+    const normalizeKey = (str: string): string => {
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    };
 
     if (conversionVar === 'origin' && trafficData?.channelsData?.rows) {
       trafficData.channelsData.rows.forEach((r: any) => {
         const name = r.dimensionValues?.[1]?.value || '(not set)';
         const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
-        sessionsMap[name] = (sessionsMap[name] || 0) + sess;
+        const key = normalizeKey(name);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
       });
     } else if (conversionVar === 'city' && trafficData?.geoData?.rows) {
       trafficData.geoData.rows.forEach((r: any) => {
         const name = r.dimensionValues?.[1]?.value || '(não setado)';
         const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
-        sessionsMap[name] = (sessionsMap[name] || 0) + sess;
+        const key = normalizeKey(name);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
       });
     } else if (conversionVar === 'state' && trafficData?.geoData?.rows) {
       const normalizeRegion = (name: string): string => {
@@ -1379,18 +1388,20 @@ export default function Dashboard() {
         const regionName = r.dimensionValues?.[2]?.value || '';
         const stateAbbr = normalizeRegion(regionName);
         const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
-        sessionsMap[stateAbbr] = (sessionsMap[stateAbbr] || 0) + sess;
+        const key = normalizeKey(stateAbbr);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
       });
     } else if (conversionVar === 'device' && trafficData?.deviceData?.rows) {
       trafficData.deviceData.rows.forEach((r: any) => {
         const name = r.dimensionValues?.[1]?.value || '(not set)';
         const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
-        sessionsMap[name] = (sessionsMap[name] || 0) + sess;
+        const key = normalizeKey(name);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
       });
     }
 
     const tableList = Object.values(tableDataMap).map(item => {
-      const sess = sessionsMap[item.name] || 0;
+      const sess = sessionsMap[normalizeKey(item.name)] || 0;
       const rate = sess > 0 ? (item.conversions / sess) * 100 : 0;
       return {
         ...item,
