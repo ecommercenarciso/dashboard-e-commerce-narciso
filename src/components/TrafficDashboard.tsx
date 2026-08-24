@@ -123,6 +123,17 @@ export default function TrafficDashboard({
   const [isOsOpen, setIsOsOpen] = useState(false);
 
   const [conversionVar, setConversionVar] = useState<'origin' | 'city' | 'state' | 'device'>('origin');
+  const [conversionSortField, setConversionSortField] = useState<'name' | 'sessions' | 'conversions' | 'rate' | 'revenue'>('conversions');
+  const [conversionSortDir, setConversionSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleConversionSort = (field: 'name' | 'sessions' | 'conversions' | 'rate' | 'revenue') => {
+    if (conversionSortField === field) {
+      setConversionSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setConversionSortField(field);
+      setConversionSortDir('desc');
+    }
+  };
 
   const completedTransactions = useMemo(() => {
     if (!vtexOrdersList) return [];
@@ -227,8 +238,90 @@ export default function TrafficDashboard({
       chartDataMap[rawDate][name] = (chartDataMap[rawDate][name] || 0) + 1;
     });
 
-    const tableList = Object.values(tableDataMap).sort((a, b) => b.conversions - a.conversions);
-    const topKeys = tableList.slice(0, 5).map(item => item.name);
+    const sessionsMap: Record<string, number> = {};
+    const normalizeKey = (str: string): string => {
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    };
+
+    if (conversionVar === 'origin' && data?.channelsData?.rows) {
+      data.channelsData.rows.forEach((r: any) => {
+        const name = r.dimensionValues?.[1]?.value || '(not set)';
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        const key = normalizeKey(name);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
+      });
+    } else if (conversionVar === 'city' && data?.geoData?.rows) {
+      data.geoData.rows.forEach((r: any) => {
+        const name = r.dimensionValues?.[1]?.value || '(não setado)';
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        const key = normalizeKey(name);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
+      });
+    } else if (conversionVar === 'state' && data?.geoData?.rows) {
+      const normalizeRegion = (name: string): string => {
+        let clean = name.replace(/^State of\s+/i, '').trim();
+        if (clean.toLowerCase() === 'federal district') return 'DF';
+        clean = clean
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+        
+        const stateMapNormalized: Record<string, string> = {
+          'acre': 'AC', 'alagoas': 'AL', 'amapa': 'AP', 'amazonas': 'AM',
+          'bahia': 'BA', 'ceara': 'CE', 'distrito federal': 'DF', 'espirito santo': 'ES',
+          'goias': 'GO', 'maranhao': 'MA', 'mato grosso': 'MT', 'mato grosso do sul': 'MS',
+          'minas gerais': 'MG', 'para': 'PA', 'paraiba': 'PB', 'parana': 'PR',
+          'pernambuco': 'PE', 'piaui': 'PI', 'rio de janeiro': 'RJ', 'rio grande do norte': 'RN',
+          'rio grande do sul': 'RS', 'rondonia': 'RO', 'roraima': 'RR', 'santa catarina': 'SC',
+          'sao paulo': 'SP', 'sergipe': 'SE', 'tocantins': 'TO'
+        };
+        return stateMapNormalized[clean] || name;
+      };
+      data.geoData.rows.forEach((r: any) => {
+        const regionName = r.dimensionValues?.[2]?.value || '';
+        const stateAbbr = normalizeRegion(regionName);
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        const key = normalizeKey(stateAbbr);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
+      });
+    } else if (conversionVar === 'device' && data?.deviceData?.rows) {
+      data.deviceData.rows.forEach((r: any) => {
+        const name = r.dimensionValues?.[1]?.value || '(not set)';
+        const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
+        const key = normalizeKey(name);
+        sessionsMap[key] = (sessionsMap[key] || 0) + sess;
+      });
+    }
+
+    const tableList = Object.values(tableDataMap).map(item => {
+      const sess = sessionsMap[normalizeKey(item.name)] || 0;
+      const rate = sess > 0 ? (item.conversions / sess) * 100 : 0;
+      return {
+        ...item,
+        sessions: sess,
+        rate
+      };
+    }).sort((a, b) => {
+      let valA = a[conversionSortField];
+      let valB = b[conversionSortField];
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return conversionSortDir === 'asc' 
+          ? valA.localeCompare(valB) 
+          : valB.localeCompare(valA);
+      }
+      return conversionSortDir === 'asc' 
+        ? (valA as number) - (valB as number) 
+        : (valB as number) - (valA as number);
+    });
+
+    const topKeys = [...tableList]
+      .sort((a, b) => b.conversions - a.conversions)
+      .slice(0, 5)
+      .map(item => item.name);
 
     const chartList = Object.entries(chartDataMap)
       .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
@@ -246,7 +339,7 @@ export default function TrafficDashboard({
       chartList,
       topKeys
     };
-  }, [completedTransactions, conversionVar]);
+  }, [completedTransactions, conversionVar, data, conversionSortField, conversionSortDir]);
   
   const handleFunnelLegendClick = (e: any) => {
     const dataKey = e.dataKey;
@@ -968,23 +1061,27 @@ export default function TrafficDashboard({
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead className="sticky top-0 bg-white shadow-xs z-10">
-                  <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8">
-                    <th className="py-2 px-4">Item</th>
-                    <th className="py-2 px-2 text-right">Pedidos (Conv.)</th>
-                    <th className="py-2 px-4 text-right">Faturamento (Receita)</th>
+                  <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8 select-none">
+                    <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('name')}>Item {conversionSortField === 'name' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                    <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('sessions')}>Sessões {conversionSortField === 'sessions' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                    <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('conversions')}>Pedidos {conversionSortField === 'conversions' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                    <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('rate')}>Taxa Conv. {conversionSortField === 'rate' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                    <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('revenue')}>Faturamento (Receita) {conversionSortField === 'revenue' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-slate-700">
                   {conversionStats.tableList.map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4 font-semibold text-slate-900 truncate max-w-[150px]" title={item.name}>{item.name === '(not set)' ? '-' : item.name}</td>
+                      <td className="py-3 px-2 text-right font-mono text-slate-600">{item.sessions.toLocaleString('pt-BR')}</td>
                       <td className="py-3 px-2 text-right font-mono font-bold text-slate-800">{item.conversions.toLocaleString('pt-BR')}</td>
+                      <td className="py-3 px-2 text-right font-mono font-bold text-indigo-600">{item.rate.toFixed(2)}%</td>
                       <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                   ))}
                   {conversionStats.tableList.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
+                      <td colSpan={5} className="py-8 text-center text-slate-400">Nenhum pedido registrado no período.</td>
                     </tr>
                   )}
                 </tbody>
