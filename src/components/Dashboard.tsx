@@ -1345,18 +1345,28 @@ export default function Dashboard() {
         sessionsMap[name] = (sessionsMap[name] || 0) + sess;
       });
     } else if (conversionVar === 'state' && trafficData?.geoData?.rows) {
-      const stateMapping: Record<string, string> = {
-        'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM',
-        'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF', 'Espírito Santo': 'ES',
-        'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS',
-        'Minas Gerais': 'MG', 'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR',
-        'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
-        'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
-        'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO'
+      const normalizeRegion = (name: string): string => {
+        let clean = name.replace(/^State of\s+/i, '').trim();
+        if (clean.toLowerCase() === 'federal district') return 'DF';
+        clean = clean
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+        
+        const stateMapNormalized: Record<string, string> = {
+          'acre': 'AC', 'alagoas': 'AL', 'amapa': 'AP', 'amazonas': 'AM',
+          'bahia': 'BA', 'ceara': 'CE', 'distrito federal': 'DF', 'espirito santo': 'ES',
+          'goias': 'GO', 'maranhao': 'MA', 'mato grosso': 'MT', 'mato grosso do sul': 'MS',
+          'minas gerais': 'MG', 'para': 'PA', 'paraiba': 'PB', 'parana': 'PR',
+          'pernambuco': 'PE', 'piaui': 'PI', 'rio de janeiro': 'RJ', 'rio grande do norte': 'RN',
+          'rio grande do sul': 'RS', 'rondonia': 'RO', 'roraima': 'RR', 'santa catarina': 'SC',
+          'sao paulo': 'SP', 'sergipe': 'SE', 'tocantins': 'TO'
+        };
+        return stateMapNormalized[clean] || name;
       };
       trafficData.geoData.rows.forEach((r: any) => {
         const regionName = r.dimensionValues?.[2]?.value || '';
-        const stateAbbr = stateMapping[regionName] || regionName || '-';
+        const stateAbbr = normalizeRegion(regionName);
         const sess = parseInt(r.metricValues?.[0]?.value || '0', 10);
         sessionsMap[stateAbbr] = (sessionsMap[stateAbbr] || 0) + sess;
       });
