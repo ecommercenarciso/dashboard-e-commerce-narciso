@@ -652,6 +652,54 @@ app.post('/api/ga4/traffic', async (c) => {
   }
 });
 
+// GA4 Products Route
+app.post('/api/ga4/products', async (c) => {
+  try {
+    const { startDate, endDate } = await c.req.json();
+    
+    const missing = checkEnvVars(c, ['GA4_PROPERTY_ID']);
+    const credentialsJson = getEnv(c, 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
+    
+    if (missing.length > 0 || !credentialsJson) {
+      return c.json({ list: [] });
+    }
+
+    const credentials = parseCredentialsJson(credentialsJson);
+    const accessToken = await getGoogleAccessToken(credentials.client_email, credentials.private_key);
+    const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
+
+    const startStr = startDate || '28daysAgo';
+    const endStr = clampEndDate(endDate);
+
+    const report = await runGa4Report(accessToken, propertyId!, {
+      dateRanges: [{ startDate: startStr, endDate: endStr }],
+      dimensions: [{ name: 'itemName' }],
+      metrics: [
+        { name: 'itemsViewed' }, 
+        { name: 'itemsAddedToCart' },
+        { name: 'sessions' },
+        { name: 'activeUsers' }
+      ],
+      limit: 100
+    });
+
+    const list = (report.rows || []).map((row: any) => {
+      return {
+        itemName: row.dimensionValues?.[0]?.value || '',
+        itemsViewed: parseInt(row.metricValues?.[0]?.value || '0', 10),
+        itemsAddedToCart: parseInt(row.metricValues?.[1]?.value || '0', 10),
+        sessions: parseInt(row.metricValues?.[2]?.value || '0', 10),
+        activeUsers: parseInt(row.metricValues?.[3]?.value || '0', 10)
+      };
+    });
+
+    return c.json({ list });
+  } catch (error: any) {
+    console.error('GA4 Products Error:', error);
+    return c.json({ error: error.message || 'Failed to fetch GA4 products data' }, 500);
+  }
+});
+
 // GA4 Dimensions Route for Filters
 app.post('/api/ga4/dimensions', async (c) => {
   try {

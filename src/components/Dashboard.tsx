@@ -64,6 +64,7 @@ export default function Dashboard() {
   const [ga4OsOptions, setGa4OsOptions] = useState<string[]>([]);
   const [vtexAbandonedCarts, setVtexAbandonedCarts] = useState<any[]>([]);
   const [loadingAbandoned, setLoadingAbandoned] = useState(false);
+  const [ga4Products, setGa4Products] = useState<any[]>([]);
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [buyerSortField, setBuyerSortField] = useState<'name' | 'count' | 'total' | 'avg'>('total');
   const [buyerSortDirection, setBuyerSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -582,6 +583,20 @@ export default function Dashboard() {
             setGa4OsOptions(data.os || []);
           }
         }).catch(e => console.error("Error fetching GA4 dimensions:", e));
+      }
+
+      try {
+        const prodResponse = await fetch('/api/ga4/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate: filters.startDate, endDate: filters.endDate })
+        });
+        if (prodResponse.ok) {
+          const prodJson = await prodResponse.json();
+          setGa4Products(prodJson.list || []);
+        }
+      } catch (e) {
+        console.error("Error fetching GA4 products:", e);
       }
 
       setLoadingAbandoned(true);
@@ -6810,6 +6825,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 ga4CityOptions={ga4CityOptions}
                 ga4OsOptions={ga4OsOptions}
                 getDayOfWeekSuffix={getDayOfWeekSuffix}
+                ga4Products={ga4Products}
               />
             </ErrorBoundary>
           )}
