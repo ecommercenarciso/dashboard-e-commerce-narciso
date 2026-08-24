@@ -673,25 +673,44 @@ app.post('/api/ga4/products', async (c) => {
 
     const report = await runGa4Report(accessToken, propertyId!, {
       dateRanges: [{ startDate: startStr, endDate: endStr }],
-      dimensions: [{ name: 'itemName' }],
+      dimensions: [{ name: 'itemName' }, { name: 'eventName' }],
       metrics: [
-        { name: 'itemsViewed' }, 
-        { name: 'itemsAddedToCart' },
-        { name: 'sessions' },
-        { name: 'activeUsers' }
+        { name: 'activeUsers' },
+        { name: 'sessions' }
       ],
-      limit: 100
+      dimensionFilter: {
+        filter: {
+          fieldName: 'eventName',
+          inListFilter: {
+            values: ['view_item', 'add_to_cart']
+          }
+        }
+      },
+      limit: 500
     });
 
-    const list = (report.rows || []).map((row: any) => {
-      return {
-        itemName: row.dimensionValues?.[0]?.value || '',
-        itemsViewed: parseInt(row.metricValues?.[0]?.value || '0', 10),
-        itemsAddedToCart: parseInt(row.metricValues?.[1]?.value || '0', 10),
-        sessions: parseInt(row.metricValues?.[2]?.value || '0', 10),
-        activeUsers: parseInt(row.metricValues?.[3]?.value || '0', 10)
-      };
+    const groups: Record<string, { itemName: string, viewUsers: number, addUsers: number, viewSessions: number, addSessions: number }> = {};
+
+    (report.rows || []).forEach((row: any) => {
+      const name = row.dimensionValues?.[0]?.value || '';
+      const event = row.dimensionValues?.[1]?.value || '';
+      const users = parseInt(row.metricValues?.[0]?.value || '0', 10);
+      const sess = parseInt(row.metricValues?.[1]?.value || '0', 10);
+
+      if (!groups[name]) {
+        groups[name] = { itemName: name, viewUsers: 0, addUsers: 0, viewSessions: 0, addSessions: 0 };
+      }
+
+      if (event === 'view_item') {
+        groups[name].viewUsers = users;
+        groups[name].viewSessions = sess;
+      } else if (event === 'add_to_cart') {
+        groups[name].addUsers = users;
+        groups[name].addSessions = sess;
+      }
     });
+
+    const list = Object.values(groups);
 
     return c.json({ list });
   } catch (error: any) {

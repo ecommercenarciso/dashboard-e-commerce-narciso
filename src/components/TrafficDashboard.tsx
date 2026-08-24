@@ -128,7 +128,7 @@ export default function TrafficDashboard({
   const [conversionSortField, setConversionSortField] = useState<'name' | 'sessions' | 'conversions' | 'rate' | 'revenue'>('conversions');
   const [conversionSortDir, setConversionSortDir] = useState<'asc' | 'desc'>('desc');
   const [productSearch, setProductSearch] = useState('');
-  const [productSortField, setProductSortField] = useState<'name' | 'sessions' | 'users' | 'views' | 'adds' | 'viewToAdd' | 'orders' | 'cartToOrder'>('adds');
+  const [productSortField, setProductSortField] = useState<'name' | 'sessions' | 'users' | 'addUsers' | 'viewToAdd' | 'orders' | 'cartToOrder'>('addUsers');
   const [productSortDir, setProductSortDir] = useState<'asc' | 'desc'>('desc');
 
   const handleProductSort = (field: typeof productSortField) => {
@@ -156,21 +156,19 @@ export default function TrafficDashboard({
         });
       }).length;
       
-      const views = p.itemsViewed || 0;
-      const adds = p.itemsAddedToCart || 0;
-      const sess = p.sessions || 0;
-      const users = p.activeUsers || 0;
+      const viewUsers = p.viewUsers || 0;
+      const addUsers = p.addUsers || 0;
+      const viewSessions = p.viewSessions || 0;
       
-      const viewToAdd = views > 0 ? (adds / views) * 100 : 0;
-      const cartToOrder = adds > 0 ? (matchingOrdersCount / adds) * 100 : 0;
+      const viewToAdd = viewUsers > 0 ? (addUsers / viewUsers) * 100 : 0;
+      const cartToOrder = addUsers > 0 ? (matchingOrdersCount / addUsers) * 100 : 0;
       
       return {
         id: idx,
         name,
-        sessions: sess,
-        users,
-        views,
-        adds,
+        sessions: viewSessions,
+        users: viewUsers,
+        addUsers,
         viewToAdd,
         orders: matchingOrdersCount,
         cartToOrder
@@ -1171,13 +1169,12 @@ export default function TrafficDashboard({
             <thead>
               <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8 select-none sticky top-0 bg-white z-10">
                 <th className="py-2 px-3 cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('name')}>Produto {productSortField === 'name' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
-                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('sessions')}>Sessões {productSortField === 'sessions' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
-                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('users')}>Usuários {productSortField === 'users' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
-                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('views')}>Visualizações {productSortField === 'views' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
-                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('adds')}>Adicionados ao Carrinho {productSortField === 'adds' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
-                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-indigo-600" onClick={() => handleProductSort('viewToAdd')}>Taxa Visto → Carrinho {productSortField === 'viewToAdd' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('sessions')}>Sessões Vistas {productSortField === 'sessions' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('users')}>Usuários Vistos {productSortField === 'users' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('addUsers')}>Usuários Add Carrinho {productSortField === 'addUsers' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-indigo-600" onClick={() => handleProductSort('viewToAdd')}>Taxa Visto → Carrinho (User) {productSortField === 'viewToAdd' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
                 <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleProductSort('orders')}>Pedidos Gerados {productSortField === 'orders' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
-                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-emerald-600" onClick={() => handleProductSort('cartToOrder')}>Taxa Carrinho → Pedido {productSortField === 'cartToOrder' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-emerald-600" onClick={() => handleProductSort('cartToOrder')}>Taxa Carrinho → Pedido (User) {productSortField === 'cartToOrder' ? (productSortDir === 'desc' ? '▼' : '▲') : ''}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -1186,8 +1183,7 @@ export default function TrafficDashboard({
                   <td className="py-3 px-3 font-semibold text-slate-900 max-w-[320px] truncate" title={item.name}>{item.name}</td>
                   <td className="py-3 px-3 text-right font-mono text-slate-600">{item.sessions.toLocaleString('pt-BR')}</td>
                   <td className="py-3 px-3 text-right font-mono text-slate-600">{item.users.toLocaleString('pt-BR')}</td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-600">{item.views.toLocaleString('pt-BR')}</td>
-                  <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{item.adds.toLocaleString('pt-BR')}</td>
+                  <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{item.addUsers.toLocaleString('pt-BR')}</td>
                   <td className="py-3 px-3 text-right font-mono font-bold text-indigo-600 bg-indigo-50/20">{item.viewToAdd.toFixed(2)}%</td>
                   <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">{item.orders.toLocaleString('pt-BR')}</td>
                   <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 bg-emerald-50/20">{item.cartToOrder.toFixed(2)}%</td>
