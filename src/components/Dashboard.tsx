@@ -204,6 +204,17 @@ export default function Dashboard() {
   const [entregaSortDirection, setEntregaSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const [conversionVar, setConversionVar] = useState<'origin' | 'city' | 'state' | 'device'>('origin');
+  const [conversionSortField, setConversionSortField] = useState<'name' | 'conversions' | 'rate' | 'revenue'>('conversions');
+  const [conversionSortDir, setConversionSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleConversionSort = (field: 'name' | 'conversions' | 'rate' | 'revenue') => {
+    if (conversionSortField === field) {
+      setConversionSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setConversionSortField(field);
+      setConversionSortDir('desc');
+    }
+  };
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -1386,9 +1397,23 @@ export default function Dashboard() {
         sessions: sess,
         rate
       };
-    }).sort((a, b) => b.conversions - a.conversions);
+    }).sort((a, b) => {
+      let valA = a[conversionSortField];
+      let valB = b[conversionSortField];
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return conversionSortDir === 'asc' 
+          ? valA.localeCompare(valB) 
+          : valB.localeCompare(valA);
+      }
+      return conversionSortDir === 'asc' 
+        ? (valA as number) - (valB as number) 
+        : (valB as number) - (valA as number);
+    });
 
-    const topKeys = tableList.slice(0, 5).map(item => item.name);
+    const topKeys = [...tableList]
+      .sort((a, b) => b.conversions - a.conversions)
+      .slice(0, 5)
+      .map(item => item.name);
 
     const chartList = Object.entries(chartDataMap)
       .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
@@ -1406,7 +1431,7 @@ export default function Dashboard() {
       chartList,
       topKeys
     };
-  }, [completedTransactions, conversionVar, trafficData]);
+  }, [completedTransactions, conversionVar, trafficData, conversionSortField, conversionSortDir]);
 
   // Order status distribution data - based on current period only
   const statusMetrics = currentVtexOrders.reduce((acc, order) => {
@@ -3717,11 +3742,11 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                           <table className="w-full text-left text-xs border-collapse">
                             <thead className="sticky top-0 bg-white shadow-xs z-10">
-                              <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8">
-                                <th className="py-2 px-4">Item</th>
-                                <th className="py-2 px-2 text-right">Pedidos (Conv.)</th>
-                                <th className="py-2 px-2 text-right">Taxa Conv.</th>
-                                <th className="py-2 px-4 text-right">Faturamento (Receita)</th>
+                              <tr className="text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[9px] h-8 select-none">
+                                <th className="py-2 px-4 cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('name')}>Item {conversionSortField === 'name' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                                <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('conversions')}>Pedidos (Conv.) {conversionSortField === 'conversions' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                                <th className="py-2 px-2 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('rate')}>Taxa Conv. {conversionSortField === 'rate' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                                <th className="py-2 px-4 text-right cursor-pointer hover:text-slate-800" onClick={() => handleConversionSort('revenue')}>Faturamento (Receita) {conversionSortField === 'revenue' ? (conversionSortDir === 'desc' ? '▼' : '▲') : ''}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-slate-700">
