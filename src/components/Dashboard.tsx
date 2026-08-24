@@ -2800,6 +2800,14 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
       const targetOrds = targetGoals.orders[idx];
       const targetRev = targetGoals.revenue[idx];
       
+      const avgConversion = avgSessions > 0 ? (avgOrders / avgSessions) * 100 : 0;
+      const targetConversion = goals.conversion;
+      const conversionProgress = targetConversion > 0 ? (avgConversion / targetConversion) * 100 : 0;
+
+      const avgTicket = avgOrders > 0 ? avgRevenue / avgOrders : 0;
+      const targetTicket = goals.ticket;
+      const ticketProgress = targetTicket > 0 ? (avgTicket / targetTicket) * 100 : 0;
+
       return {
         dayName,
         avgSessions,
@@ -2812,7 +2820,15 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
         
         avgRevenue,
         targetRevenue: targetRev,
-        revenueProgress: targetRev > 0 ? (avgRevenue / targetRev) * 100 : 0
+        revenueProgress: targetRev > 0 ? (avgRevenue / targetRev) * 100 : 0,
+
+        avgConversion,
+        targetConversion,
+        conversionProgress,
+
+        avgTicket,
+        targetTicket,
+        ticketProgress
       };
     });
   }, [chartData, filters.startDate, filters.endDate]);
@@ -5355,6 +5371,10 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                            <th className="pb-2 text-right text-indigo-500">Meta Pedidos</th>
                            <th className="pb-2 text-right text-emerald-600">Média Fat.</th>
                            <th className="pb-2 text-right text-emerald-600">Meta Fat.</th>
+                           <th className="pb-2 text-right text-indigo-500">Tx. Conv.</th>
+                           <th className="pb-2 text-right text-indigo-500">Meta Conv.</th>
+                           <th className="pb-2 text-right text-slate-600">Ticket Médio</th>
+                           <th className="pb-2 text-right text-slate-600">Meta Ticket</th>
                          </tr>
                        </thead>
                        <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -5362,6 +5382,8 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                            const sPct = item.sessionsProgress;
                            const oPct = item.ordersProgress;
                            const rPct = item.revenueProgress;
+                           const cPct = item.conversionProgress;
+                           const tPct = item.ticketProgress;
                            
                            return (
                              <tr key={idx} className="hover:bg-slate-50 transition-colors">
@@ -5399,7 +5421,29 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                    ({rPct.toFixed(0)}%)
                                  </span>
                                </td>
-                             </tr>
+
+                               {/* Taxa de Conversão */}
+                               <td className="py-3 text-right font-mono font-semibold text-indigo-600">
+                                 {item.avgConversion.toFixed(2)}%
+                                </td>
+                                <td className="py-3 text-right font-mono text-slate-500">
+                                  {item.targetConversion.toFixed(2)}%
+                                  <span className={`text-[9px] font-bold ml-1 ${cPct >= 100 ? 'text-emerald-600' : cPct >= 70 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                    ({cPct.toFixed(0)}%)
+                                  </span>
+                                </td>
+
+                                {/* Ticket Médio */}
+                                <td className="py-3 text-right font-mono font-bold text-slate-700">
+                                  R$ {item.avgTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                                <td className="py-3 text-right font-mono text-slate-500">
+                                  R$ {item.targetTicket.toLocaleString('pt-BR')}
+                                  <span className={`text-[9px] font-bold ml-1 ${tPct >= 100 ? 'text-emerald-600' : tPct >= 70 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                    ({tPct.toFixed(0)}%)
+                                  </span>
+                                </td>
+                              </tr>
                            );
                          })}
                        </tbody>
