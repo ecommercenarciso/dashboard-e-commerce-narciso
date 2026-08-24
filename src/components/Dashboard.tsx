@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned' | 'colchao'>('executive');
   const [trafficData, setTrafficData] = useState<any>(null);
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
@@ -244,63 +244,7 @@ export default function Dashboard() {
     }
   };
 
-  const parsedProdFunnel = useMemo(() => {
-    const products = ga4Products || [];
-    const orders = currentVtexOrders || [];
-    
-    return products.map((p, idx) => {
-      const name = p.itemName || '';
-      
-      const matchingOrdersCount = orders.filter(o => {
-        if (!o.items) return false;
-        return o.items.some((item: any) => {
-          const vtexName = (item.name || '').toLowerCase();
-          const ga4Name = name.toLowerCase();
-          return vtexName.includes(ga4Name) || ga4Name.includes(vtexName);
-        });
-      }).length;
-      
-      const viewUsers = p.viewUsers || 0;
-      const addUsers = p.addUsers || 0;
-      const viewSessions = p.viewSessions || 0;
-      
-      const viewToAdd = viewUsers > 0 ? (addUsers / viewUsers) * 100 : 0;
-      const cartToOrder = addUsers > 0 ? (matchingOrdersCount / addUsers) * 100 : 0;
-      
-      return {
-        id: idx,
-        name,
-        sessions: viewSessions,
-        users: viewUsers,
-        addUsers,
-        viewToAdd,
-        orders: matchingOrdersCount,
-        cartToOrder
-      };
-    });
-  }, [ga4Products, currentVtexOrders]);
 
-  const filteredProdFunnel = useMemo(() => {
-    const filtered = parsedProdFunnel.filter(p => {
-      if (!prodFunnelSearch) return true;
-      return p.name.toLowerCase().includes(prodFunnelSearch.toLowerCase());
-    });
-    
-    return filtered.sort((a, b) => {
-      let valA = a[prodFunnelSortField];
-      let valB = b[prodFunnelSortField];
-      
-      if (typeof valA === 'string' && typeof valB === 'string') {
-        return prodFunnelSortDir === 'asc' 
-          ? valA.localeCompare(valB)
-          : valB.localeCompare(valA);
-      }
-      
-      return prodFunnelSortDir === 'asc'
-        ? (valA as number) - (valB as number)
-        : (valB as number) - (valA as number);
-    });
-  }, [parsedProdFunnel, prodFunnelSearch, prodFunnelSortField, prodFunnelSortDir]);
 
   // Goals (Metas) Persisted State
   const [goals, setGoals] = useState({
@@ -1300,6 +1244,64 @@ export default function Dashboard() {
     const orderDate = getLocalDateStr(order.creationDate);
     return orderDate >= prevStartDateStr && orderDate <= prevEndDateStr;
   });
+
+  const parsedProdFunnel = useMemo(() => {
+    const products = ga4Products || [];
+    const orders = currentVtexOrders || [];
+    
+    return products.map((p, idx) => {
+      const name = p.itemName || '';
+      
+      const matchingOrdersCount = orders.filter(o => {
+        if (!o.items) return false;
+        return o.items.some((item: any) => {
+          const vtexName = (item.name || '').toLowerCase();
+          const ga4Name = name.toLowerCase();
+          return vtexName.includes(ga4Name) || ga4Name.includes(vtexName);
+        });
+      }).length;
+      
+      const viewUsers = p.viewUsers || 0;
+      const addUsers = p.addUsers || 0;
+      const viewSessions = p.viewSessions || 0;
+      
+      const viewToAdd = viewUsers > 0 ? (addUsers / viewUsers) * 100 : 0;
+      const cartToOrder = addUsers > 0 ? (matchingOrdersCount / addUsers) * 100 : 0;
+      
+      return {
+        id: idx,
+        name,
+        sessions: viewSessions,
+        users: viewUsers,
+        addUsers,
+        viewToAdd,
+        orders: matchingOrdersCount,
+        cartToOrder
+      };
+    });
+  }, [ga4Products, currentVtexOrders]);
+
+  const filteredProdFunnel = useMemo(() => {
+    const filtered = parsedProdFunnel.filter(p => {
+      if (!prodFunnelSearch) return true;
+      return p.name.toLowerCase().includes(prodFunnelSearch.toLowerCase());
+    });
+    
+    return filtered.sort((a, b) => {
+      let valA = a[prodFunnelSortField];
+      let valB = b[prodFunnelSortField];
+      
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return prodFunnelSortDir === 'asc' 
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      
+      return prodFunnelSortDir === 'asc'
+        ? (valA as number) - (valB as number)
+        : (valB as number) - (valA as number);
+    });
+  }, [parsedProdFunnel, prodFunnelSearch, prodFunnelSortField, prodFunnelSortDir]);
 
   // Calculate current aggregates
   const totalSessions = currentGa4Data.reduce((acc, row) => acc + row.sessions, 0);
@@ -3423,7 +3425,19 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                       ? 'Acompanhamento de Metas' 
                       : activeTab === 'traffic'
                         ? 'Visão Geral de Tráfego'
-                        : 'Calculadora de Metas DRE'}
+                        : activeTab === 'dre'
+                          ? 'Calculadora de Metas DRE'
+                          : activeTab === 'colchao'
+                            ? 'Calculadora de Densidade de Colchão'
+                            : activeTab === 'abandoned'
+                              ? 'Carrinho Abandonado'
+                              : activeTab === 'crm'
+                                ? 'CRM & Retenção'
+                                : activeTab === 'logistics'
+                                  ? 'Logística & Frete'
+                                  : activeTab === 'finance'
+                                    ? 'Meios de Pagamento'
+                                    : 'Dashboard'}
             </h1>
           </div>
 
