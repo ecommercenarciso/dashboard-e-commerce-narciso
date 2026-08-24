@@ -421,6 +421,56 @@ export default function TrafficDashboard({
     });
   }, [averagedChartData, funnelBase, conversionMode]);
 
+  const dayOfWeekStats = useMemo(() => {
+    if (!finalChartData || finalChartData.length === 0) return [];
+    
+    const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const daysOfWeekFull = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    
+    const visitsByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    const ordersByDay: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    
+    finalChartData.forEach(row => {
+      const suffix = getDayOfWeekSuffix ? getDayOfWeekSuffix(row.date) : '';
+      if (!suffix) return;
+      
+      const dayIdx = daysOfWeekFull.indexOf(suffix);
+      if (dayIdx === -1) return;
+      
+      const visits = funnelBase === 'users' ? (row.visitors || 0) : (row.visitorsSessions || 0);
+      const orders = row.vtexOrders || 0;
+      
+      visitsByDay[dayIdx].push(visits);
+      ordersByDay[dayIdx].push(orders);
+    });
+    
+    return daysOfWeek.map((dayName, idx) => {
+      const visitsList = visitsByDay[idx];
+      const ordersList = ordersByDay[idx];
+      
+      const totalVisits = visitsList.reduce((a, b) => a + b, 0);
+      const totalOrders = ordersList.reduce((a, b) => a + b, 0);
+      
+      const minVisits = visitsList.length > 0 ? Math.min(...visitsList) : 0;
+      const maxVisits = visitsList.length > 0 ? Math.max(...visitsList) : 0;
+      
+      const avgVisits = visitsList.length > 0 ? totalVisits / visitsList.length : 0;
+      const avgOrders = ordersList.length > 0 ? totalOrders / ordersList.length : 0;
+      
+      const avgConvRate = avgVisits > 0 ? (avgOrders / avgVisits) * 100 : 0;
+      
+      return {
+        dayName,
+        totalVisits,
+        minVisits,
+        maxVisits,
+        avgVisits,
+        avgOrders,
+        avgConvRate
+      };
+    });
+  }, [finalChartData, funnelBase, getDayOfWeekSuffix]);
+
   const conversionTableData = useMemo(() => {
     if (!finalChartData || finalChartData.length === 0) return [];
     
@@ -1022,6 +1072,67 @@ export default function TrafficDashboard({
 
 
 
+
+      {/* CAMADA 2.7: Comportamento por Dia da Semana */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 w-full mb-4">
+        {/* Gráfico - Média de Visitas por Dia da Semana */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">
+            Média de {funnelBase === 'users' ? 'Visitas Únicas' : 'Sessões'} por Dia da Semana
+          </h3>
+          <div className="flex-1 w-full min-h-0">
+            {dayOfWeekStats.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dayOfWeekStats} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="dayName" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value) => [`${parseFloat(value as string).toFixed(1)} ${funnelBase === 'users' ? 'visitantes' : 'sessões'}`, 'Média']}
+                  />
+                  <Bar dataKey="avgVisits" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados</div>
+            )}
+          </div>
+        </div>
+
+        {/* Tabela - Métricas por Dia da Semana */}
+        <div className="lg:col-span-3 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[400px]">
+          <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Métricas por Dia da Semana</h3>
+          <div className="flex-1 overflow-x-auto min-h-0 custom-scrollbar">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8 select-none">
+                  <th className="pb-2 text-left">Dia da Semana</th>
+                  <th className="pb-2 text-right">Total {funnelBase === 'users' ? 'Visitas' : 'Sessões'}</th>
+                  <th className="pb-2 text-right">Menor</th>
+                  <th className="pb-2 text-right">Maior</th>
+                  <th className="pb-2 text-right">Média Visitas</th>
+                  <th className="pb-2 text-right">Média Pedidos</th>
+                  <th className="pb-2 text-right text-indigo-600">Taxa Conv. Média</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {dayOfWeekStats.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 font-semibold text-slate-950">{item.dayName}</td>
+                    <td className="py-3 text-right font-mono font-bold text-slate-800">{item.totalVisits.toLocaleString('pt-BR')}</td>
+                    <td className="py-3 text-right font-mono text-slate-500">{item.minVisits.toLocaleString('pt-BR')}</td>
+                    <td className="py-3 text-right font-mono text-slate-800">{item.maxVisits.toLocaleString('pt-BR')}</td>
+                    <td className="py-3 text-right font-mono font-bold text-indigo-500">{item.avgVisits.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</td>
+                    <td className="py-3 text-right font-mono font-bold text-slate-900">{item.avgOrders.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+                    <td className="py-3 text-right font-mono font-extrabold text-emerald-600">{item.avgConvRate.toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       {/* CAMADA DE ANÁLISE DE CONVERSÃO POR DIMENSÃO (ORIGEM, CIDADE, ESTADO, DISPOSITIVO) */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex flex-col gap-6">
