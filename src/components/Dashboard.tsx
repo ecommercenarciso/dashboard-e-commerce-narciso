@@ -1370,16 +1370,29 @@ export default function Dashboard() {
       if (bestMatch) return bestMatch;
 
       const lower = ga4Name.toLowerCase();
-      if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençol';
-      if (lower.includes('travesseiro')) return 'Travesseiro';
-      if (lower.includes('cobreleito')) return 'Cobreleito';
-      if (lower.includes('edredom')) return 'Edredom';
-      if (lower.includes('manta')) return 'Manta';
-      if (lower.includes('colchão') || lower.includes('colchao') || lower.includes('cama box') || lower.includes('cama combate')) return 'Colchões';
-      if (lower.includes('toalha') || lower.includes('banho') || lower.includes('rosto')) return 'Banho';
-      if (lower.includes('mesa') || lower.includes('jogo americano')) return 'Mesa';
-      if (lower.includes('cortina') || lower.includes('tapete') || lower.includes('almofada')) return 'Decoração';
-      return 'Outros';
+      if (lower.includes('toalha') && (lower.includes('banhao') || lower.includes('banhão') || lower.includes('banho'))) return 'Toalhas de Banho e Banhão';
+      if (lower.includes('toalha') && (lower.includes('rosto') || lower.includes('visita'))) return 'Toalhas de Rosto e visita';
+      if (lower.includes('jogo') && (lower.includes('toalha') || lower.includes('toalhas'))) return 'Jogos de toalhas';
+      if (lower.includes('piso') || lower.includes('pe de toalha') || (lower.includes('toalha') && lower.includes('tapete'))) return 'Toalhas de piso e tapetes';
+      if (lower.includes('toalha')) return 'Toalhas';
+      
+      if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençóis';
+      if (lower.includes('travesseiro')) return 'Travesseiros';
+      if (lower.includes('cobreleito')) return 'Cobreleitos';
+      if (lower.includes('edredom')) return 'Edredons';
+      if (lower.includes('manta') || lower.includes('cobertor')) return 'Cobertores e mantas';
+      if (lower.includes('colchão') || lower.includes('colchao')) return 'Colchões';
+      if (lower.includes('cama box') || lower.includes('cama combate') || lower.includes('conjunto box')) return 'Camas box e conjuntos';
+      if (lower.includes('jogo de cama') || lower.includes('jogo de lencol')) return 'Jogos de cama';
+      
+      if (lower.includes('cortina')) return 'Cortinas';
+      if (lower.includes('tapete')) return 'Tapetes';
+      if (lower.includes('almofada')) return 'Almofadas';
+      if (lower.includes('pano de prato') || lower.includes('pano de copa')) return 'Panos de Prato';
+      if (lower.includes('jogo americano')) return 'Jogos Americanos';
+      if (lower.includes('bancada') || lower.includes('saboneteira') || lower.includes('porta escova')) return 'Acessórios de bancada';
+
+      return 'Acessórios e Diversos';
     };
 
     const subcatStats: Record<string, {
