@@ -244,6 +244,19 @@ export default function Dashboard() {
     }
   };
 
+  const [subcatFunnelSearch, setSubcatFunnelSearch] = useState('');
+  const [subcatFunnelSortField, setSubcatFunnelSortField] = useState<'name' | 'sessions' | 'users' | 'addUsers' | 'viewToAdd' | 'orders' | 'cartToOrder'>('addUsers');
+  const [subcatFunnelSortDir, setSubcatFunnelSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSubcatFunnelSort = (field: typeof subcatFunnelSortField) => {
+    if (subcatFunnelSortField === field) {
+      setSubcatFunnelSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSubcatFunnelSortField(field);
+      setSubcatFunnelSortDir('desc');
+    }
+  };
+
 
 
   // Goals (Metas) Persisted State
@@ -1298,6 +1311,129 @@ export default function Dashboard() {
         : (valB as number) - (valA as number);
     });
   }, [parsedProdFunnel, prodFunnelSearch, prodFunnelSortField, prodFunnelSortDir]);
+
+  const parsedSubcategoryFunnel = useMemo(() => {
+    const products = ga4Products || [];
+    const orders = currentVtexOrders || [];
+    
+    const subcatStats: Record<string, {
+      name: string,
+      sessions: number,
+      users: number,
+      addUsers: number,
+      orders: number
+    }> = {};
+
+    const productNameToCategory: Record<string, string> = {};
+    orders.forEach(o => {
+      if (o.items) {
+        o.items.forEach((item: any) => {
+          const name = item.name || '';
+          let cat = item.category || 'Outros';
+          if (cat.startsWith('/')) cat = cat.substring(1);
+          if (cat.endsWith('/')) cat = cat.substring(0, cat.length - 1);
+          const parts = cat.split('/');
+          const subcat = parts[parts.length - 1] || 'Outros';
+          productNameToCategory[name.toLowerCase()] = subcat;
+        });
+      }
+    });
+
+    const getSubcategory = (name: string): string => {
+      const lower = name.toLowerCase();
+      for (const [vName, cat] of Object.entries(productNameToCategory)) {
+        if (lower.includes(vName) || vName.includes(lower)) {
+          return cat;
+        }
+      }
+      if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençol';
+      if (lower.includes('travesseiro')) return 'Travesseiro';
+      if (lower.includes('cobreleito')) return 'Cobreleito';
+      if (lower.includes('edredom')) return 'Edredom';
+      if (lower.includes('manta')) return 'Manta';
+      if (lower.includes('colchão') || lower.includes('colchao') || lower.includes('cama box') || lower.includes('cama combate')) return 'Colchões & Camas';
+      if (lower.includes('toalha') || lower.includes('banho') || lower.includes('rosto')) return 'Banho';
+      if (lower.includes('mesa') || lower.includes('jogo americano')) return 'Mesa';
+      if (lower.includes('cortina') || lower.includes('tapete') || lower.includes('almofada')) return 'Decoração';
+      return 'Outros';
+    };
+
+    products.forEach(p => {
+      const name = p.itemName || '';
+      const subcat = getSubcategory(name);
+      
+      if (!subcatStats[subcat]) {
+        subcatStats[subcat] = {
+          name: subcat,
+          sessions: 0,
+          users: 0,
+          addUsers: 0,
+          orders: 0
+        };
+      }
+      
+      subcatStats[subcat].sessions += p.viewSessions || 0;
+      subcatStats[subcat].users += p.viewUsers || 0;
+      subcatStats[subcat].addUsers += p.addUsers || 0;
+    });
+
+    orders.forEach(o => {
+      if (o.items) {
+        const orderSubcats = new Set<string>();
+        o.items.forEach((item: any) => {
+          const name = item.name || '';
+          const subcat = getSubcategory(name);
+          orderSubcats.add(subcat);
+        });
+        
+        orderSubcats.forEach(subcat => {
+          if (!subcatStats[subcat]) {
+            subcatStats[subcat] = {
+              name: subcat,
+              sessions: 0,
+              users: 0,
+              addUsers: 0,
+              orders: 0
+            };
+          }
+          subcatStats[subcat].orders += 1;
+        });
+      }
+    });
+
+    return Object.values(subcatStats).map((s, idx) => {
+      const viewToAdd = s.users > 0 ? (s.addUsers / s.users) * 100 : 0;
+      const cartToOrder = s.addUsers > 0 ? (s.orders / s.addUsers) * 100 : 0;
+      return {
+        id: idx,
+        ...s,
+        viewToAdd,
+        cartToOrder
+      };
+    });
+  }, [ga4Products, currentVtexOrders]);
+
+  const filteredSubcategoryFunnel = useMemo(() => {
+    const filtered = parsedSubcategoryFunnel.filter(p => {
+      if (!subcatFunnelSearch) return true;
+      return p.name.toLowerCase().includes(subcatFunnelSearch.toLowerCase());
+    });
+    
+    return filtered.sort((a, b) => {
+      let valA = a[subcatFunnelSortField];
+      let valB = b[subcatFunnelSortField];
+      
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return subcatFunnelSortDir === 'asc' 
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      
+      return subcatFunnelSortDir === 'asc'
+        ? (valA as number) - (valB as number)
+        : (valB as number) - (valA as number);
+    });
+  }, [parsedSubcategoryFunnel, subcatFunnelSearch, subcatFunnelSortField, subcatFunnelSortDir]);
 
   // Calculate current aggregates
   const totalSessions = currentGa4Data.reduce((acc, row) => acc + row.sessions, 0);
@@ -6981,6 +7117,60 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                         {filteredProdFunnel.length === 0 && (
                           <tr>
                             <td colSpan={7} className="py-8 text-center text-slate-400">Nenhum produto encontrado.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* CAMADA: Funil de Conversão por Subcategoria */}
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4 mt-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Funil de Conversão por Subcategoria (GA4 + VTEX)</h3>
+                      <p className="text-xs text-slate-500 mt-1">Acompanhe as interações do usuário com cada subcategoria desde a visualização e adição ao carrinho até a compra final.</p>
+                    </div>
+                    <div className="relative w-full max-w-[300px]">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar subcategoria..."
+                        value={subcatFunnelSearch}
+                        onChange={(e) => setSubcatFunnelSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto custom-scrollbar max-h-[450px] overflow-y-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8 select-none sticky top-0 bg-white z-10">
+                          <th className="py-2 px-3 cursor-pointer hover:text-slate-800" onClick={() => handleSubcatFunnelSort('name')}>Subcategoria {subcatFunnelSortField === 'name' ? (subcatFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleSubcatFunnelSort('sessions')}>Sessões Vistas {subcatFunnelSortField === 'sessions' ? (subcatFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleSubcatFunnelSort('users')}>Usuários Vistos {subcatFunnelSortField === 'users' ? (subcatFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleSubcatFunnelSort('addUsers')}>Usuários Add Carrinho {subcatFunnelSortField === 'addUsers' ? (subcatFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-indigo-600" onClick={() => handleSubcatFunnelSort('viewToAdd')}>Taxa Visto → Carrinho (User) {subcatFunnelSortField === 'viewToAdd' ? (subcatFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800" onClick={() => handleSubcatFunnelSort('orders')}>Pedidos Gerados {subcatFunnelSortField === 'orders' ? (subcatFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                          <th className="py-2 px-3 text-right cursor-pointer hover:text-slate-800 text-emerald-600" onClick={() => handleSubcatFunnelSort('cartToOrder')}>Taxa Carrinho → Pedido (User) {subcatFunnelSortField === 'cartToOrder' ? (subcatFunnelSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {filteredSubcategoryFunnel.map((item: any) => (
+                          <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 px-3 font-semibold text-slate-900 max-w-[320px] truncate" title={item.name}>{item.name}</td>
+                            <td className="py-3 px-3 text-right font-mono text-slate-600">{item.sessions.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono text-slate-600">{item.users.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{item.addUsers.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-indigo-600 bg-indigo-50/20">{item.viewToAdd.toFixed(2)}%</td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">{item.orders.toLocaleString('pt-BR')}</td>
+                            <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 bg-emerald-50/20">{item.cartToOrder.toFixed(2)}%</td>
+                          </tr>
+                        ))}
+                        {filteredSubcategoryFunnel.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-slate-400">Nenhuma subcategoria encontrada.</td>
                           </tr>
                         )}
                       </tbody>
