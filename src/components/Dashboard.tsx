@@ -1316,6 +1316,72 @@ export default function Dashboard() {
     const products = ga4Products || [];
     const orders = currentVtexOrders || [];
     
+    const productNameToVtexSubcat = new Map<string, string>();
+    (vtexOrders || []).forEach(order => {
+      if (order.items) {
+        order.items.forEach((item: any) => {
+          const name = item.name || '';
+          let cat = item.category || '';
+          if (cat) {
+            if (cat.startsWith('/')) cat = cat.substring(1);
+            if (cat.endsWith('/')) cat = cat.substring(0, cat.length - 1);
+            const parts = cat.split('/');
+            const subcat = parts[parts.length - 1];
+            if (subcat && subcat !== 'Não Informado') {
+              productNameToVtexSubcat.set(name.toLowerCase(), subcat);
+            }
+          }
+        });
+      }
+    });
+
+    const cleanName = (n: string) => {
+      return n
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    };
+
+    const cleanNameToVtexSubcat = new Map<string, string>();
+    productNameToVtexSubcat.forEach((subcat, originalName) => {
+      cleanNameToVtexSubcat.set(cleanName(originalName), subcat);
+    });
+
+    const getVtexSubcategory = (ga4Name: string): string => {
+      const cleanedGA4 = cleanName(ga4Name);
+      if (cleanNameToVtexSubcat.has(cleanedGA4)) {
+        return cleanNameToVtexSubcat.get(cleanedGA4)!;
+      }
+      
+      let bestMatch = '';
+      let maxLen = 0;
+      cleanNameToVtexSubcat.forEach((subcat, cleanedVtex) => {
+        if (cleanedVtex.length > 5 && (cleanedGA4.includes(cleanedVtex) || cleanedVtex.includes(cleanedGA4))) {
+          if (cleanedVtex.length > maxLen) {
+            maxLen = cleanedVtex.length;
+            bestMatch = subcat;
+          }
+        }
+      });
+      
+      if (bestMatch) return bestMatch;
+
+      const lower = ga4Name.toLowerCase();
+      if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençol';
+      if (lower.includes('travesseiro')) return 'Travesseiro';
+      if (lower.includes('cobreleito')) return 'Cobreleito';
+      if (lower.includes('edredom')) return 'Edredom';
+      if (lower.includes('manta')) return 'Manta';
+      if (lower.includes('colchão') || lower.includes('colchao') || lower.includes('cama box') || lower.includes('cama combate')) return 'Colchões';
+      if (lower.includes('toalha') || lower.includes('banho') || lower.includes('rosto')) return 'Banho';
+      if (lower.includes('mesa') || lower.includes('jogo americano')) return 'Mesa';
+      if (lower.includes('cortina') || lower.includes('tapete') || lower.includes('almofada')) return 'Decoração';
+      return 'Outros';
+    };
+
     const subcatStats: Record<string, {
       name: string,
       sessions: number,
@@ -1324,43 +1390,9 @@ export default function Dashboard() {
       orders: number
     }> = {};
 
-    const productNameToCategory: Record<string, string> = {};
-    orders.forEach(o => {
-      if (o.items) {
-        o.items.forEach((item: any) => {
-          const name = item.name || '';
-          let cat = item.category || 'Outros';
-          if (cat.startsWith('/')) cat = cat.substring(1);
-          if (cat.endsWith('/')) cat = cat.substring(0, cat.length - 1);
-          const parts = cat.split('/');
-          const subcat = parts[parts.length - 1] || 'Outros';
-          productNameToCategory[name.toLowerCase()] = subcat;
-        });
-      }
-    });
-
-    const getSubcategory = (name: string): string => {
-      const lower = name.toLowerCase();
-      for (const [vName, cat] of Object.entries(productNameToCategory)) {
-        if (lower.includes(vName) || vName.includes(lower)) {
-          return cat;
-        }
-      }
-      if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençol';
-      if (lower.includes('travesseiro')) return 'Travesseiro';
-      if (lower.includes('cobreleito')) return 'Cobreleito';
-      if (lower.includes('edredom')) return 'Edredom';
-      if (lower.includes('manta')) return 'Manta';
-      if (lower.includes('colchão') || lower.includes('colchao') || lower.includes('cama box') || lower.includes('cama combate')) return 'Colchões & Camas';
-      if (lower.includes('toalha') || lower.includes('banho') || lower.includes('rosto')) return 'Banho';
-      if (lower.includes('mesa') || lower.includes('jogo americano')) return 'Mesa';
-      if (lower.includes('cortina') || lower.includes('tapete') || lower.includes('almofada')) return 'Decoração';
-      return 'Outros';
-    };
-
     products.forEach(p => {
       const name = p.itemName || '';
-      const subcat = getSubcategory(name);
+      const subcat = getVtexSubcategory(name);
       
       if (!subcatStats[subcat]) {
         subcatStats[subcat] = {
@@ -1382,7 +1414,7 @@ export default function Dashboard() {
         const orderSubcats = new Set<string>();
         o.items.forEach((item: any) => {
           const name = item.name || '';
-          const subcat = getSubcategory(name);
+          const subcat = getVtexSubcategory(name);
           orderSubcats.add(subcat);
         });
         
@@ -1411,7 +1443,7 @@ export default function Dashboard() {
         cartToOrder
       };
     });
-  }, [ga4Products, currentVtexOrders]);
+  }, [ga4Products, currentVtexOrders, vtexOrders]);
 
   const filteredSubcategoryFunnel = useMemo(() => {
     const filtered = parsedSubcategoryFunnel.filter(p => {
