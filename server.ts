@@ -673,7 +673,7 @@ app.post('/api/ga4/products', async (c) => {
 
     const report = await runGa4Report(accessToken, propertyId!, {
       dateRanges: [{ startDate: startStr, endDate: endStr }],
-      dimensions: [{ name: 'itemName' }, { name: 'eventName' }],
+      dimensions: [{ name: 'itemName' }, { name: 'itemId' }, { name: 'eventName' }],
       metrics: [
         { name: 'activeUsers' },
         { name: 'sessions' }
@@ -689,24 +689,27 @@ app.post('/api/ga4/products', async (c) => {
       limit: 500
     });
 
-    const groups: Record<string, { itemName: string, viewUsers: number, addUsers: number, viewSessions: number, addSessions: number }> = {};
+    const groups: Record<string, { itemName: string, itemId: string, viewUsers: number, addUsers: number, viewSessions: number, addSessions: number }> = {};
 
     (report.rows || []).forEach((row: any) => {
       const name = row.dimensionValues?.[0]?.value || '';
-      const event = row.dimensionValues?.[1]?.value || '';
+      const id = row.dimensionValues?.[1]?.value || '';
+      const event = row.dimensionValues?.[2]?.value || '';
       const users = parseInt(row.metricValues?.[0]?.value || '0', 10);
       const sess = parseInt(row.metricValues?.[1]?.value || '0', 10);
 
-      if (!groups[name]) {
-        groups[name] = { itemName: name, viewUsers: 0, addUsers: 0, viewSessions: 0, addSessions: 0 };
+      const key = id || name;
+
+      if (!groups[key]) {
+        groups[key] = { itemName: name, itemId: id, viewUsers: 0, addUsers: 0, viewSessions: 0, addSessions: 0 };
       }
 
       if (event === 'view_item') {
-        groups[name].viewUsers = users;
-        groups[name].viewSessions = sess;
+        groups[key].viewUsers = users;
+        groups[key].viewSessions = sess;
       } else if (event === 'add_to_cart') {
-        groups[name].addUsers = users;
-        groups[name].addSessions = sess;
+        groups[key].addUsers = users;
+        groups[key].addSessions = sess;
       }
     });
 

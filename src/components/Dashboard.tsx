@@ -1264,6 +1264,9 @@ export default function Dashboard() {
       const matchingOrdersCount = orders.filter(o => {
         if (!o.items) return false;
         return o.items.some((item: any) => {
+          if (p.itemId && (String(item.id) === String(p.itemId) || String(item.productId) === String(p.itemId) || String(item.refId) === String(p.itemId))) {
+            return true;
+          }
           const vtexName = (item.name || '').toLowerCase();
           const ga4Name = name.toLowerCase();
           return vtexName.includes(ga4Name) || ga4Name.includes(vtexName);
@@ -1316,11 +1319,14 @@ export default function Dashboard() {
     const products = ga4Products || [];
     const orders = currentVtexOrders || [];
     
-    const productNameToVtexSubcat = new Map<string, string>();
+    const vtexSkuToSubcat = new Map<string, string>();
+    const vtexProductIdToSubcat = new Map<string, string>();
+    const vtexRefIdToSubcat = new Map<string, string>();
+    const vtexNameToSubcat = new Map<string, string>();
+    
     (vtexOrders || []).forEach(order => {
       if (order.items) {
         order.items.forEach((item: any) => {
-          const name = item.name || '';
           let cat = item.category || '';
           if (cat) {
             if (cat.startsWith('/')) cat = cat.substring(1);
@@ -1328,7 +1334,10 @@ export default function Dashboard() {
             const parts = cat.split('/');
             const subcat = parts[parts.length - 1];
             if (subcat && subcat !== 'Não Informado') {
-              productNameToVtexSubcat.set(name.toLowerCase(), subcat);
+              if (item.id) vtexSkuToSubcat.set(String(item.id), subcat);
+              if (item.productId) vtexProductIdToSubcat.set(String(item.productId), subcat);
+              if (item.refId) vtexRefIdToSubcat.set(String(item.refId), subcat);
+              if (item.name) vtexNameToSubcat.set(item.name.toLowerCase(), subcat);
             }
           }
         });
@@ -1346,16 +1355,26 @@ export default function Dashboard() {
     };
 
     const cleanNameToVtexSubcat = new Map<string, string>();
-    productNameToVtexSubcat.forEach((subcat, originalName) => {
+    vtexNameToSubcat.forEach((subcat, originalName) => {
       cleanNameToVtexSubcat.set(cleanName(originalName), subcat);
     });
 
-    const getVtexSubcategory = (ga4Name: string): string => {
+    const getVtexSubcategory = (ga4Name: string, ga4Id?: string): string => {
+      // 1. Try matching with Sku ID / Product ID / Ref ID
+      if (ga4Id) {
+        const idStr = String(ga4Id);
+        if (vtexSkuToSubcat.has(idStr)) return vtexSkuToSubcat.get(idStr)!;
+        if (vtexProductIdToSubcat.has(idStr)) return vtexProductIdToSubcat.get(idStr)!;
+        if (vtexRefIdToSubcat.has(idStr)) return vtexRefIdToSubcat.get(idStr)!;
+      }
+
+      // 2. Try matching exact cleaned name
       const cleanedGA4 = cleanName(ga4Name);
       if (cleanNameToVtexSubcat.has(cleanedGA4)) {
         return cleanNameToVtexSubcat.get(cleanedGA4)!;
       }
       
+      // 3. Substring match
       let bestMatch = '';
       let maxLen = 0;
       cleanNameToVtexSubcat.forEach((subcat, cleanedVtex) => {
@@ -1405,7 +1424,7 @@ export default function Dashboard() {
 
     products.forEach(p => {
       const name = p.itemName || '';
-      const subcat = getVtexSubcategory(name);
+      const subcat = getVtexSubcategory(name, p.itemId);
       
       if (!subcatStats[subcat]) {
         subcatStats[subcat] = {
@@ -1427,7 +1446,7 @@ export default function Dashboard() {
         const orderSubcats = new Set<string>();
         o.items.forEach((item: any) => {
           const name = item.name || '';
-          const subcat = getVtexSubcategory(name);
+          const subcat = getVtexSubcategory(name, String(item.id));
           orderSubcats.add(subcat);
         });
         
