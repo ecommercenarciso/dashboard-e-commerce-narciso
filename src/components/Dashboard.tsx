@@ -43,47 +43,6 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned' | 'settings' | 'search'>('executive');
   const [trafficData, setTrafficData] = useState<any>(null);
-
-  // Search Analytics states
-  const [searchAnalyticsData, setSearchAnalyticsData] = useState<any>(null);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [searchTypeFilter, setSearchTypeFilter] = useState<'search' | 'autocomplete'>('search');
-  const [searchResultFilter, setSearchResultFilter] = useState<'all' | 'with_results' | 'no_results'>('with_results');
-  const [searchDeviceFilter, setSearchDeviceFilter] = useState<'all' | 'mobile' | 'desktop'>('all');
-  const [searchQueryTerm, setSearchQueryTerm] = useState('');
-  const [searchSortField, setSearchSortField] = useState<'term' | 'searches' | 'clicks' | 'uniqueClicks' | 'ctr' | 'conv' | 'orders' | 'revenue'>('searches');
-  const [searchSortDir, setSearchSortDir] = useState<'asc' | 'desc'>('desc');
-
-  const fetchSearchAnalytics = async () => {
-    setLoadingSearch(true);
-    try {
-      const response = await fetch('/api/ga4/search-analytics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          startDate: filters.startDate,
-          endDate: filters.endDate
-        })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setSearchAnalyticsData(data);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingSearch(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'search' && filters.startDate && filters.endDate) {
-      fetchSearchAnalytics();
-    }
-  }, [activeTab, filters.startDate, filters.endDate]);
-
   // Authentication states
   const [currentUser, setCurrentUser] = useState<{ username: string, role: string } | null>(() => {
     const saved = localStorage.getItem('narciso_user');
@@ -674,6 +633,46 @@ export default function Dashboard() {
     customCompareStart: format(subMonths(startOfMonth(new Date()), 1), 'yyyy-MM-dd'),
     customCompareEnd: format(subMonths(new Date(), 1), 'yyyy-MM-dd'),
   });
+
+  // Search Analytics states
+  const [searchAnalyticsData, setSearchAnalyticsData] = useState<any>(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchTypeFilter, setSearchTypeFilter] = useState<'search' | 'autocomplete'>('search');
+  const [searchResultFilter, setSearchResultFilter] = useState<'all' | 'with_results' | 'no_results'>('with_results');
+  const [searchDeviceFilter, setSearchDeviceFilter] = useState<'all' | 'mobile' | 'desktop'>('all');
+  const [searchQueryTerm, setSearchQueryTerm] = useState('');
+  const [searchSortField, setSearchSortField] = useState<'term' | 'searches' | 'clicks' | 'uniqueClicks' | 'ctr' | 'conv' | 'orders' | 'revenue'>('searches');
+  const [searchSortDir, setSearchSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const fetchSearchAnalytics = async () => {
+    setLoadingSearch(true);
+    try {
+      const response = await fetch('/api/ga4/search-analytics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          startDate: filters.startDate,
+          endDate: filters.endDate
+        })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSearchAnalyticsData(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'search' && filters.startDate && filters.endDate) {
+      fetchSearchAnalytics();
+    }
+  }, [activeTab, filters.startDate, filters.endDate]);
 
   // Auto-adjust chart interval based on selected period
   useEffect(() => {
