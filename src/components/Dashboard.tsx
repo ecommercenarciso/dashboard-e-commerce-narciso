@@ -350,14 +350,14 @@ export default function Dashboard() {
     }
   };
 
-  const [channelsSortField, setChannelsSortField] = useState<'name' | 'soma' | 'pct' | 'avgDaily'>('soma');
+  const [channelsSortField, setChannelsSortField] = useState<'name' | 'soma' | 'pct' | 'avgDaily' | 'orders' | 'rate' | 'revenue'>('soma');
   const [channelsSortDir, setChannelsSortDir] = useState<'asc' | 'desc'>('desc');
-  const [geoSortField, setGeoSortField] = useState<'name' | 'soma' | 'pct' | 'avgDaily'>('soma');
+  const [geoSortField, setGeoSortField] = useState<'name' | 'soma' | 'pct' | 'avgDaily' | 'orders' | 'rate' | 'revenue'>('soma');
   const [geoSortDir, setGeoSortDir] = useState<'asc' | 'desc'>('desc');
-  const [osSortField, setOsSortField] = useState<'name' | 'soma' | 'pct' | 'avgDaily'>('soma');
+  const [osSortField, setOsSortField] = useState<'name' | 'soma' | 'pct' | 'avgDaily' | 'orders' | 'rate' | 'revenue'>('soma');
   const [osSortDir, setOsSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const handleChannelsSort = (field: 'name' | 'soma' | 'pct' | 'avgDaily') => {
+  const handleChannelsSort = (field: 'name' | 'soma' | 'pct' | 'avgDaily' | 'orders' | 'rate' | 'revenue') => {
     if (channelsSortField === field) {
       setChannelsSortDir(channelsSortDir === 'asc' ? 'desc' : 'asc');
     } else {
@@ -365,7 +365,7 @@ export default function Dashboard() {
       setChannelsSortDir('desc');
     }
   };
-  const handleGeoSort = (field: 'name' | 'soma' | 'pct' | 'avgDaily') => {
+  const handleGeoSort = (field: 'name' | 'soma' | 'pct' | 'avgDaily' | 'orders' | 'rate' | 'revenue') => {
     if (geoSortField === field) {
       setGeoSortDir(geoSortDir === 'asc' ? 'desc' : 'asc');
     } else {
@@ -373,7 +373,7 @@ export default function Dashboard() {
       setGeoSortDir('desc');
     }
   };
-  const handleOsSort = (field: 'name' | 'soma' | 'pct' | 'avgDaily') => {
+  const handleOsSort = (field: 'name' | 'soma' | 'pct' | 'avgDaily' | 'orders' | 'rate' | 'revenue') => {
     if (osSortField === field) {
       setOsSortDir(osSortDir === 'asc' ? 'desc' : 'asc');
     } else {
@@ -2111,6 +2111,15 @@ export default function Dashboard() {
   // Full table data sources with custom sorting support
   const execChannelsList = React.useMemo(() => {
     if (!trafficData?.channelsData?.rows) return [];
+    
+    const txByChannel: Record<string, { orders: number, revenue: number }> = {};
+    completedTransactions.forEach(tx => {
+      const ch = tx.firstUserSourceMedium || '-';
+      if (!txByChannel[ch]) txByChannel[ch] = { orders: 0, revenue: 0 };
+      txByChannel[ch].orders += 1;
+      txByChannel[ch].revenue += tx.revenue || 0;
+    });
+
     const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
     let totalVis = 0;
     let totalSess = 0;
@@ -2126,16 +2135,23 @@ export default function Dashboard() {
       totalVis += vis;
       totalSess += sess;
     });
-    const list = Object.values(map).map(item => ({
-      ...item,
-      soma: execFunnelBase === 'users' ? item.visitors : item.sessions,
-      pct: execFunnelBase === 'users' 
-        ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
-        : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
-      avgDaily: execFunnelBase === 'users'
-        ? (item.visitors / daysCount)
-        : (item.sessions / daysCount)
-    }));
+    const list = Object.values(map).map(item => {
+      const tx = txByChannel[item.name] || { orders: 0, revenue: 0 };
+      const rate = item.sessions > 0 ? (tx.orders / item.sessions) * 100 : 0;
+      return {
+        ...item,
+        soma: execFunnelBase === 'users' ? item.visitors : item.sessions,
+        pct: execFunnelBase === 'users' 
+          ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
+          : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
+        avgDaily: execFunnelBase === 'users'
+          ? (item.visitors / daysCount)
+          : (item.sessions / daysCount),
+        orders: tx.orders,
+        rate,
+        revenue: tx.revenue
+      };
+    });
     return list.sort((a, b) => {
       let valA = a[channelsSortField];
       let valB = b[channelsSortField];
@@ -2148,10 +2164,19 @@ export default function Dashboard() {
         ? (valA as number) - (valB as number) 
         : (valB as number) - (valA as number);
     });
-  }, [trafficData, execFunnelBase, daysCount, channelsSortField, channelsSortDir]);
+  }, [trafficData, execFunnelBase, daysCount, channelsSortField, channelsSortDir, completedTransactions]);
 
   const execGeoList = React.useMemo(() => {
     if (!trafficData?.geoData?.rows) return [];
+    
+    const txByCity: Record<string, { orders: number, revenue: number }> = {};
+    completedTransactions.forEach(tx => {
+      const city = tx.city || '-';
+      if (!txByCity[city]) txByCity[city] = { orders: 0, revenue: 0 };
+      txByCity[city].orders += 1;
+      txByCity[city].revenue += tx.revenue || 0;
+    });
+
     const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
     let totalVis = 0;
     let totalSess = 0;
@@ -2167,16 +2192,23 @@ export default function Dashboard() {
       totalVis += vis;
       totalSess += sess;
     });
-    const list = Object.values(map).map(item => ({
-      ...item,
-      soma: execFunnelBase === 'users' ? item.visitors : item.sessions,
-      pct: execFunnelBase === 'users'
-        ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
-        : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
-      avgDaily: execFunnelBase === 'users'
-        ? (item.visitors / daysCount)
-        : (item.sessions / daysCount)
-    }));
+    const list = Object.values(map).map(item => {
+      const tx = txByCity[item.name] || { orders: 0, revenue: 0 };
+      const rate = item.sessions > 0 ? (tx.orders / item.sessions) * 100 : 0;
+      return {
+        ...item,
+        soma: execFunnelBase === 'users' ? item.visitors : item.sessions,
+        pct: execFunnelBase === 'users'
+          ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
+          : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
+        avgDaily: execFunnelBase === 'users'
+          ? (item.visitors / daysCount)
+          : (item.sessions / daysCount),
+        orders: tx.orders,
+        rate,
+        revenue: tx.revenue
+      };
+    });
     return list.sort((a, b) => {
       let valA = a[geoSortField];
       let valB = b[geoSortField];
@@ -2189,10 +2221,19 @@ export default function Dashboard() {
         ? (valA as number) - (valB as number) 
         : (valB as number) - (valA as number);
     });
-  }, [trafficData, execFunnelBase, daysCount, geoSortField, geoSortDir]);
+  }, [trafficData, execFunnelBase, daysCount, geoSortField, geoSortDir, completedTransactions]);
 
   const execOsList = React.useMemo(() => {
     if (!trafficData?.deviceData?.rows) return [];
+    
+    const txByOs: Record<string, { orders: number, revenue: number }> = {};
+    completedTransactions.forEach(tx => {
+      const os = tx.operatingSystem || '-';
+      if (!txByOs[os]) txByOs[os] = { orders: 0, revenue: 0 };
+      txByOs[os].orders += 1;
+      txByOs[os].revenue += tx.revenue || 0;
+    });
+
     const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
     let totalVis = 0;
     let totalSess = 0;
@@ -2208,16 +2249,23 @@ export default function Dashboard() {
       totalVis += vis;
       totalSess += sess;
     });
-    const list = Object.values(map).map(item => ({
-      ...item,
-      soma: execFunnelBase === 'users' ? item.visitors : item.sessions,
-      pct: execFunnelBase === 'users'
-        ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
-        : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
-      avgDaily: execFunnelBase === 'users'
-        ? (item.visitors / daysCount)
-        : (item.sessions / daysCount)
-    }));
+    const list = Object.values(map).map(item => {
+      const tx = txByOs[item.name] || { orders: 0, revenue: 0 };
+      const rate = item.sessions > 0 ? (tx.orders / item.sessions) * 100 : 0;
+      return {
+        ...item,
+        soma: execFunnelBase === 'users' ? item.visitors : item.sessions,
+        pct: execFunnelBase === 'users'
+          ? (totalVis > 0 ? (item.visitors / totalVis) * 100 : 0)
+          : (totalSess > 0 ? (item.sessions / totalSess) * 100 : 0),
+        avgDaily: execFunnelBase === 'users'
+          ? (item.visitors / daysCount)
+          : (item.sessions / daysCount),
+        orders: tx.orders,
+        rate,
+        revenue: tx.revenue
+      };
+    });
     return list.sort((a, b) => {
       let valA = a[osSortField];
       let valB = b[osSortField];
@@ -2230,7 +2278,7 @@ export default function Dashboard() {
         ? (valA as number) - (valB as number) 
         : (valB as number) - (valA as number);
     });
-  }, [trafficData, execFunnelBase, daysCount, osSortField, osSortDir]);
+  }, [trafficData, execFunnelBase, daysCount, osSortField, osSortDir, completedTransactions]);
 
   let items1Count = 0;
   let items2Count = 0;
@@ -4533,273 +4581,6 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                             <td className="py-4 font-bold text-indigo-600 text-right">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             <td className="py-4 font-bold text-indigo-600 text-right">R$ {avgOrderValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                           </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Linha 5: Origem e Mídia */}
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mt-4">
-                  {/* Gráfico Origem e Mídia */}
-                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center justify-between">
-                      <span>Origem & Mídia (Evolução Diária)</span>
-                      <span className="text-[10px] text-slate-400 font-normal normal-case">{execFunnelBase === 'users' ? 'Primeira Origem / Mídia' : 'Sessões'} • Top 5 no Gráfico</span>
-                    </h3>
-                    <div className="flex-1 w-full min-h-0">
-                      {channelsChartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={channelsChartData} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              labelFormatter={(label) => {
-                                const dow = getDayOfWeekSuffix(label);
-                                return dow ? `${label} (${dow})` : label;
-                              }}
-                              formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
-                            />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleChannelsLegendClick} />
-                            {top5ChannelsList.map((name, idx) => (
-                              <Line 
-                                key={name}
-                                type="linear"
-                                dataKey={name}
-                                stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
-                                strokeWidth={2}
-                                dot={{ r: 2 }}
-                                activeDot={{ r: 4 }}
-                                name={name}
-                                strokeOpacity={activeChannelsLines.length === 0 || activeChannelsLines.includes(name) ? 1 : 0.2}
-                                onClick={(e) => e && handleChannelsLegendClick({ dataKey: name })}
-                              />
-                            ))}
-                          </LineChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis.'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tabela Origem e Mídia */}
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <div className="mb-2 border-b border-slate-100 pb-2">
-                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span>Origem & Mídia</span>
-                        <span className="text-[10px] text-slate-400 font-normal normal-case">Ordenar</span>
-                      </h3>
-                    </div>
-                    <div className="flex-1 overflow-y-auto pr-1 min-h-0 max-h-[290px] custom-scrollbar">
-                      <table className="w-full text-left text-[11px] text-slate-600 table-fixed">
-                        <thead>
-                          <tr className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-200 select-none">
-                            <th className="pb-2 font-bold text-left cursor-pointer hover:text-indigo-600 w-1/3" onClick={() => handleChannelsSort('name')}>
-                              Canal {channelsSortField === 'name' ? (channelsSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleChannelsSort('soma')}>
-                              Soma {channelsSortField === 'soma' ? (channelsSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleChannelsSort('pct')}>
-                              Part. {channelsSortField === 'pct' ? (channelsSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleChannelsSort('avgDaily')}>
-                              Média/D {channelsSortField === 'avgDaily' ? (channelsSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {execChannelsList.map((item: any, idx: number) => (
-                            <tr key={idx} className="hover:bg-slate-50/50">
-                              <td className="py-2 font-medium text-slate-800 text-left truncate" title={item.name}>{item.name}</td>
-                              <td className="py-2 font-bold text-slate-900 text-right">{item.soma.toLocaleString('pt-BR')}</td>
-                              <td className="py-2 text-slate-500 text-right">{item.pct.toFixed(1)}%</td>
-                              <td className="py-2 text-slate-600 text-right">{item.avgDaily.toFixed(1)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Linha 6: Cidades */}
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mt-4">
-                  {/* Gráfico Cidades */}
-                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center justify-between">
-                      <span>Cidades (Evolução Diária)</span>
-                      <span className="text-[10px] text-slate-400 font-normal normal-case">{execFunnelBase === 'users' ? 'Visitantes Únicos' : 'Sessões'} • Top 5 no Gráfico</span>
-                    </h3>
-                    <div className="flex-1 w-full min-h-0">
-                      {geoChartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={geoChartData} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              labelFormatter={(label) => {
-                                const dow = getDayOfWeekSuffix(label);
-                                return dow ? `${label} (${dow})` : label;
-                              }}
-                              formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
-                            />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleGeoLegendClick} />
-                            {top5GeoList.map((name, idx) => (
-                              <Line 
-                                key={name}
-                                type="linear"
-                                dataKey={name}
-                                stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
-                                strokeWidth={2}
-                                dot={{ r: 2 }}
-                                activeDot={{ r: 4 }}
-                                name={name}
-                                strokeOpacity={activeGeoLines.length === 0 || activeGeoLines.includes(name) ? 1 : 0.2}
-                                onClick={(e) => e && handleGeoLegendClick({ dataKey: name })}
-                              />
-                            ))}
-                          </LineChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis.'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tabela Cidades */}
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <div className="mb-2 border-b border-slate-100 pb-2">
-                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span>Cidades</span>
-                        <span className="text-[10px] text-slate-400 font-normal normal-case">Ordenar</span>
-                      </h3>
-                    </div>
-                    <div className="flex-1 overflow-y-auto pr-1 min-h-0 max-h-[290px] custom-scrollbar">
-                      <table className="w-full text-left text-[11px] text-slate-600 table-fixed">
-                        <thead>
-                          <tr className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-200 select-none">
-                            <th className="pb-2 font-bold text-left cursor-pointer hover:text-indigo-600 w-1/3" onClick={() => handleGeoSort('name')}>
-                              Cidade {geoSortField === 'name' ? (geoSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleGeoSort('soma')}>
-                              Soma {geoSortField === 'soma' ? (geoSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleGeoSort('pct')}>
-                              Part. {geoSortField === 'pct' ? (geoSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleGeoSort('avgDaily')}>
-                              Média/D {geoSortField === 'avgDaily' ? (geoSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {execGeoList.map((item: any, idx: number) => (
-                            <tr key={idx} className="hover:bg-slate-50/50">
-                              <td className="py-2 font-medium text-slate-800 text-left truncate" title={item.name}>{item.name}</td>
-                              <td className="py-2 font-bold text-slate-900 text-right">{item.soma.toLocaleString('pt-BR')}</td>
-                              <td className="py-2 text-slate-500 text-right">{item.pct.toFixed(1)}%</td>
-                              <td className="py-2 text-slate-600 text-right">{item.avgDaily.toFixed(1)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Linha 7: Sistema Operacional */}
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full mt-4">
-                  {/* Gráfico Sistema Operacional */}
-                  <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center justify-between">
-                      <span>Sistema Operacional (Evolução Diária)</span>
-                      <span className="text-[10px] text-slate-400 font-normal normal-case">{execFunnelBase === 'users' ? 'Visitantes Únicos' : 'Sessões'} • Top 5 no Gráfico</span>
-                    </h3>
-                    <div className="flex-1 w-full min-h-0">
-                      {osChartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={osChartData} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              labelFormatter={(label) => {
-                                const dow = getDayOfWeekSuffix(label);
-                                return dow ? `${label} (${dow})` : label;
-                              }}
-                              formatter={(value, name) => [Number(value).toLocaleString('pt-BR'), name]}
-                            />
-                            <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'semibold', paddingBottom: '10px', cursor: 'pointer' }} onClick={handleOsLegendClick} />
-                            {top5OsList.map((name, idx) => (
-                              <Line 
-                                key={name}
-                                type="linear"
-                                dataKey={name}
-                                stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
-                                strokeWidth={2}
-                                dot={{ r: 2 }}
-                                activeDot={{ r: 4 }}
-                                name={name}
-                                strokeOpacity={activeOsLines.length === 0 || activeOsLines.includes(name) ? 1 : 0.2}
-                                onClick={(e) => e && handleOsLegendClick({ dataKey: name })}
-                              />
-                            ))}
-                          </LineChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                          {loading ? 'Carregando dados...' : 'Sem dados disponíveis.'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tabela Sistema Operacional */}
-                  <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-[380px]">
-                    <div className="mb-2 border-b border-slate-100 pb-2">
-                      <h3 className="text-[14px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span>Sistema Operacional</span>
-                        <span className="text-[10px] text-slate-400 font-normal normal-case">Ordenar</span>
-                      </h3>
-                    </div>
-                    <div className="flex-1 overflow-y-auto pr-1 min-h-0 max-h-[290px] custom-scrollbar">
-                      <table className="w-full text-left text-[11px] text-slate-600 table-fixed">
-                        <thead>
-                          <tr className="text-[9px] text-slate-400 uppercase tracking-wider border-b border-slate-200 select-none">
-                            <th className="pb-2 font-bold text-left cursor-pointer hover:text-indigo-600 w-1/3" onClick={() => handleOsSort('name')}>
-                              SO {osSortField === 'name' ? (osSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleOsSort('soma')}>
-                              Soma {osSortField === 'soma' ? (osSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleOsSort('pct')}>
-                              Part. {osSortField === 'pct' ? (osSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                            <th className="pb-2 font-bold text-right cursor-pointer hover:text-indigo-600" onClick={() => handleOsSort('avgDaily')}>
-                              Média/D {osSortField === 'avgDaily' ? (osSortDir === 'asc' ? '▲' : '▼') : ''}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {execOsList.map((item: any, idx: number) => (
-                            <tr key={idx} className="hover:bg-slate-50/50">
-                              <td className="py-2 font-medium text-slate-800 text-left truncate" title={item.name}>{item.name}</td>
-                              <td className="py-2 font-bold text-slate-900 text-right">{item.soma.toLocaleString('pt-BR')}</td>
-                              <td className="py-2 text-slate-500 text-right">{item.pct.toFixed(1)}%</td>
-                              <td className="py-2 text-slate-600 text-right">{item.avgDaily.toFixed(1)}</td>
-                            </tr>
-                          ))}
                         </tbody>
                       </table>
                     </div>
@@ -7350,6 +7131,8 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 ga4OsOptions={ga4OsOptions}
                 getDayOfWeekSuffix={getDayOfWeekSuffix}
                 ga4Products={ga4Products}
+                getGA4GroupKey={getGA4GroupKey}
+                getGA4GroupDisplay={getGA4GroupDisplay}
               />
             </ErrorBoundary>
           )}
