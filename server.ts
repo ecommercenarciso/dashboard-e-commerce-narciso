@@ -1341,4 +1341,72 @@ app.delete('/api/users/:targetUsername', async (c) => {
   }
 });
 
+app.post('/api/auth/change-password', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Acesso negado: Token inválido' }, 401);
+    }
+    const token = authHeader.substring(7);
+    const decoded = atob(token);
+    const [username] = decoded.split(':');
+
+    const { currentPassword, newPassword } = await c.req.json();
+    if (!currentPassword || !newPassword) {
+      return c.json({ error: 'Campos obrigatórios ausentes' }, 400);
+    }
+
+    const users = await getUsersList(c);
+    const userIndex = users.findIndex((u: any) => u.username.toLowerCase() === username.toLowerCase());
+    if (userIndex === -1) {
+      return c.json({ error: 'Usuário não encontrado' }, 404);
+    }
+
+    if (users[userIndex].password !== currentPassword) {
+      return c.json({ error: 'Senha atual incorreta' }, 400);
+    }
+
+    users[userIndex].password = newPassword;
+    await saveUsersList(c, users);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    return c.json({ error: 'Erro ao alterar a senha' }, 500);
+  }
+});
+
+app.post('/api/users/:targetUsername/reset-password', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Acesso negado: Token inválido' }, 401);
+    }
+    const token = authHeader.substring(7);
+    const decoded = atob(token);
+    const [username, role] = decoded.split(':');
+    if (role !== 'master') {
+      return c.json({ error: 'Acesso negado: Apenas usuário master pode redefinir senhas' }, 403);
+    }
+
+    const targetUsername = c.req.param('targetUsername');
+    const { newPassword } = await c.req.json();
+    if (!newPassword) {
+      return c.json({ error: 'Nova senha é obrigatória' }, 400);
+    }
+
+    const users = await getUsersList(c);
+    const userIndex = users.findIndex((u: any) => u.username.toLowerCase() === targetUsername.toLowerCase());
+    if (userIndex === -1) {
+      return c.json({ error: 'Usuário não encontrado' }, 404);
+    }
+
+    users[userIndex].password = newPassword;
+    await saveUsersList(c, users);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    return c.json({ error: 'Erro ao redefinir a senha' }, 500);
+  }
+});
+
 export default app;

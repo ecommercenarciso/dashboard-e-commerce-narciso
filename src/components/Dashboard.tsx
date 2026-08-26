@@ -157,6 +157,87 @@ export default function Dashboard() {
     }
   };
 
+  const handleResetPassword = async (targetUsername: string) => {
+    const newPassword = prompt(`Digite a nova senha para o usuário "${targetUsername}":`);
+    if (!newPassword) return;
+    if (newPassword.trim() === '') {
+      alert('A senha não pode ser vazia.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${targetUsername}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ newPassword })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error || 'Erro ao redefinir a senha');
+      } else {
+        alert('Senha redefinida com sucesso!');
+      }
+    } catch (err) {
+      alert('Erro de conexão ao redefinir senha');
+    }
+  };
+
+  // Change own password states
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [myCurrentPassword, setMyCurrentPassword] = useState('');
+  const [myNewPassword, setMyNewPassword] = useState('');
+  const [myNewPasswordConfirm, setMyNewPasswordConfirm] = useState('');
+  const [myPasswordError, setMyPasswordError] = useState<string | null>(null);
+  const [myPasswordSuccess, setMyPasswordSuccess] = useState(false);
+
+  const handleChangeMyPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMyPasswordError(null);
+    setMyPasswordSuccess(false);
+
+    if (!myCurrentPassword || !myNewPassword || !myNewPasswordConfirm) {
+      setMyPasswordError('Preencha todos os campos.');
+      return;
+    }
+
+    if (myNewPassword !== myNewPasswordConfirm) {
+      setMyPasswordError('A nova senha e a confirmação não coincidem.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          currentPassword: myCurrentPassword,
+          newPassword: myNewPassword
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMyPasswordError(data.error || 'Erro ao alterar a senha');
+      } else {
+        setMyPasswordSuccess(true);
+        setMyCurrentPassword('');
+        setMyNewPassword('');
+        setMyNewPasswordConfirm('');
+        setTimeout(() => {
+          setIsChangePasswordOpen(false);
+          setMyPasswordSuccess(false);
+        }, 1500);
+      }
+    } catch (err) {
+      setMyPasswordError('Erro de conexão ao alterar a senha.');
+    }
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
@@ -3930,13 +4011,22 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               )}
             </div>
             
-            <button 
-              onClick={handleLogout}
-              className="text-slate-500 hover:text-rose-400 p-1.5 rounded transition-colors"
-              title="Sair do Dashboard"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button 
+                onClick={() => setIsChangePasswordOpen(true)}
+                className="text-slate-500 hover:text-indigo-400 p-1.5 rounded transition-colors"
+                title="Alterar Minha Senha"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="text-slate-500 hover:text-rose-400 p-1.5 rounded transition-colors"
+                title="Sair do Dashboard"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -8057,7 +8147,13 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                   {u.role === 'master' ? 'Master' : 'Colaborador'}
                                 </span>
                               </td>
-                              <td className="py-2 px-3 text-right">
+                              <td className="py-2 px-3 text-right flex items-center justify-end gap-2 h-10">
+                                <button
+                                  onClick={() => handleResetPassword(u.username)}
+                                  className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2 py-1 rounded transition-colors text-[10px] font-bold cursor-pointer"
+                                >
+                                  Redefinir Senha
+                                </button>
                                 {u.username.toLowerCase() !== 'master' ? (
                                   <button
                                     onClick={() => handleDeleteUser(u.username)}
@@ -8577,11 +8673,86 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
             </div>
           </div>
           <div className="bg-slate-900 text-slate-100 rounded-lg p-6 font-mono text-[9px] whitespace-pre-wrap leading-relaxed border border-slate-800 shadow-inner select-all">
-            {aiPromptText}
+          {aiPromptText}
           </div>
         </div>
       </div>
     </div>
+
+    {/* Change own password modal */}
+    {isChangePasswordOpen && (
+      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-2xl relative flex flex-col gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Alterar Minha Senha</h3>
+            <p className="text-[11px] text-slate-400 mt-1">Atualize as credenciais da sua conta.</p>
+          </div>
+
+          <form onSubmit={handleChangeMyPasswordSubmit} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Senha Atual</label>
+              <input
+                type="password"
+                placeholder="Sua senha atual"
+                value={myCurrentPassword}
+                onChange={(e) => setMyCurrentPassword(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nova Senha</label>
+              <input
+                type="password"
+                placeholder="Nova senha"
+                value={myNewPassword}
+                onChange={(e) => setMyNewPassword(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Confirmar Nova Senha</label>
+              <input
+                type="password"
+                placeholder="Confirme a nova senha"
+                value={myNewPasswordConfirm}
+                onChange={(e) => setMyNewPasswordConfirm(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+              />
+            </div>
+
+            {myPasswordError && (
+              <div className="text-[10px] text-rose-500 font-semibold bg-rose-500/10 border border-rose-500/20 px-2 py-1.5 rounded-md">
+                {myPasswordError}
+              </div>
+            )}
+
+            {myPasswordSuccess && (
+              <div className="text-[10px] text-emerald-500 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1.5 rounded-md">
+                Senha alterada com sucesso!
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setIsChangePasswordOpen(false)}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2 px-4 rounded-md transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 px-4 rounded-md transition-colors cursor-pointer"
+              >
+                Alterar Senha
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
   </>
 );
 }
