@@ -41,8 +41,48 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned' | 'settings'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned' | 'settings' | 'search'>('executive');
   const [trafficData, setTrafficData] = useState<any>(null);
+
+  // Search Analytics states
+  const [searchAnalyticsData, setSearchAnalyticsData] = useState<any>(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchTypeFilter, setSearchTypeFilter] = useState<'search' | 'autocomplete'>('search');
+  const [searchResultFilter, setSearchResultFilter] = useState<'all' | 'with_results' | 'no_results'>('with_results');
+  const [searchDeviceFilter, setSearchDeviceFilter] = useState<'all' | 'mobile' | 'desktop'>('all');
+  const [searchQueryTerm, setSearchQueryTerm] = useState('');
+  const [searchSortField, setSearchSortField] = useState<'term' | 'searches' | 'clicks' | 'uniqueClicks' | 'ctr' | 'conv' | 'orders' | 'revenue'>('searches');
+  const [searchSortDir, setSearchSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const fetchSearchAnalytics = async () => {
+    setLoadingSearch(true);
+    try {
+      const response = await fetch('/api/ga4/search-analytics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          startDate: filters.startDate,
+          endDate: filters.endDate
+        })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSearchAnalyticsData(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'search' && filters.startDate && filters.endDate) {
+      fetchSearchAnalytics();
+    }
+  }, [activeTab, filters.startDate, filters.endDate]);
 
   // Authentication states
   const [currentUser, setCurrentUser] = useState<{ username: string, role: string } | null>(() => {
@@ -3967,6 +4007,14 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               <Calculator className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora DRE</span>}
             </div>
+            <div 
+              onClick={() => setActiveTab('search')}
+              className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'search' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+              title="Analytics de Busca"
+            >
+              <Search className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Analytics de Busca</span>}
+            </div>
             {currentUser?.role === 'master' && (
               <div 
                 onClick={() => setActiveTab('settings')}
@@ -4066,7 +4114,9 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                     ? 'Meios de Pagamento'
                                     : activeTab === 'settings'
                                       ? 'Configurações do Dashboard'
-                                      : 'Dashboard'}
+                                      : activeTab === 'search'
+                                        ? 'Analytics de Busca'
+                                        : 'Dashboard'}
             </h1>
           </div>
 
@@ -8037,18 +8087,18 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                   {copiedPrompt ? 'Prompt Copiado!' : 'Copiar Prompt para IA'}
                 </button>
               </div>
-              <details className="group border border-slate-800 bg-slate-950/60 rounded-lg overflow-hidden transition-all duration-300">
+              <details className="group border border-slate-850 bg-slate-950/60 rounded-lg overflow-hidden transition-all duration-300">
                 <summary className="px-4 py-3 text-xs text-slate-400 font-semibold cursor-pointer hover:bg-slate-800 hover:text-white select-none list-none flex justify-between items-center">
                   <span>Visualizar dados consolidados do prompt estruturado</span>
                   <span className="transition-transform group-open:rotate-180 text-xs">▼</span>
                 </summary>
-                <div className="p-4 border-t border-slate-850 max-h-[300px] overflow-y-auto font-mono text-[10px] text-slate-300 whitespace-pre-wrap select-all leading-relaxed bg-slate-950/30">
+                <div className="p-4 border-t border-slate-850 max-h-[300px] overflow-y-auto font-mono text-[10px] text-slate-350 whitespace-pre-wrap select-all leading-relaxed bg-slate-950/30">
                   {aiPromptText}
                 </div>
               </details>
             </div>
 
-          {activeTab === 'settings' && currentUser?.role === 'master' && (
+            {activeTab === 'settings' && currentUser?.role === 'master' && (
             <div className="flex flex-col gap-6 animate-fade-in">
               <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                 <div>
@@ -8128,7 +8178,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                     ) : (
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="text-slate-450 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8">
+                          <tr className="text-slate-455 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8">
                             <th className="py-2 px-3">Nome de Usuário</th>
                             <th className="py-2 px-3">Perfil de Acesso</th>
                             <th className="py-2 px-3 text-right">Ações</th>
@@ -8171,6 +8221,206 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                       </table>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'search' && (
+            <div className="flex flex-col gap-6 animate-fade-in text-slate-800">
+              {/* FILTROS PILLS - EXATAMENTE COMO NO VTEX SEARCH ANALYTICS */}
+              <div className="flex flex-wrap items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                {/* Tipo de Busca */}
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                  <button 
+                    onClick={() => setSearchTypeFilter('search')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${searchTypeFilter === 'search' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    {searchTypeFilter === 'search' && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>}
+                    <span>Busca</span>
+                  </button>
+                  <button 
+                    onClick={() => setSearchTypeFilter('autocomplete')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${searchTypeFilter === 'autocomplete' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    {searchTypeFilter === 'autocomplete' && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>}
+                    <span>Preenchimento automático</span>
+                  </button>
+                </div>
+
+                {/* Filtro de Resultados */}
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                  <button 
+                    onClick={() => setSearchResultFilter('with_results')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${searchResultFilter === 'with_results' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    {searchResultFilter === 'with_results' && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>}
+                    <span>Com resultados</span>
+                  </button>
+                  <button 
+                    onClick={() => setSearchResultFilter('no_results')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${searchResultFilter === 'no_results' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    {searchResultFilter === 'no_results' && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>}
+                    <span>Sem resultados</span>
+                  </button>
+                </div>
+
+                {/* Dispositivo */}
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                  <button 
+                    onClick={() => setSearchDeviceFilter('all')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${searchDeviceFilter === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    {searchDeviceFilter === 'all' && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>}
+                    <span>Todos</span>
+                  </button>
+                  <button 
+                    onClick={() => setSearchDeviceFilter('mobile')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${searchDeviceFilter === 'mobile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    {searchDeviceFilter === 'mobile' && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>}
+                    <span>Dispositivos móveis</span>
+                  </button>
+                  <button 
+                    onClick={() => setSearchDeviceFilter('desktop')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${searchDeviceFilter === 'desktop' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  >
+                    {searchDeviceFilter === 'desktop' && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>}
+                    <span>Computador</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* SEARCH BAR E EXPORTAÇÃO */}
+              <div className="flex items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                <div className="relative w-full max-w-md">
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar por termo..."
+                    value={searchQueryTerm}
+                    onChange={(e) => setSearchQueryTerm(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <button 
+                  onClick={() => {
+                    const headers = 'Termos,Buscas,Cliques,Cliques unicos,CTR,Conversao,Pedidos,Vendas\n';
+                    const rows = (searchAnalyticsData?.list || []).map((item: any) => 
+                      `"${item.term}",${item.searches},${item.clicks},${item.uniqueClicks},${item.ctr.toFixed(2)}%,${item.conv.toFixed(2)}%,${item.orders},${item.revenue.toFixed(2)}`
+                    ).join('\n');
+                    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.setAttribute('download', `search_analytics_${filters.startDate}_to_${filters.endDate}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>EXPORTAR</span>
+                </button>
+              </div>
+
+              {/* CARDS DE KPIS */}
+              {loadingSearch ? (
+                <div className="h-20 flex items-center justify-center text-slate-400 text-xs">Carregando métricas...</div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Buscas</span>
+                    <h3 className="text-2xl font-extrabold text-slate-900 mt-2">{searchAnalyticsData?.summary?.searches.toLocaleString('pt-BR') || 0}</h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cliques</span>
+                    <h3 className="text-2xl font-extrabold text-slate-900 mt-2">{searchAnalyticsData?.summary?.clicks.toLocaleString('pt-BR') || 0}</h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cliques únicos</span>
+                    <h3 className="text-2xl font-extrabold text-slate-900 mt-2">{searchAnalyticsData?.summary?.uniqueClicks.toLocaleString('pt-BR') || 0}</h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">CTR</span>
+                    <h3 className="text-2xl font-extrabold text-slate-900 mt-2">{searchAnalyticsData?.summary?.ctr.toFixed(2)}%</h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-indigo-600">Conversão</span>
+                    <h3 className="text-2xl font-extrabold text-indigo-600 mt-2">{searchAnalyticsData?.summary?.conv.toFixed(2)}%</h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pedidos</span>
+                    <h3 className="text-2xl font-extrabold text-slate-900 mt-2">{searchAnalyticsData?.summary?.orders || 0}</h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between h-[100px]">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-emerald-600 font-semibold">Vendas</span>
+                    <h3 className="text-2xl font-extrabold text-emerald-600 mt-2">R$ {searchAnalyticsData?.summary?.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</h3>
+                  </div>
+                </div>
+              )}
+
+              {/* TABELA DE TERMOS */}
+              <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs flex flex-col gap-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="text-slate-455 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8 select-none">
+                        <th className="py-2 px-3 text-left cursor-pointer hover:text-indigo-600" onClick={() => { setSearchSortField('term'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>Termos {searchSortField === 'term' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-3 text-right cursor-pointer hover:text-indigo-600" onClick={() => { setSearchSortField('searches'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>Buscas {searchSortField === 'searches' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-3 text-right cursor-pointer hover:text-indigo-600" onClick={() => { setSearchSortField('clicks'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>Cliques {searchSortField === 'clicks' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-3 text-right cursor-pointer hover:text-indigo-600" onClick={() => { setSearchSortField('uniqueClicks'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>Cliques únicos {searchSortField === 'uniqueClicks' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-3 text-right cursor-pointer hover:text-indigo-600" onClick={() => { setSearchSortField('ctr'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>CTR {searchSortField === 'ctr' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-3 text-right cursor-pointer hover:text-indigo-600 text-indigo-600" onClick={() => { setSearchSortField('conv'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>Conversão {searchSortField === 'conv' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-3 text-right cursor-pointer hover:text-indigo-600" onClick={() => { setSearchSortField('orders'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>Pedidos {searchSortField === 'orders' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                        <th className="py-2 px-3 text-right cursor-pointer hover:text-indigo-600 text-emerald-600" onClick={() => { setSearchSortField('revenue'); setSearchSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); }}>Vendas {searchSortField === 'revenue' ? (searchSortDir === 'desc' ? '▼' : '▲') : ''}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                      {loadingSearch ? (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-400">Carregando termos de busca...</td>
+                        </tr>
+                      ) : (
+                        (searchAnalyticsData?.list || [])
+                          .filter((item: any) => {
+                            if (searchQueryTerm && !item.term.toLowerCase().includes(searchQueryTerm.toLowerCase())) {
+                              return false;
+                            }
+                            if (searchResultFilter === 'no_results') {
+                              return item.searches > 0 && item.clicks === 0;
+                            }
+                            return true;
+                          })
+                          .sort((a: any, b: any) => {
+                            let valA = a[searchSortField];
+                            let valB = b[searchSortField];
+                            if (typeof valA === 'string') {
+                              return searchSortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                            }
+                            return searchSortDir === 'asc' ? valA - valB : valB - valA;
+                          })
+                          .map((item: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors h-10">
+                              <td className="py-2 px-3 font-mono font-bold text-slate-800 text-left">{item.term}</td>
+                              <td className="py-2 px-3 text-right font-mono text-slate-900">{item.searches.toLocaleString('pt-BR')}</td>
+                              <td className="py-2 px-3 text-right font-mono text-slate-600">{item.clicks.toLocaleString('pt-BR')}</td>
+                              <td className="py-2 px-3 text-right font-mono text-slate-600">{item.uniqueClicks.toLocaleString('pt-BR')}</td>
+                              <td className="py-2 px-3 text-right font-mono font-semibold text-slate-500">{item.ctr.toFixed(2)}%</td>
+                              <td className="py-2 px-3 text-right font-mono font-bold text-indigo-600 bg-indigo-50/25">{item.conv.toFixed(2)}%</td>
+                              <td className="py-2 px-3 text-right font-mono font-semibold text-slate-700">{item.orders}</td>
+                              <td className="py-2 px-3 text-right font-mono font-bold text-emerald-600 bg-emerald-50/25">R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            </tr>
+                          ))
+                      )}
+                      {!loadingSearch && (!searchAnalyticsData?.list || searchAnalyticsData.list.length === 0) && (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-400">Nenhum termo de busca encontrado para o período selecionado.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
