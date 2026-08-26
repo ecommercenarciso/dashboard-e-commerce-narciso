@@ -1361,7 +1361,31 @@ export default function Dashboard() {
     });
 
     const getVtexSubcategory = (ga4Name: string, ga4Id?: string): string => {
-      // 1. Try matching with Sku ID / Product ID / Ref ID
+      const lower = ga4Name.toLowerCase();
+      
+      // 1. Strongly-identifying name keywords check (first to prevent wrong ID matches)
+      if (lower.includes('toalha') && (lower.includes('banhao') || lower.includes('banhão') || lower.includes('banho'))) return 'Toalhas de Banho e Banhão';
+      if (lower.includes('toalha') && (lower.includes('rosto') || lower.includes('visita'))) return 'Toalhas de Rosto e visita';
+      if (lower.includes('jogo') && (lower.includes('toalha') || lower.includes('toalhas'))) return 'Jogos de toalhas';
+      if (lower.includes('piso') || lower.includes('pe de toalha') || (lower.includes('toalha') && lower.includes('tapete'))) return 'Toalhas de piso e tapetes';
+      if (lower.includes('toalha')) return 'Toalhas';
+      
+      if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençóis';
+      if (lower.includes('travesseiro')) return 'Travesseiros';
+      if (lower.includes('cobreleito')) return 'Cobreleitos';
+      if (lower.includes('edredom')) return 'Edredons';
+      if (lower.includes('colchão') || lower.includes('colchao')) return 'Colchões';
+      if (lower.includes('cama box') || lower.includes('cama combate') || lower.includes('conjunto box')) return 'Camas box e conjuntos';
+      if (lower.includes('jogo de cama') || lower.includes('jogo de lencol')) return 'Jogos de cama';
+      
+      if (lower.includes('cortina')) return 'Cortinas';
+      if (lower.includes('tapete')) return 'Tapetes';
+      if (lower.includes('almofada')) return 'Almofadas';
+      if (lower.includes('pano de prato') || lower.includes('pano de copa')) return 'Panos de Prato';
+      if (lower.includes('jogo americano')) return 'Jogos Americanos';
+      if (lower.includes('bancada') || lower.includes('saboneteira') || lower.includes('porta escova')) return 'Acessórios de bancada';
+
+      // 2. Try matching with Sku ID / Product ID / Ref ID
       if (ga4Id) {
         const idStr = String(ga4Id);
         if (vtexSkuToSubcat.has(idStr)) return vtexSkuToSubcat.get(idStr)!;
@@ -1369,13 +1393,13 @@ export default function Dashboard() {
         if (vtexRefIdToSubcat.has(idStr)) return vtexRefIdToSubcat.get(idStr)!;
       }
 
-      // 2. Try matching exact cleaned name
+      // 3. Try matching exact cleaned name
       const cleanedGA4 = cleanName(ga4Name);
       if (cleanNameToVtexSubcat.has(cleanedGA4)) {
         return cleanNameToVtexSubcat.get(cleanedGA4)!;
       }
       
-      // 3. Substring match
+      // 4. Substring match
       let bestMatch = '';
       let maxLen = 0;
       cleanNameToVtexSubcat.forEach((subcat, cleanedVtex) => {
@@ -1389,28 +1413,8 @@ export default function Dashboard() {
       
       if (bestMatch) return bestMatch;
 
-      const lower = ga4Name.toLowerCase();
-      if (lower.includes('toalha') && (lower.includes('banhao') || lower.includes('banhão') || lower.includes('banho'))) return 'Toalhas de Banho e Banhão';
-      if (lower.includes('toalha') && (lower.includes('rosto') || lower.includes('visita'))) return 'Toalhas de Rosto e visita';
-      if (lower.includes('jogo') && (lower.includes('toalha') || lower.includes('toalhas'))) return 'Jogos de toalhas';
-      if (lower.includes('piso') || lower.includes('pe de toalha') || (lower.includes('toalha') && lower.includes('tapete'))) return 'Toalhas de piso e tapetes';
-      if (lower.includes('toalha')) return 'Toalhas';
-      
-      if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençóis';
-      if (lower.includes('travesseiro')) return 'Travesseiros';
-      if (lower.includes('cobreleito')) return 'Cobreleitos';
-      if (lower.includes('edredom')) return 'Edredons';
+      // 5. Weakly-identifying keywords fallbacks
       if (lower.includes('manta') || lower.includes('cobertor')) return 'Cobertores e mantas';
-      if (lower.includes('colchão') || lower.includes('colchao')) return 'Colchões';
-      if (lower.includes('cama box') || lower.includes('cama combate') || lower.includes('conjunto box')) return 'Camas box e conjuntos';
-      if (lower.includes('jogo de cama') || lower.includes('jogo de lencol')) return 'Jogos de cama';
-      
-      if (lower.includes('cortina')) return 'Cortinas';
-      if (lower.includes('tapete')) return 'Tapetes';
-      if (lower.includes('almofada')) return 'Almofadas';
-      if (lower.includes('pano de prato') || lower.includes('pano de copa')) return 'Panos de Prato';
-      if (lower.includes('jogo americano')) return 'Jogos Americanos';
-      if (lower.includes('bancada') || lower.includes('saboneteira') || lower.includes('porta escova')) return 'Acessórios de bancada';
 
       return 'Acessórios e Diversos';
     };
