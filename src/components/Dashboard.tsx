@@ -247,6 +247,7 @@ export default function Dashboard() {
   const [subcatFunnelSearch, setSubcatFunnelSearch] = useState('');
   const [subcatFunnelSortField, setSubcatFunnelSortField] = useState<'name' | 'sessions' | 'users' | 'addUsers' | 'viewToAdd' | 'orders' | 'cartToOrder'>('addUsers');
   const [subcatFunnelSortDir, setSubcatFunnelSortDir] = useState<'asc' | 'desc'>('desc');
+  const [expandedSubcat, setExpandedSubcat] = useState<string | null>(null);
 
   const handleSubcatFunnelSort = (field: typeof subcatFunnelSortField) => {
     if (subcatFunnelSortField === field) {
@@ -1419,7 +1420,8 @@ export default function Dashboard() {
       sessions: number,
       users: number,
       addUsers: number,
-      orders: number
+      orders: number,
+      products: Array<{ name: string, itemId: string, sessions: number, users: number, addUsers: number }>
     }> = {};
 
     products.forEach(p => {
@@ -1432,13 +1434,26 @@ export default function Dashboard() {
           sessions: 0,
           users: 0,
           addUsers: 0,
-          orders: 0
+          orders: 0,
+          products: []
         };
       }
       
       subcatStats[subcat].sessions += p.viewSessions || 0;
       subcatStats[subcat].users += p.viewUsers || 0;
       subcatStats[subcat].addUsers += p.addUsers || 0;
+
+      // Avoid duplicate product listings in the subcategory breakdown
+      const exists = subcatStats[subcat].products.some(pr => pr.name === name || (p.itemId && pr.itemId === p.itemId));
+      if (!exists) {
+        subcatStats[subcat].products.push({
+          name,
+          itemId: p.itemId || '',
+          sessions: p.viewSessions || 0,
+          users: p.viewUsers || 0,
+          addUsers: p.addUsers || 0
+        });
+      }
     });
 
     orders.forEach(o => {
@@ -1457,7 +1472,8 @@ export default function Dashboard() {
               sessions: 0,
               users: 0,
               addUsers: 0,
-              orders: 0
+              orders: 0,
+              products: []
             };
           }
           subcatStats[subcat].orders += 1;
@@ -1468,9 +1484,14 @@ export default function Dashboard() {
     return Object.values(subcatStats).map((s, idx) => {
       const viewToAdd = s.users > 0 ? (s.addUsers / s.users) * 100 : 0;
       const cartToOrder = s.addUsers > 0 ? (s.orders / s.addUsers) * 100 : 0;
+      
+      // Sort products inside this subcategory by sessions desc
+      const sortedProducts = [...s.products].sort((a, b) => b.sessions - a.sessions);
+
       return {
         id: idx,
         ...s,
+        products: sortedProducts,
         viewToAdd,
         cartToOrder
       };
@@ -7193,7 +7214,7 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Funil de Conversão por Subcategoria (GA4 + VTEX)</h3>
-                      <p className="text-xs text-slate-500 mt-1">Acompanhe as interações do usuário com cada subcategoria desde a visualização e adição ao carrinho até a compra final.</p>
+                      <p className="text-xs text-slate-500 mt-1">Acompanhe as interações do usuário com cada subcategoria desde a visualização e adição ao carrinho até a compra final. Clique em uma linha para detalhar os produtos.</p>
                     </div>
                     <div className="relative w-full max-w-[300px]">
                       <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
@@ -7222,15 +7243,64 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-slate-700">
                         {filteredSubcategoryFunnel.map((item: any) => (
-                          <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 px-3 font-semibold text-slate-900 max-w-[320px] truncate" title={item.name}>{item.name}</td>
-                            <td className="py-3 px-3 text-right font-mono text-slate-600">{item.sessions.toLocaleString('pt-BR')}</td>
-                            <td className="py-3 px-3 text-right font-mono text-slate-600">{item.users.toLocaleString('pt-BR')}</td>
-                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{item.addUsers.toLocaleString('pt-BR')}</td>
-                            <td className="py-3 px-3 text-right font-mono font-bold text-indigo-600 bg-indigo-50/20">{item.viewToAdd.toFixed(2)}%</td>
-                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">{item.orders.toLocaleString('pt-BR')}</td>
-                            <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 bg-emerald-50/20">{item.cartToOrder.toFixed(2)}%</td>
-                          </tr>
+                          <React.Fragment key={item.id}>
+                            <tr 
+                              onClick={() => setExpandedSubcat(expandedSubcat === item.name ? null : item.name)}
+                              className="hover:bg-slate-50 transition-colors cursor-pointer select-none border-b border-slate-100"
+                            >
+                              <td className="py-3 px-3 font-semibold text-slate-900 max-w-[320px] truncate flex items-center gap-2" title={item.name}>
+                                <span className="text-[10px] text-slate-400 font-bold shrink-0">{expandedSubcat === item.name ? '▼' : '▶'}</span>
+                                {item.name}
+                              </td>
+                              <td className="py-3 px-3 text-right font-mono text-slate-600">{item.sessions.toLocaleString('pt-BR')}</td>
+                              <td className="py-3 px-3 text-right font-mono text-slate-600">{item.users.toLocaleString('pt-BR')}</td>
+                              <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{item.addUsers.toLocaleString('pt-BR')}</td>
+                              <td className="py-3 px-3 text-right font-mono font-bold text-indigo-600 bg-indigo-50/20">{item.viewToAdd.toFixed(2)}%</td>
+                              <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">{item.orders.toLocaleString('pt-BR')}</td>
+                              <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 bg-emerald-50/20">{item.cartToOrder.toFixed(2)}%</td>
+                            </tr>
+                            {expandedSubcat === item.name && (
+                              <tr>
+                                <td colSpan={7} className="p-4 bg-slate-50 border-t border-b border-slate-200">
+                                  <div className="flex flex-col gap-2 max-w-4xl mx-auto">
+                                    <div className="flex justify-between items-baseline mb-2 pb-1 border-b border-slate-200">
+                                      <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Produtos mapeados nesta subcategoria</h4>
+                                      <span className="text-[9px] text-slate-400 font-bold">Total: {item.products.length} itens</span>
+                                    </div>
+                                    <div className="overflow-x-auto max-h-[220px] overflow-y-auto custom-scrollbar bg-white rounded-md border border-slate-200 shadow-xs">
+                                      <table className="w-full text-left text-[11px] border-collapse">
+                                        <thead>
+                                          <tr className="text-slate-400 font-bold border-b border-slate-200 uppercase tracking-wider text-[8px] h-7 bg-slate-50 sticky top-0 z-10 select-none">
+                                            <th className="py-1.5 px-3">Nome do Produto</th>
+                                            <th className="py-1.5 px-3 text-right">Cód SKU</th>
+                                            <th className="py-1.5 px-3 text-right">Sessões</th>
+                                            <th className="py-1.5 px-3 text-right">Vistos (Users)</th>
+                                            <th className="py-1.5 px-3 text-right">Add Carrinho</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 text-slate-600">
+                                          {item.products.map((p: any, pIdx: number) => (
+                                            <tr key={pIdx} className="hover:bg-slate-50 h-8">
+                                              <td className="py-1.5 px-3 font-medium text-slate-800 max-w-[400px] truncate text-left" title={p.name}>{p.name}</td>
+                                              <td className="py-1.5 px-3 text-right font-mono text-[10px] text-slate-400">{p.itemId || '-'}</td>
+                                              <td className="py-1.5 px-3 text-right font-mono">{p.sessions.toLocaleString('pt-BR')}</td>
+                                              <td className="py-1.5 px-3 text-right font-mono">{p.users.toLocaleString('pt-BR')}</td>
+                                              <td className="py-1.5 px-3 text-right font-mono font-bold text-slate-700">{p.addUsers.toLocaleString('pt-BR')}</td>
+                                            </tr>
+                                          ))}
+                                          {item.products.length === 0 && (
+                                            <tr>
+                                              <td colSpan={5} className="py-4 text-center text-slate-400">Nenhum produto com visualização no período.</td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         ))}
                         {filteredSubcategoryFunnel.length === 0 && (
                           <tr>
