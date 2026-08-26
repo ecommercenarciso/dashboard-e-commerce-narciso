@@ -1372,18 +1372,24 @@ export default function Dashboard() {
       
       if (lower.includes('lençol') || lower.includes('lencol')) return 'Lençóis';
       if (lower.includes('travesseiro')) return 'Travesseiros';
-      if (lower.includes('cobreleito')) return 'Cobreleitos';
+      if (lower.includes('cobreleito') || lower.includes('cobre leito')) return 'Cobreleitos';
       if (lower.includes('edredom')) return 'Edredons';
       if (lower.includes('colchão') || lower.includes('colchao')) return 'Colchões';
-      if (lower.includes('cama box') || lower.includes('cama combate') || lower.includes('conjunto box')) return 'Camas box e conjuntos';
+      if (lower.includes('cama box') || lower.includes('cama combate') || lower.includes('conjunto box') || lower.includes('unibox') || lower.includes('cama unibox')) return 'Camas box e conjuntos';
       if (lower.includes('jogo de cama') || lower.includes('jogo de lencol')) return 'Jogos de cama';
       
       if (lower.includes('cortina')) return 'Cortinas';
       if (lower.includes('tapete')) return 'Tapetes';
       if (lower.includes('almofada')) return 'Almofadas';
+      
+      // Cozinha e Utilidades subcategories
+      if (lower.includes('aparelho de jantar') || lower.includes('aparelhos de jantar')) return 'Aparelhos de Jantar';
+      if (lower.includes('potes') || lower.includes('pote') || lower.includes('organizador') || lower.includes('porta mantimento')) return 'Organização e potes';
+      if (lower.includes('panelas') || lower.includes('panela') || lower.includes('frigideira') || lower.includes('jogo de panelas')) return 'Jogo de Panelas';
       if (lower.includes('pano de prato') || lower.includes('pano de copa')) return 'Panos de Prato';
       if (lower.includes('jogo americano')) return 'Jogos Americanos';
       if (lower.includes('bancada') || lower.includes('saboneteira') || lower.includes('porta escova')) return 'Acessórios de bancada';
+      if (lower.includes('copo') || lower.includes('taça') || lower.includes('taca') || lower.includes('garrafa') || lower.includes('bule') || lower.includes('talher') || lower.includes('assadeira')) return 'Utensílios de Cozinha';
 
       // 2. Try matching with Sku ID / Product ID / Ref ID
       if (ga4Id) {
