@@ -436,7 +436,9 @@ export default function TrafficDashboard({
   }, [data, funnelBase, top5OsList, chartInterval, getGA4GroupKey, getGA4GroupDisplay]);
 
   const execChannelsList = useMemo(() => {
-    if (!data?.channelsData?.rows) return [];
+    const hasTotals = !!data?.channelsTotals?.rows;
+    const rows = data?.channelsTotals?.rows || data?.channelsData?.rows || [];
+    if (rows.length === 0) return [];
     
     const txByChannel: Record<string, { orders: number, revenue: number }> = {};
     completedTransactions.forEach(tx => {
@@ -449,8 +451,8 @@ export default function TrafficDashboard({
     const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
     let totalVis = 0;
     let totalSess = 0;
-    data.channelsData.rows.forEach((r: any) => {
-      const name = r.dimensionValues?.[1]?.value || '(not set)';
+    rows.forEach((r: any) => {
+      const name = r.dimensionValues?.[hasTotals ? 0 : 1]?.value || '(not set)';
       const sess = parseInt(r.metricValues?.[0]?.value || '0');
       const vis = parseInt(r.metricValues?.[1]?.value || '0');
       if (!map[name]) {
@@ -493,7 +495,9 @@ export default function TrafficDashboard({
   }, [data, funnelBase, daysCount, channelsSortField, channelsSortDir, completedTransactions]);
 
   const execGeoList = useMemo(() => {
-    if (!data?.geoData?.rows) return [];
+    const hasTotals = !!data?.geoTotals?.rows;
+    const rows = data?.geoTotals?.rows || data?.geoData?.rows || [];
+    if (rows.length === 0) return [];
     
     const txByCity: Record<string, { orders: number, revenue: number }> = {};
     completedTransactions.forEach(tx => {
@@ -506,8 +510,9 @@ export default function TrafficDashboard({
     const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
     let totalVis = 0;
     let totalSess = 0;
-    data.geoData.rows.forEach((r: any) => {
-      const name = r.dimensionValues?.[1]?.value || '(não setado)';
+    rows.forEach((r: any) => {
+      // If geoTotals, city is at index 0. If geoData, city is at index 1.
+      const name = r.dimensionValues?.[hasTotals ? 0 : 1]?.value || '(não setado)';
       const sess = parseInt(r.metricValues?.[0]?.value || '0');
       const vis = parseInt(r.metricValues?.[1]?.value || '0');
       if (!map[name]) {
@@ -550,7 +555,9 @@ export default function TrafficDashboard({
   }, [data, funnelBase, daysCount, geoSortField, geoSortDir, completedTransactions]);
 
   const execOsList = useMemo(() => {
-    if (!data?.deviceData?.rows) return [];
+    const hasTotals = !!data?.deviceTotals?.rows;
+    const rows = data?.deviceTotals?.rows || data?.deviceData?.rows || [];
+    if (rows.length === 0) return [];
     
     const txByOs: Record<string, { orders: number, revenue: number }> = {};
     completedTransactions.forEach(tx => {
@@ -563,8 +570,8 @@ export default function TrafficDashboard({
     const map: Record<string, { name: string, visitors: number, sessions: number }> = {};
     let totalVis = 0;
     let totalSess = 0;
-    data.deviceData.rows.forEach((r: any) => {
-      const name = r.dimensionValues?.[1]?.value || '(not set)';
+    rows.forEach((r: any) => {
+      const name = r.dimensionValues?.[hasTotals ? 0 : 1]?.value || '(not set)';
       const sess = parseInt(r.metricValues?.[0]?.value || '0');
       const vis = parseInt(r.metricValues?.[1]?.value || '0');
       if (!map[name]) {

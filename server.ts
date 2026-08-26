@@ -558,7 +558,7 @@ app.post('/api/ga4/traffic', async (c) => {
     const propertyId = cleanEnvString(getEnv(c, 'GA4_PROPERTY_ID'));
 
     // We need multiple queries because of GA4 API limitations on dimensions/metrics
-    const [overviewData, prevOverviewData, channelsData, geoData, deviceData, campaignsData, landingPagesData, granularityData, transactionsData] = await Promise.all([
+    const [overviewData, prevOverviewData, channelsData, geoData, deviceData, campaignsData, landingPagesData, granularityData, transactionsData, channelsTotals, geoTotals, deviceTotals] = await Promise.all([
       runGa4Report(accessToken, propertyId!, {
         dateRanges: [{ startDate, endDate }],
         metrics: [
@@ -632,6 +632,21 @@ app.post('/api/ga4/traffic', async (c) => {
         metrics: [
           { name: 'purchaseRevenue' }
         ]
+      }, extraFilters),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'firstUserSourceMedium' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }]
+      }, extraFilters),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'city' }, { name: 'region' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }]
+      }, extraFilters),
+      runGa4Report(accessToken, propertyId!, {
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'operatingSystem' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }]
       }, extraFilters)
     ]);
 
@@ -644,7 +659,10 @@ app.post('/api/ga4/traffic', async (c) => {
       campaignsData,
       landingPagesData,
       granularityData,
-      transactionsData
+      transactionsData,
+      channelsTotals,
+      geoTotals,
+      deviceTotals
     });
   } catch (error: any) {
     console.error('GA4 Traffic Error:', error);
