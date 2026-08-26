@@ -1213,4 +1213,132 @@ app.get('/api/vtex/abandoned-carts', async (c) => {
   }
 });
 
+// User management persistent storage and auth logic
+let memoryUsers: any[] = [];
+
+async function getUsersList(c: any) {
+  if (c.env?.DASHBOARD_KV) {
+    const data = await c.env.DASHBOARD_KV.get('dashboard_users');
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {}
+    }
+  }
+  if (memoryUsers.length === 0) {
+    memoryUsers = [
+      { username: 'master', password: 'narcisomaster', role: 'master' }
+    ];
+  }
+  return memoryUsers;
+}
+
+async function saveUsersList(c: any, users: any[]) {
+  if (c.env?.DASHBOARD_KV) {
+    await c.env.DASHBOARD_KV.put('dashboard_users', JSON.stringify(users));
+  } else {
+    memoryUsers = users;
+  }
+}
+
+app.post('/api/auth/login', async (c) => {
+  try {
+    const { username, password } = await c.req.json();
+    const users = await getUsersList(c);
+    const user = users.find((u: any) => u.username === username && u.password === password);
+    if (!user) {
+      return c.json({ error: 'Usuário ou senha incorretos' }, 401);
+    }
+    const token = btoa(`${username}:${user.role}:${Date.now()}`);
+    return c.json({ 
+      user: { username: user.username, role: user.role },
+      token 
+    });
+  } catch (error: any) {
+    return c.json({ error: 'Erro ao processar login' }, 500);
+  }
+});
+
+app.get('/api/users', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Acesso negado: Token inválido' }, 401);
+    }
+    const token = authHeader.substring(7);
+    const decoded = atob(token);
+    const [username, role] = decoded.split(':');
+    if (role !== 'master') {
+      return c.json({ error: 'Acesso negado: Apenas usuário master pode ver os usuários' }, 403);
+    }
+
+    const users = await getUsersList(c);
+    const safeUsers = users.map((u: any) => ({ username: u.username, role: u.role }));
+    return c.json({ users: safeUsers });
+  } catch (error: any) {
+    return c.json({ error: 'Erro ao listar usuários' }, 500);
+  }
+});
+
+app.post('/api/users', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Acesso negado: Token inválido' }, 401);
+    }
+    const token = authHeader.substring(7);
+    const decoded = atob(token);
+    const [username, role] = decoded.split(':');
+    if (role !== 'master') {
+      return c.json({ error: 'Acesso negado: Apenas usuário master pode criar novos usuários' }, 403);
+    }
+
+    const { newUsername, newPassword, newRole } = await c.req.json();
+    if (!newUsername || !newPassword || !newRole) {
+      return c.json({ error: 'Campos obrigatórios ausentes' }, 400);
+    }
+
+    const users = await getUsersList(c);
+    const exists = users.some((u: any) => u.username.toLowerCase() === newUsername.toLowerCase());
+    if (exists) {
+      return c.json({ error: 'Este nome de usuário já está em uso' }, 400);
+    }
+
+    const updatedUsers = [...users, { username: newUsername, password: newPassword, role: newRole }];
+    await saveUsersList(c, updatedUsers);
+
+    return c.json({ success: true, user: { username: newUsername, role: newRole } });
+  } catch (error: any) {
+    return c.json({ error: 'Erro ao criar usuário' }, 500);
+  }
+});
+
+app.delete('/api/users/:targetUsername', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Acesso negado: Token inválido' }, 401);
+    }
+    const token = authHeader.substring(7);
+    const decoded = atob(token);
+    const [username, role] = decoded.split(':');
+    if (role !== 'master') {
+      return c.json({ error: 'Acesso negado: Apenas usuário master pode excluir usuários' }, 403);
+    }
+
+    const targetUsername = c.req.param('targetUsername');
+    if (targetUsername.toLowerCase() === 'master') {
+      return c.json({ error: 'Não é possível excluir o usuário master principal' }, 400);
+    }
+
+    const users = await getUsersList(c);
+    const updatedUsers = users.filter((u: any) => u.username.toLowerCase() !== targetUsername.toLowerCase());
+    await saveUsersList(c, updatedUsers);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    return c.json({ error: 'Erro ao excluir usuário' }, 500);
+  }
+});
+
 export default app;

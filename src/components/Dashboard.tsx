@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ComposedChart, PieChart, Pie, Cell, LabelList, ScatterChart, Scatter, ZAxis, ReferenceLine } from 'recharts';
-import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileDown, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package, ArrowDownRight, CreditCard, Truck, Search, Bed } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, ShoppingCart, DollarSign, Users, AlertCircle, RefreshCw, Sparkles, Menu, X, FileDown, ChevronLeft, ChevronRight, LayoutDashboard, Target, ChevronDown, Calculator, Package, ArrowDownRight, CreditCard, Truck, Search, Bed, Settings, LogOut } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subWeeks, subMonths, subQuarters, subYears } from 'date-fns';
 import { GA4DataRow, VTEXOrder, DashboardFilter, FunnelData } from '../types';
 import TrafficDashboard from './TrafficDashboard';
@@ -41,8 +41,170 @@ export default function Dashboard() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'goals' | 'dre' | 'products' | 'traffic' | 'crm' | 'logistics' | 'finance' | 'marketing' | 'abandoned' | 'settings'>('executive');
   const [trafficData, setTrafficData] = useState<any>(null);
+
+  // Authentication states
+  const [currentUser, setCurrentUser] = useState<{ username: string, role: string } | null>(() => {
+    const saved = localStorage.getItem('narciso_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return null;
+  });
+  const [authToken, setAuthToken] = useState<string | null>(() => {
+    return localStorage.getItem('narciso_token');
+  });
+
+  // Login Form states
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // User Management states
+  const [systemUsers, setSystemUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('colaborador');
+  const [userCreationError, setUserCreationError] = useState<string | null>(null);
+  const [userCreationSuccess, setUserCreationSuccess] = useState(false);
+
+  const fetchUsersList = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('narciso_token')}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSystemUsers(data.users || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Load users list if active tab is settings
+  useEffect(() => {
+    if (activeTab === 'settings' && currentUser?.role === 'master' && authToken) {
+      fetchUsersList();
+    }
+  }, [activeTab, currentUser, authToken]);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserCreationError(null);
+    setUserCreationSuccess(false);
+
+    if (!newUsername || !newPassword) {
+      setUserCreationError('Preencha todos os campos do novo usuário.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          newUsername,
+          newPassword,
+          newRole
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setUserCreationError(data.error || 'Erro ao criar usuário');
+      } else {
+        setUserCreationSuccess(true);
+        setNewUsername('');
+        setNewPassword('');
+        fetchUsersList();
+      }
+    } catch (err) {
+      setUserCreationError('Erro de conexão ao criar usuário');
+    }
+  };
+
+  const handleDeleteUser = async (targetUsername: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o usuário "${targetUsername}"?`)) return;
+
+    try {
+      const response = await fetch(`/api/users/${targetUsername}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error || 'Erro ao excluir usuário');
+      } else {
+        fetchUsersList();
+      }
+    } catch (err) {
+      alert('Erro de conexão ao excluir usuário');
+    }
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setLoginLoading(true);
+
+    if (!loginUsername || !loginPassword) {
+      setLoginError('Digite o usuário e a senha.');
+      setLoginLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: loginUsername,
+          password: loginPassword
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setLoginError(data.error || 'Erro de autenticação.');
+      } else {
+        setAuthToken(data.token);
+        setCurrentUser(data.user);
+        localStorage.setItem('narciso_token', data.token);
+        localStorage.setItem('narciso_user', JSON.stringify(data.user));
+        // Clear login form
+        setLoginUsername('');
+        setLoginPassword('');
+      }
+    } catch (err) {
+      setLoginError('Erro ao se conectar ao servidor.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setAuthToken(null);
+    localStorage.removeItem('narciso_user');
+    localStorage.removeItem('narciso_token');
+    setActiveTab('executive');
+  };
   const [periodType, setPeriodType] = useState('Este mês, até agora');
   const [comparisonType, setComparisonType] = useState<'days' | 'period' | 'custom'>('period');
 
@@ -3534,6 +3696,71 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
     setTimeout(() => setCopiedPrompt(false), 2500);
   };
 
+  if (!currentUser || !authToken) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 relative overflow-hidden font-sans">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-800 p-8 shadow-2xl relative z-10 flex flex-col gap-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-extrabold text-white tracking-wider flex items-center justify-center gap-2">
+              <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">NARCISO</span>
+              <span className="text-[12px] font-semibold text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full uppercase">Dashboard</span>
+            </h1>
+            <p className="text-slate-400 text-xs mt-2 font-medium">Entre com suas credenciais para acessar o painel</p>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Usuário</label>
+              <input
+                type="text"
+                placeholder="Ex: master"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder-slate-650 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-mono"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Senha</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder-slate-650 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-mono"
+              />
+            </div>
+
+            {loginError && (
+              <div className="text-xs text-rose-500 font-semibold bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full mt-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-sm py-3 px-4 rounded-lg shadow-lg hover:shadow-indigo-500/20 focus:outline-hidden transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {loginLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Entrando...</span>
+                </>
+              ) : (
+                <span>Acessar Painel</span>
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden print:hidden">
@@ -3659,6 +3886,16 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
               <Calculator className="w-5 h-5 shrink-0" />
               {!isSidebarCollapsed && <span className="text-sm font-medium">Calculadora DRE</span>}
             </div>
+            {currentUser?.role === 'master' && (
+              <div 
+                onClick={() => setActiveTab('settings')}
+                className={`flex items-center gap-3 py-2 rounded-md cursor-pointer transition-all ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'settings' ? 'text-white bg-slate-800 border-l-4 border-cyan-500 pl-2' : 'hover:text-white text-slate-500 hover:text-slate-400'}`}
+                title="Configurações"
+              >
+                <Settings className="w-5 h-5 shrink-0" />
+                {!isSidebarCollapsed && <span className="text-sm font-medium">Configurações</span>}
+              </div>
+            )}
           </nav>
         </div>
 
@@ -3680,16 +3917,26 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
             )}
           </button>
 
-          <div className={`bg-slate-950 transition-all ${isSidebarCollapsed ? 'p-3 flex justify-center' : 'p-6'}`}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center font-bold text-white shrink-0">U</div>
+          <div className={`bg-slate-950 transition-all ${isSidebarCollapsed ? 'p-3 flex flex-col items-center gap-3' : 'p-4 flex items-center justify-between'}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-indigo-600 border border-indigo-500 flex items-center justify-center font-bold text-white shrink-0 uppercase">
+                {currentUser?.username.substring(0, 2)}
+              </div>
               {!isSidebarCollapsed && (
-                <div className="text-xs">
-                  <p className="text-white font-medium">Usuário Analista</p>
-                  <p className="text-slate-500">Plano Enterprise</p>
+                <div className="text-xs min-w-0">
+                  <p className="text-white font-semibold truncate" title={currentUser?.username}>{currentUser?.username}</p>
+                  <p className="text-slate-500 capitalize">{currentUser?.role === 'master' ? 'Master' : 'Colaborador'}</p>
                 </div>
               )}
             </div>
+            
+            <button 
+              onClick={handleLogout}
+              className="text-slate-500 hover:text-rose-400 p-1.5 rounded transition-colors"
+              title="Sair do Dashboard"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
@@ -3727,7 +3974,9 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                                   ? 'Logística & Frete'
                                   : activeTab === 'finance'
                                     ? 'Meios de Pagamento'
-                                    : 'Dashboard'}
+                                    : activeTab === 'settings'
+                                      ? 'Configurações do Dashboard'
+                                      : 'Dashboard'}
             </h1>
           </div>
 
@@ -7708,6 +7957,128 @@ ${topClients.slice(0, 15).map(c => `| ${c.name} | ${c.count} | R$ ${c.total.toLo
                 </div>
               </details>
             </div>
+
+          {activeTab === 'settings' && currentUser?.role === 'master' && (
+            <div className="flex flex-col gap-6 animate-fade-in">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">Configurações do Dashboard</h2>
+                  <p className="text-xs text-slate-500 mt-1">Gerencie os usuários do sistema e suas permissões de acesso.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Criar Novo Usuário */}
+                <div className="lg:col-span-4 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Criar Novo Usuário</h3>
+                  
+                  <form onSubmit={handleCreateUser} className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-semibold">Nome de Usuário</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: joao_narciso"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        className="w-full border border-slate-200 rounded-md px-3 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-semibold">Senha</label>
+                      <input
+                        type="password"
+                        placeholder="Digite a senha"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full border border-slate-200 rounded-md px-3 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500 font-mono"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-semibold">Perfil de Acesso</label>
+                      <select
+                        value={newRole}
+                        onChange={(e) => setNewRole(e.target.value)}
+                        className="w-full border border-slate-200 rounded-md px-3 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="colaborador">Colaborador (Visualização)</option>
+                        <option value="master">Master (Visualização + Gestão de Usuários)</option>
+                      </select>
+                    </div>
+
+                    {userCreationError && (
+                      <div className="text-[10px] text-rose-600 font-semibold bg-rose-50 border border-rose-100 px-2 py-1.5 rounded-md">
+                        {userCreationError}
+                      </div>
+                    )}
+
+                    {userCreationSuccess && (
+                      <div className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-100 px-2 py-1.5 rounded-md">
+                        Usuário criado com sucesso!
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 px-4 rounded-md transition-colors cursor-pointer mt-2"
+                    >
+                      Cadastrar Usuário
+                    </button>
+                  </form>
+                </div>
+
+                {/* Lista de Usuários */}
+                <div className="lg:col-span-8 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Usuários Cadastrados</h3>
+                  
+                  <div className="overflow-x-auto">
+                    {loadingUsers ? (
+                      <div className="py-8 text-center text-slate-400 text-xs">Carregando usuários...</div>
+                    ) : (
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="text-slate-450 font-bold border-b border-slate-200 uppercase tracking-wider text-[9px] h-8">
+                            <th className="py-2 px-3">Nome de Usuário</th>
+                            <th className="py-2 px-3">Perfil de Acesso</th>
+                            <th className="py-2 px-3 text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          {systemUsers.map((u: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors h-10">
+                              <td className="py-2 px-3 font-mono font-bold text-slate-800">{u.username}</td>
+                              <td className="py-2 px-3">
+                                <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${
+                                  u.role === 'master' 
+                                    ? 'bg-purple-50 text-purple-700 border border-purple-100' 
+                                    : 'bg-slate-100 text-slate-650'
+                                }`}>
+                                  {u.role === 'master' ? 'Master' : 'Colaborador'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-right">
+                                {u.username.toLowerCase() !== 'master' ? (
+                                  <button
+                                    onClick={() => handleDeleteUser(u.username)}
+                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded transition-colors text-[10px] font-bold cursor-pointer"
+                                  >
+                                    Excluir
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 font-semibold italic px-2">Bloqueado</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           </div>
         </div>
